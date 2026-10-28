@@ -6,10 +6,16 @@ import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthService } from './auth.service';
+import { MfaService } from './mfa.service';
+import { Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ChangePasswordDto,
   ForgotPasswordDto,
   LoginDto,
+  MfaCodeDto,
+  MfaDisableDto,
+  MfaLoginDto,
   RefreshDto,
   RegisterDto,
   ResetPasswordDto,
@@ -21,7 +27,11 @@ const STRICT = { default: { limit: 8, ttl: 60_000 } };
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly mfa: MfaService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   @Public()
   @Throttle(STRICT)
@@ -45,6 +55,53 @@ export class AuthController {
   @Post('admin/login')
   adminLogin(@Body() dto: LoginDto, @ClientIp() ip: string, @Req() req: Request) {
     return this.auth.login(dto, { ip, userAgent: req.headers['user-agent'] }, true);
+  }
+
+  /** Second step after `admin/login` (or `login`) answered `{ mfaRequired: true, mfaToken }`. */
+  @Public()
+  @Throttle(STRICT)
+  @HttpCode(200)
+  @Post('login/mfa')
+  loginMfa(@Body() dto: MfaLoginDto, @ClientIp() ip: string, @Req() req: Request) {
+    return this.auth.loginMfa(dto.mfaToken, dto.code, { ip, userAgent: req.headers['user-agent'] });
+  }
+
+  @ApiBearerAuth()
+  @Roles(...STAFF_ROLES)
+  @Get('mfa')
+  async mfaStatus(@CurrentUser() user: AuthUser) {
+    return this.mfa.status(await this.prisma.user.findUniqueOrThrow({ where: { id: user.id } }));
+  }
+
+  @ApiBearerAuth()
+  @Roles(...STAFF_ROLES)
+  @Post('mfa/setup')
+  mfaSetup(@CurrentUser() user: AuthUser) {
+    return this.mfa.setup(user.id);
+  }
+
+  @ApiBearerAuth()
+  @Roles(...STAFF_ROLES)
+  @HttpCode(200)
+  @Post('mfa/enable')
+  mfaEnable(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {
+    return this.mfa.enable(user.id, dto.code);
+  }
+
+  @ApiBearerAuth()
+  @Roles(...STAFF_ROLES)
+  @HttpCode(200)
+  @Post('mfa/disable')
+  mfaDisable(@CurrentUser() user: AuthUser, @Body() dto: MfaDisableDto) {
+    return this.mfa.disable(user.id, dto.password, dto.code);
+  }
+
+  @ApiBearerAuth()
+  @Roles(...STAFF_ROLES)
+  @HttpCode(200)
+  @Post('mfa/backup-codes')
+  mfaBackupCodes(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {
+    return this.mfa.regenerateBackupCodes(user.id, dto.code);
   }
 
   @Public()

@@ -5,6 +5,8 @@ export interface AuthUser {
   id: string;
   email: string;
   role: UserRole;
+  /** true when the session was opened with a second factor */
+  mfa?: boolean;
 }
 
 export const CurrentUser = createParamDecorator(

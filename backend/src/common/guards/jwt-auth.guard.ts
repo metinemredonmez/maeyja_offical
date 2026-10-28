@@ -8,6 +8,7 @@ interface AccessPayload {
   sub: string;
   email: string;
   role: UserRole;
+  mfa?: boolean;
   typ: 'access';
 }
 
@@ -35,7 +36,7 @@ export class JwtAuthGuard implements CanActivate {
       try {
         const payload = await this.jwt.verifyAsync<AccessPayload>(token);
         if (payload.typ !== 'access') throw new Error('wrong token type');
-        req.user = { id: payload.sub, email: payload.email, role: payload.role };
+        req.user = { id: payload.sub, email: payload.email, role: payload.role, mfa: payload.mfa === true };
       } catch {
         if (!isPublic) throw new UnauthorizedException('Oturum süresi doldu, lütfen tekrar giriş yapın');
       }

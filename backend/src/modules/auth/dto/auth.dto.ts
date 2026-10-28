@@ -125,3 +125,17 @@ export class ChangePasswordDto {
   @IsNotCommonPassword()
   newPassword: string;
 }
+
+export class MfaLoginDto {
+  @ApiProperty() @IsString() @MaxLength(600) mfaToken: string;
+  @ApiProperty({ description: '6-digit TOTP or a backup code' }) @IsString() @MaxLength(16) code: string;
+}
+
+export class MfaCodeDto {
+  @ApiProperty() @IsString() @MaxLength(16) code: string;
+}
+
+export class MfaDisableDto {
+  @ApiProperty() @IsString() @MaxLength(72) password: string;
+  @ApiProperty() @IsString() @MaxLength(16) code: string;
+}

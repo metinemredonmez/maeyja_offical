@@ -11,6 +11,7 @@ import { MailService } from '../notifications/mail.service';
 import { mailLocale, templates } from '../notifications/mail.templates';
 import { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 import { LoginGuardService } from './login-guard.service';
+import { MfaService } from './mfa.service';
 
 const BCRYPT_ROUNDS = 12;
 const VERIFY_TTL_MS = 48 * 3600_000;
@@ -33,6 +34,7 @@ export const publicUser = (u: User) => ({
   locale: u.locale,
   marketingOptIn: u.marketingOptIn,
   emailVerified: Boolean(u.emailVerifiedAt),
+  mfaEnabled: Boolean(u.mfaEnabledAt),
   createdAt: u.createdAt,
 });
 
@@ -46,6 +48,7 @@ export class AuthService {
     private readonly config: ConfigService<Env, true>,
     private readonly mail: MailService,
     private readonly loginGuard: LoginGuardService,
+    private readonly mfa: MfaService,
   ) {}
 
   async register(dto: RegisterDto, meta: ClientMeta) {
@@ -96,8 +99,39 @@ export class AuthService {
     }
 
     this.loginGuard.recordSuccess(dto.email);
+
+    // Staff with TOTP enabled: password alone only buys a 5-minute token for the second step.
+    if (user.mfaEnabledAt) {
+      const mfaToken = await this.jwt.signAsync({ sub: user.id, typ: 'mfa' }, { expiresIn: '5m' });
+      return { mfaRequired: true as const, mfaToken };
+    }
+
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     if (staffOnly) this.logger.log(`admin login: ${user.email} from ${ip}`);
+    return this.issueSession(user, meta);
+  }
+
+  /** Second login step for MFA-enabled accounts. */
+  async loginMfa(mfaToken: string, code: string, meta: ClientMeta) {
+    const ip = meta.ip ?? 'unknown';
+    let payload: { sub: string; typ: string };
+    try {
+      payload = await this.jwt.verifyAsync(mfaToken);
+    } catch {
+      throw new UnauthorizedException('Oturum süresi doldu, tekrar giriş yapın');
+    }
+    if (payload.typ !== 'mfa') throw new UnauthorizedException();
+    const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+    if (!user || !user.isActive || user.deletedAt) throw new UnauthorizedException();
+    this.loginGuard.assertAllowed(user.email, ip);
+    if (!(await this.mfa.verify(user, code))) {
+      this.loginGuard.recordFailure(user.email, ip);
+      this.logger.warn(`failed mfa for ${user.email} from ${ip}`);
+      throw new UnauthorizedException('Doğrulama kodu geçersiz');
+    }
+    this.loginGuard.recordSuccess(user.email);
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    this.logger.log(`admin login (mfa): ${user.email} from ${ip}`);
     return this.issueSession(user, meta);
   }
 
@@ -180,7 +214,7 @@ export class AuthService {
   // ─────────────────────────── helpers ───────────────────────────
 
   private async issueSession(user: User, meta: ClientMeta) {
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, typ: 'access' });
+    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, mfa: Boolean(user.mfaEnabledAt), typ: 'access' });
     const refreshToken = generateToken(48);
     const days = this.config.get('JWT_REFRESH_TTL_DAYS', { infer: true });
     await this.prisma.refreshToken.create({

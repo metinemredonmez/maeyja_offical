@@ -19,6 +19,8 @@ Başarılı: `{ success: true, data }` — Hata: `{ success: false, statusCode, 
 - `Authorization: Bearer <accessToken>` (15 dk). Yenileme: `POST /auth/refresh` ile dönen refresh token **tek kullanımlıktır** (rotasyon; tekrar kullanım tüm oturumları düşürür).
 - Misafir sepeti: ilk `POST /cart/items` yanıtındaki `cartToken`'ı sakla, sonraki isteklerde `X-Cart-Token` başlığı ile gönder. Girişten sonra `POST /cart/merge`.
 - Roller: `CUSTOMER` · `EDITOR` (içerik) · `ADMIN` · `SUPER_ADMIN` (personel yönetimi). Admin paneli `POST /auth/admin/login` kullanır.
+- **İki adımlı doğrulama (TOTP):** personel `POST /auth/mfa/setup` → QR (`qrDataUrl`) → `POST /auth/mfa/enable {code}` → 8 yedek kod (bir kez gösterilir). Açıkken `admin/login` `{ mfaRequired: true, mfaToken }` döner; `POST /auth/login/mfa { mfaToken, code }` ile oturum açılır (yedek kod da geçer, tek kullanımlık). `MFA_REQUIRED_FOR_STAFF=true` iken MFA'sız personel admin uçlarına `403 MFA_SETUP_REQUIRED` alır. Sırlar `APP_ENCRYPTION_KEY` ile AES-GCM şifreli.
+- **Brute-force:** 5 hatalı giriş (hesap) / 20 (IP) → 15 dk kilit (429). Yaygın şifreler reddedilir.
 - Dil: `?lang=xx` veya `Accept-Language`. Varsayılan `tr`; desteklenen: `tr en ru nl de fr it es ko ja zh`. Çeviriler `translations` JSON kolonunda (`{ "en": {...}, "ja": {...} }`); boş alan TR'ye düşer. İşlem mailleri TR/EN (diğer diller EN alır); iyzico formu tr/en.
 
 ## Uç noktalar (özet)
