@@ -83,6 +83,7 @@ pm2 list                    # maeyja-api / maeyja-web / maeyja-admin "online" ol
 DNS A kayıtları (sunucu IP'si) önce: `maeyja.com`, `www`, `admin`, `api`. (Şu an maeyja.com hosting firmasının "yapım aşamasında"
 sayfasını gösteriyor; DNS taşınınca eski hosting kapatılır.)
 ```bash
+cp deploy/nginx-api-private.conf /etc/nginx/snippets/maeyja-api-private.conf   # /api/admin/* dışarıya kapalı
 cp deploy/nginx-maeyja.conf /etc/nginx/sites-available/maeyja
 ln -s /etc/nginx/sites-available/maeyja /etc/nginx/sites-enabled/
 nginx -t && systemctl reload nginx          # nginx -t hata verirse reload ETME; çıktıyı Claude'a yapıştır
