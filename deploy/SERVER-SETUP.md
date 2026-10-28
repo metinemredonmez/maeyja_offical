@@ -105,6 +105,21 @@ Sonra tarayıcıda `admin.maeyja.com` → seed admin ile gir → profil → **MF
 Güvenlik sıkılaştırma (ufw, fail2ban, SSH, otomatik güncelleme, yedek): [../docs/GUVENLIK.md](../docs/GUVENLIK.md) bölüm 4 — sunucu
 paylaşımlı olduğu için ufw kuralı eklerken diğer sitelerin portlarını (80/443/22) kapatmamaya dikkat.
 
+## E-posta (Resend) ve kampanyalar
+Resend'de `maeyja.com` domain'ini doğrula (DNS: `send` MX + TXT, `resend._domainkey` TXT), API key oluştur, sonra `backend/.env`:
+```
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=resend
+SMTP_PASS=re_…            # Resend API key
+MAIL_FROM="MAEYJA <hello@maeyja.com>"
+```
+`pm2 restart maeyja-api`. Sipariş/şifre mailleri ve admin → **E-posta kampanyaları** bununla gider.
+Kampanyalar yalnızca pazarlama izni olanlara (bülten aboneleri + izinli müşteriler) dakikada ~100 e-posta hızıyla gönderilir;
+her mailde imzalı "abonelikten çık" linki ve Gmail/Yahoo'nun istediği tek tıkla çıkış başlığı vardır. Türkiye'de ticari ileti
+için İYS kaydı gerekir.
+
 ## Her deploy
 Mac'ten tek komut (commit'li her şeyi push eder, sunucuda `git pull` + build + pm2 reload):
 ```bash

@@ -523,3 +523,34 @@ export interface Dashboard {
   unreadMessages: number;
   subscribers: number;
 }
+
+// ───────── E-mail campaigns ─────────
+export type CampaignStatus = 'DRAFT' | 'SENDING' | 'SENT' | 'CANCELLED';
+export type CampaignAudience = 'ALL' | 'SUBSCRIBERS' | 'CUSTOMERS';
+
+export interface EmailCampaign {
+  id: string;
+  subject: string;
+  preheader: string | null;
+  title: string | null;
+  body: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  audience: CampaignAudience;
+  /** null → every language */
+  locale: string | null;
+  status: CampaignStatus;
+  totalRecipients: number;
+  sentCount: number;
+  failedCount: number;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmailCampaignDetail extends EmailCampaign {
+  pendingCount: number;
+  failures: { email: string; error: string | null }[];
+  mailEnabled: boolean;
+}

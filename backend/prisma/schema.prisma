@@ -724,3 +724,65 @@ model AuditLog {
   @@index([createdAt])
   @@index([actorId])
 }
+
+// ───────── E-mail campaigns (marketing; only to people who opted in) ─────────
+enum CampaignStatus {
+  DRAFT
+  SENDING
+  SENT
+  CANCELLED
+}
+
+enum CampaignAudience {
+  ALL // newsletter subscribers + customers who opted in
+  SUBSCRIBERS // newsletter subscribers only
+  CUSTOMERS // registered customers who opted in
+}
+
+enum CampaignRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model EmailCampaign {
+  id              String           @id @default(cuid())
+  subject         String
+  preheader       String? // preview line shown next to the subject in the inbox
+  title           String? // heading inside the email
+  body            String           @db.Text // sanitised HTML
+  ctaLabel        String?
+  ctaUrl          String?
+  audience        CampaignAudience @default(ALL)
+  locale          String? // null → every language
+  status          CampaignStatus   @default(DRAFT)
+  totalRecipients Int              @default(0)
+  sentCount       Int              @default(0)
+  failedCount     Int              @default(0)
+  createdById     String?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  recipients EmailCampaignRecipient[]
+
+  @@index([status])
+}
+
+/** Snapshot of the audience at send time; lets an interrupted send resume without mailing anyone twice. */
+model EmailCampaignRecipient {
+  id         String                  @id @default(cuid())
+  campaignId String
+  email      String
+  locale     String                  @default("tr")
+  status     CampaignRecipientStatus @default(PENDING)
+  error      String?
+  sentAt     DateTime?
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, email])
+  @@index([campaignId, status])
+}

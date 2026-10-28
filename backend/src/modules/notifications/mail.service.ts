@@ -22,6 +22,24 @@ export class MailService {
     if (!host) this.logger.warn('SMTP_HOST not set — emails are logged instead of sent');
   }
 
+  /** False when SMTP is not configured (emails are only logged). */
+  get enabled() {
+    return this.transporter !== null;
+  }
+
+  /** For bulk sends: throws on failure so the caller can record the error per recipient. */
+  async deliver(to: string, content: MailContent, headers?: Record<string, string>) {
+    if (!this.transporter) throw new Error('SMTP ayarlı değil');
+    await this.transporter.sendMail({
+      from: this.config.get('MAIL_FROM', { infer: true }),
+      to,
+      subject: content.subject,
+      html: content.html,
+      text: content.text,
+      headers,
+    });
+  }
+
   /** Never throws: a failed email must not fail the request that triggered it. */
   async send(to: string | undefined | null, content: MailContent): Promise<boolean> {
     if (!to) return false;

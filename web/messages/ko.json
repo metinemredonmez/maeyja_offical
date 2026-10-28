@@ -15,5 +15,6 @@
   "faq": { "title": "자주 묻는 질문" },
   "stockists": { "title": "판매처", "online": "온라인", "worldwide": "전 세계 배송" },
   "journal": { "title": "Journal", "empty": "아직 게시글이 없습니다." },
-  "footer": { "shop": "쇼핑", "help": "도움말", "legal": "법적 고지", "clothing": "의류 — 출시 예정", "care": "가죽 관리 가이드", "shippingReturns": "배송 및 반품", "orderStatus": "주문 조회", "faq": "FAQ", "contact": "문의하기", "distance": "통신판매 계약", "preliminary": "사전 정보 고지서", "kvkk": "개인정보 처리 안내", "privacy": "개인정보 및 쿠키", "terms": "이용약관", "about": "브랜드 소개", "securePayment": "iyzico 안전 결제", "rights": "© {year} MAEYJA · 이스탄불" }
+  "footer": { "shop": "쇼핑", "help": "도움말", "legal": "법적 고지", "clothing": "의류 — 출시 예정", "care": "가죽 관리 가이드", "shippingReturns": "배송 및 반품", "orderStatus": "주문 조회", "faq": "FAQ", "contact": "문의하기", "distance": "통신판매 계약", "preliminary": "사전 정보 고지서", "kvkk": "개인정보 처리 안내", "privacy": "개인정보 및 쿠키", "terms": "이용약관", "about": "브랜드 소개", "securePayment": "iyzico 안전 결제", "rights": "© {year} MAEYJA · 이스탄불" },
+  "unsubscribe": { "title": "수신 거부", "text": "MAEYJA의 이메일을 더 이상 받고 싶지 않으시면 아래 버튼을 눌러 주세요.", "button": "수신 거부", "done": "수신 거부가 완료되었습니다. 더 이상 캠페인 이메일이 발송되지 않습니다.", "fail": "유효하지 않거나 만료된 링크입니다. 계정에서 마케팅 수신을 해제하거나 문의해 주세요.", "back": "쇼핑 계속하기" }
 }

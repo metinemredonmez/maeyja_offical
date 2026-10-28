@@ -100,11 +100,6 @@ export class ContentService {
     return { ok: true };
   }
 
-  async unsubscribe(email: string) {
-    await this.prisma.newsletterSubscriber.updateMany({ where: { email }, data: { unsubscribedAt: new Date() } });
-    return { ok: true };
-  }
-
   async contact(dto: ContactDto) {
     if (dto.website) return { ok: true }; // honeypot hit — pretend success
     const { website: _w, ...data } = dto;

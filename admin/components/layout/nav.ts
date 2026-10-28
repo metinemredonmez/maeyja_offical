@@ -15,6 +15,7 @@ import {
   NewspaperIcon,
   PaletteIcon,
   RotateCcwIcon,
+  SendIcon,
   SettingsIcon,
   ShoppingBagIcon,
   TagIcon,
@@ -70,6 +71,7 @@ export const NAV: NavGroup[] = [
   {
     label: 'Pazarlama',
     items: [
+      { href: '/campaigns', label: 'E-posta kampanyaları', icon: SendIcon, roles: ALL },
       { href: '/newsletter', label: 'Bülten', icon: MailIcon, roles: ALL },
       { href: '/messages', label: 'Mesajlar', icon: MessageSquareIcon, roles: ALL },
       { href: '/push', label: 'Push bildirim', icon: BellRingIcon, roles: ALL },

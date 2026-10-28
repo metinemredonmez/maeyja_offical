@@ -31,10 +31,10 @@ function layout(title: string, bodyHtml: string, footer = 'MAEYJA — Hand craft
 </td></tr></table></body></html>`;
 }
 
-const button = (href: string, label: string) =>
+export const button = (href: string, label: string) =>
   `<p style="margin:28px 0"><a href="${esc(href)}" style="background:#1A1A1A;color:#FFFFFF;text-decoration:none;padding:14px 28px;font-size:12px;letter-spacing:.16em;text-transform:uppercase">${esc(label)}</a></p>`;
 
-const textOf = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+export const textOf = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
 function build(subject: string, title: string, body: string): MailContent {
   const html = layout(title, body);

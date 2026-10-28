@@ -1,4 +1,6 @@
 import type {
+  CampaignAudience,
+  CampaignStatus,
   ContentStatus,
   CouponType,
   HomeSectionType,
@@ -89,3 +91,16 @@ export const HOME_SECTION_TYPE: Record<HomeSectionType, { label: string; hint: s
 
 export const STAFF_ROLES: UserRole[] = ['EDITOR', 'ADMIN', 'SUPER_ADMIN'];
 export const ADMIN_ROLES: UserRole[] = ['ADMIN', 'SUPER_ADMIN'];
+
+export const CAMPAIGN_STATUS: Record<CampaignStatus, { label: string; tone: Tone }> = {
+  DRAFT: { label: 'Taslak', tone: 'muted' },
+  SENDING: { label: 'Gönderiliyor', tone: 'info' },
+  SENT: { label: 'Gönderildi', tone: 'success' },
+  CANCELLED: { label: 'Durduruldu', tone: 'warning' },
+};
+
+export const CAMPAIGN_AUDIENCE: Record<CampaignAudience, string> = {
+  ALL: 'Tüm izinli kişiler',
+  SUBSCRIBERS: 'Bülten aboneleri',
+  CUSTOMERS: 'İzinli müşteriler',
+};

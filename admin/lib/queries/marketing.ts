@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api, qs } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
-import type { ContactMessage, Paginated, PushCampaign, PushListResponse, PushTarget, Subscriber } from '@/lib/types';
+import type { CampaignAudience, ContactMessage, EmailCampaign, EmailCampaignDetail, Paginated, PushCampaign, PushListResponse, PushTarget, Subscriber } from '@/lib/types';
 
 export const marketingKeys = {
   newsletter: ['newsletter'] as const,
@@ -12,6 +12,10 @@ export const marketingKeys = {
   messageList: (p: { page: number; limit: number }) => ['messages', 'list', p] as const,
   push: ['push'] as const,
   pushList: (p: { page: number; limit: number }) => ['push', 'list', p] as const,
+  campaigns: ['campaigns'] as const,
+  campaignList: (p: { page: number; limit: number; q?: string }) => ['campaigns', 'list', p] as const,
+  campaign: (id: string) => ['campaigns', 'detail', id] as const,
+  audience: (p: { audience: CampaignAudience; locale: string | null }) => ['campaigns', 'audience', p] as const,
 };
 
 export const useSubscribers = (params: { page: number; limit: number; q?: string }) =>
@@ -44,3 +48,61 @@ export const useSendPush = () =>
     invalidate: [marketingKeys.push],
     success: (c) => (c.status === 'SENT' ? `Gönderildi (${c.recipients ?? 0} alıcı)` : `Gönderilemedi: ${c.error ?? 'bilinmeyen hata'}`),
   });
+
+// ───────────── E-mail campaigns ─────────────
+export type CampaignInput = {
+  subject: string;
+  preheader: string | null;
+  title: string | null;
+  body: string;
+  ctaLabel: string | null;
+  ctaUrl: string | null;
+  audience: CampaignAudience;
+  locale: string | null;
+};
+
+export const useCampaigns = (params: { page: number; limit: number; q?: string }) =>
+  useQuery({
+    queryKey: marketingKeys.campaignList(params),
+    queryFn: () => api.get<Paginated<EmailCampaign> & { mailEnabled: boolean }>(`/admin/campaigns${qs(params)}`),
+    placeholderData: keepPreviousData,
+  });
+
+/** Polls every 3 s while the campaign is being sent so the progress bar moves. */
+export const useCampaign = (id: string) =>
+  useQuery({
+    queryKey: marketingKeys.campaign(id),
+    queryFn: () => api.get<EmailCampaignDetail>(`/admin/campaigns/${id}`),
+    refetchInterval: (q) => (q.state.data?.status === 'SENDING' ? 3000 : false),
+  });
+
+export const useCampaignAudience = (p: { audience: CampaignAudience; locale: string | null }) =>
+  useQuery({
+    queryKey: marketingKeys.audience(p),
+    queryFn: () => api.get<{ count: number; mailEnabled: boolean }>(`/admin/campaigns/audience${qs({ audience: p.audience, locale: p.locale })}`),
+    placeholderData: keepPreviousData,
+  });
+
+export const useCreateCampaign = () =>
+  useApiMutation<EmailCampaign, CampaignInput>({ mutationFn: (body) => api.post('/admin/campaigns', body), invalidate: [marketingKeys.campaigns], success: 'Taslak kaydedildi' });
+export const useUpdateCampaign = () =>
+  useApiMutation<EmailCampaign, { id: string; body: Partial<CampaignInput> }>({
+    mutationFn: ({ id, body }) => api.patch(`/admin/campaigns/${id}`, body),
+    invalidate: [marketingKeys.campaigns],
+    success: 'Kaydedildi',
+  });
+export const useDeleteCampaign = () =>
+  useApiMutation<{ ok: true }, string>({ mutationFn: (id) => api.delete(`/admin/campaigns/${id}`), invalidate: [marketingKeys.campaigns], success: 'Kampanya silindi' });
+export const useTestCampaign = () =>
+  useApiMutation<{ ok: true; to: string }, { id: string; email?: string }>({
+    mutationFn: ({ id, email }) => api.post(`/admin/campaigns/${id}/test`, { email }),
+    success: (r) => `Test e-postası gönderildi: ${r.to}`,
+  });
+export const useSendCampaign = () =>
+  useApiMutation<EmailCampaignDetail, string>({
+    mutationFn: (id) => api.post(`/admin/campaigns/${id}/send`),
+    invalidate: [marketingKeys.campaigns],
+    success: (c) => `Gönderim başladı (${c.totalRecipients} alıcı)`,
+  });
+export const useCancelCampaign = () =>
+  useApiMutation<EmailCampaignDetail, string>({ mutationFn: (id) => api.post(`/admin/campaigns/${id}/cancel`), invalidate: [marketingKeys.campaigns], success: 'Gönderim durduruldu' });

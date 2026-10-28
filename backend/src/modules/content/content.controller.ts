@@ -27,11 +27,6 @@ export class ContentController {
   @Post('newsletter/subscribe')
   subscribe(@Body() dto: SubscribeDto) { return this.content.subscribe(dto); }
 
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @HttpCode(200)
-  @Post('newsletter/unsubscribe')
-  unsubscribe(@Body() dto: SubscribeDto) { return this.content.unsubscribe(dto.email); }
-
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @Post('contact')
   contact(@Body() dto: ContactDto) { return this.content.contact(dto); }
