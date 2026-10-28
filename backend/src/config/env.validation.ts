@@ -7,6 +7,8 @@ import * as Joi from 'joi';
 export const envSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'test', 'production').default('development'),
   PORT: Joi.number().port().default(4000),
+  // Bind address. Behind nginx this must stay on loopback so :4000 is never reachable from outside.
+  LISTEN_HOST: Joi.string().default('127.0.0.1'),
   API_PREFIX: Joi.string().default('api'),
   TRUST_PROXY: Joi.number().integer().min(0).default(0),
 
@@ -62,12 +64,17 @@ export const envSchema = Joi.object({
       ADMIN_URL: Joi.string().uri({ scheme: ['https'] }),
       JWT_ACCESS_SECRET: Joi.string().min(32).invalid('dev-only-access-secret-change-me-please-32chars'),
       IYZICO_BASE_URL: Joi.string().uri({ scheme: ['https'] }),
+      UPLOAD_PUBLIC_URL: Joi.string().uri({ scheme: ['https'] }),
+      CORS_ORIGINS: Joi.string().pattern(/^(?!.*\*)https:\/\/\S+(,https:\/\/\S+)*$/).message('CORS_ORIGINS prod\'da yalnızca https origin listesi olmalı, * yasak'),
+      SWAGGER_ENABLED: Joi.boolean().valid(false).messages({ 'any.only': 'SWAGGER_ENABLED prod\'da true olamaz' }),
+      APP_ENCRYPTION_KEY: Joi.string().base64().min(40).required().messages({ 'any.required': 'APP_ENCRYPTION_KEY prod\'da zorunlu (openssl rand -base64 32)' }),
     }),
   });
 
 export interface Env {
   NODE_ENV: 'development' | 'test' | 'production';
   PORT: number;
+  LISTEN_HOST: string;
   API_PREFIX: string;
   TRUST_PROXY: number;
   API_URL: string;

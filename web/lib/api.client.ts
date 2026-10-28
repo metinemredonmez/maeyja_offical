@@ -17,6 +17,7 @@ async function request<T>(method: string, path: string, body?: unknown, locale?:
   const res = await fetch(`/api${path}`, {
     method,
     headers: {
+      'X-Requested-With': 'mj', // CSRF marker checked by the BFF proxy
       ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...(locale ? { 'Accept-Language': locale } : {}),
     },

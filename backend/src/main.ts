@@ -18,7 +18,19 @@ async function bootstrap() {
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
 
   app.setGlobalPrefix(prefix, { exclude: ['health'] });
-  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+  const isProd = config.get('NODE_ENV', { infer: true }) === 'production';
+  const swagger = !isProd || config.get('SWAGGER_ENABLED', { infer: true });
+  app.use(
+    helmet({
+      // JSON API: nothing may be embedded or executed. Swagger UI (dev / opt-in) needs inline assets.
+      contentSecurityPolicy: swagger
+        ? { directives: { defaultSrc: ["'self'"], scriptSrc: ["'self'", "'unsafe-inline'"], styleSrc: ["'self'", "'unsafe-inline'"], imgSrc: ["'self'", 'data:'], frameAncestors: ["'none'"] } }
+        : { directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] } },
+      crossOriginResourcePolicy: { policy: 'cross-origin' }, // /uploads are embedded by web + admin
+      referrerPolicy: { policy: 'no-referrer' },
+      hsts: false, // nginx terminates TLS and sets HSTS
+    }),
+  );
   app.useBodyParser('json', { limit: '2mb' });
   app.useBodyParser('urlencoded', { extended: true, limit: '1mb' }); // iyzico callback is form-encoded
 
@@ -46,8 +58,7 @@ async function bootstrap() {
   // Uploaded media. In production nginx serves this folder directly; this is the dev fallback.
   app.useStaticAssets(resolve(config.get('UPLOAD_DIR', { infer: true })), { prefix: '/uploads/', maxAge: '30d', immutable: true });
 
-  const isProd = config.get('NODE_ENV', { infer: true }) === 'production';
-  if (!isProd || config.get('SWAGGER_ENABLED', { infer: true })) {
+  if (swagger) {
     const doc = new DocumentBuilder()
       .setTitle('MAEYJA API')
       .setDescription('Storefront, account, checkout and admin endpoints. Responses are wrapped as `{ success, data }`.')
@@ -59,8 +70,9 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
   const port = config.get('PORT', { infer: true });
-  await app.listen(port);
-  Logger.log(`MAEYJA API listening on :${port}/${prefix}`, 'Bootstrap');
+  const host = config.get('LISTEN_HOST', { infer: true });
+  await app.listen(port, host);
+  Logger.log(`MAEYJA API listening on ${host}:${port}/${prefix}`, 'Bootstrap');
 }
 
 bootstrap().catch((err) => {

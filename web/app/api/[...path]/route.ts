@@ -7,7 +7,32 @@ import { COOKIE, cookieOptions } from '@/lib/cookies';
  */
 const API_URL = (process.env.API_URL ?? 'http://127.0.0.1:4000/api').replace(/\/$/, '');
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'content-length', 'host', 'cookie']);
-const AUTH_ROUTES = new Set(['auth/login', 'auth/register', 'auth/refresh', 'auth/logout']);
+/** Routes whose JSON carries tokens: they are moved into cookies and stripped from the body. */
+const AUTH_ROUTES = new Set(['auth/login', 'auth/register', 'auth/refresh', 'auth/logout', 'auth/change-password']);
+/** Only the storefront's own API surface is proxied — never admin/*, never the admin login. */
+const ALLOW: [RegExp, string[]][] = [
+  [/^auth\/(login|register|logout|forgot-password|reset-password|verify-email|resend-verification|change-password)$/, ['POST']],
+  [/^auth\/me$/, ['GET']],
+  [/^(catalog|content|settings\/public|cart|checkout|orders|me|newsletter|contact|devices)(\/[\w.-]+)*$/, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']],
+];
+/** Request headers that may travel to the API. */
+const FORWARD_HEADERS = ['accept', 'accept-language', 'content-type', 'user-agent'];
+const SITE_ORIGIN = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001').origin;
+  } catch {
+    return 'http://localhost:3001';
+  }
+})();
+
+/** CSRF: state-changing calls must come from our own pages (Origin / Sec-Fetch-Site) and from our client (custom header). */
+function sameOrigin(req: NextRequest) {
+  if (req.method === 'GET' || req.method === 'HEAD') return true;
+  const origin = req.headers.get('origin');
+  const fetchSite = req.headers.get('sec-fetch-site');
+  const originOk = origin ? origin === SITE_ORIGIN : fetchSite === 'same-origin' || fetchSite === null;
+  return originOk && req.headers.get('x-requested-with') === 'mj';
+}
 
 type Tokens = { accessToken?: string; refreshToken?: string };
 
@@ -16,6 +41,11 @@ export const dynamic = 'force-dynamic';
 async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
   const target = path.join('/');
+  const malformed = path.some((seg) => seg === '' || seg === '.' || seg === '..' || /[\\%]/.test(seg));
+  if (malformed || !ALLOW.some(([re, methods]) => re.test(target) && methods.includes(req.method))) {
+    return NextResponse.json({ success: false, statusCode: 404, message: 'Not found' }, { status: 404 });
+  }
+  if (!sameOrigin(req)) return NextResponse.json({ success: false, statusCode: 403, message: 'Forbidden' }, { status: 403 });
   const url = `${API_URL}/${target}${req.nextUrl.search}`;
   const body = req.method === 'GET' || req.method === 'HEAD' ? undefined : await req.arrayBuffer();
 
@@ -48,7 +78,7 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   if (cartToken) res.cookies.set(COOKIE.cart, cartToken, cookieOptions.cart);
 
   // Login/register: persist tokens, merge the guest cart into the account, hide tokens from JS.
-  if ((target === 'auth/login' || target === 'auth/register') && upstream.ok) {
+  if ((target === 'auth/login' || target === 'auth/register' || target === 'auth/change-password') && upstream.ok) {
     const tokens = (res as NextResponse & { __tokens?: Tokens }).__tokens;
     if (tokens) {
       setTokens(res, tokens);
@@ -68,10 +98,10 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
 
 async function forward(req: NextRequest, url: string, body: ArrayBuffer | undefined, access?: string) {
   const headers = new Headers();
-  req.headers.forEach((v, k) => {
-    if (!HOP_BY_HOP.has(k.toLowerCase())) headers.set(k, v);
-  });
-  headers.delete('authorization');
+  for (const name of FORWARD_HEADERS) {
+    const v = req.headers.get(name);
+    if (v) headers.set(name, v);
+  }
   if (access) headers.set('Authorization', `Bearer ${access}`);
   const cart = req.cookies.get(COOKIE.cart)?.value;
   if (cart) headers.set('X-Cart-Token', cart);

@@ -12,7 +12,7 @@ export class HomeSectionDto {
   @IsEnum(HomeSectionType) type: HomeSectionType;
   @IsOptional() @IsString() @MaxLength(160) title?: string;
   @IsOptional() @IsString() @MaxLength(300) subtitle?: string;
-  @IsOptional() @IsString() body?: string;
+  @IsOptional() @IsString() @MaxLength(20000) body?: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() mobileImageUrl?: string;
   @IsOptional() @IsString() videoUrl?: string;
@@ -28,7 +28,7 @@ export class UpdateHomeSectionDto extends PartialType(HomeSectionDto) {}
 export class PageDto {
   @Matches(SLUG) slug: string;
   @IsString() @MaxLength(160) title: string;
-  @IsString() body: string;
+  @IsString() @MaxLength(200000) body: string;
   @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
@@ -40,7 +40,7 @@ export class JournalPostDto {
   @IsString() @MaxLength(160) title: string;
   @IsOptional() @Matches(SLUG) slug?: string;
   @IsOptional() @IsString() @MaxLength(400) excerpt?: string;
-  @IsString() body: string;
+  @IsString() @MaxLength(200000) body: string;
   @IsOptional() @IsString() coverImageUrl?: string;
   @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
   @IsOptional() @Type(() => Date) @IsDate() publishedAt?: Date;
@@ -79,7 +79,7 @@ export class UpdateStockistDto extends PartialType(StockistDto) {}
 export class FaqDto {
   @IsOptional() @IsString() @MaxLength(60) group?: string;
   @IsString() @MaxLength(300) question: string;
-  @IsString() answer: string;
+  @IsString() @MaxLength(5000) answer: string;
   @IsOptional() @IsInt() sortOrder?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;

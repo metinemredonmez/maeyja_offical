@@ -156,9 +156,10 @@ export class AuthController {
   }
 
   @ApiBearerAuth()
+  @Throttle(STRICT)
   @HttpCode(200)
   @Post('change-password')
-  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
-    return this.auth.changePassword(user.id, dto);
+  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto, @ClientIp() ip: string, @Req() req: Request) {
+    return this.auth.changePassword(user.id, dto, { ip, userAgent: req.headers['user-agent'] });
   }
 }

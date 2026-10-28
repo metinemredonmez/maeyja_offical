@@ -150,7 +150,9 @@ export class AuthService {
     if (record.expiresAt < new Date() || !record.user.isActive || record.user.deletedAt) {
       throw new UnauthorizedException('Oturum süresi doldu');
     }
-    await this.prisma.refreshToken.update({ where: { id: record.id }, data: { revokedAt: new Date() } });
+    // Atomic: two parallel refreshes with the same token can't both succeed.
+    const claimed = await this.prisma.refreshToken.updateMany({ where: { id: record.id, revokedAt: null }, data: { revokedAt: new Date() } });
+    if (claimed.count === 0) throw new UnauthorizedException('Oturum geçersiz');
     return this.issueSession(record.user, meta);
   }
 
@@ -202,13 +204,18 @@ export class AuthService {
     return { ok: true };
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  /** Changing the password closes every other session and hands back a fresh one for this device. */
+  async changePassword(userId: string, dto: ChangePasswordDto, meta: ClientMeta) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     if (!user.passwordHash || !(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
       throw new BadRequestException('Mevcut şifre hatalı');
     }
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) } });
-    return { ok: true };
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) } }),
+      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+    ]);
+    this.logger.log(`password changed for ${user.email}`);
+    return { ok: true, ...(await this.issueSession(updated, meta)) };
   }
 
   // ─────────────────────────── helpers ───────────────────────────
@@ -249,7 +256,8 @@ export class AuthService {
     if (!record || record.type !== type || record.usedAt || record.expiresAt < new Date()) {
       throw new BadRequestException('Bağlantı geçersiz veya süresi dolmuş');
     }
-    await this.prisma.authToken.update({ where: { id: record.id }, data: { usedAt: new Date() } });
+    const claimed = await this.prisma.authToken.updateMany({ where: { id: record.id, usedAt: null }, data: { usedAt: new Date() } });
+    if (claimed.count === 0) throw new BadRequestException('Bağlantı geçersiz veya süresi dolmuş');
     return record;
   }
 

@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { ADMIN_ROLES, Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
 import { ReorderDto } from '../../common/dto/reorder.dto';
+import { cleanHtmlFields } from '../../common/utils/html.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ContentService } from './content.service';
 import {
@@ -29,7 +30,7 @@ class ReadDto {
 }
 
 const json = <T extends { translations?: unknown; payload?: unknown }>(dto: T) => ({
-  ...dto,
+  ...(cleanHtmlFields(dto as Record<string, unknown>, ['body', 'answer']) as T),
   ...(dto.translations !== undefined ? { translations: dto.translations as Prisma.InputJsonValue } : {}),
   ...(dto.payload !== undefined ? { payload: dto.payload as Prisma.InputJsonValue } : {}),
 });

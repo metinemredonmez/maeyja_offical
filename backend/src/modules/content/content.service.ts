@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { ContentStatus, Prisma } from '@prisma/client';
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
 import { Locale, localize } from '../../common/utils/i18n.util';
+import { cleanHtmlFields } from '../../common/utils/html.util';
 import { slugify } from '../../common/utils/slug.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogService } from '../catalog/catalog.service';
@@ -114,7 +115,8 @@ export class ContentService {
 
   // ─────────────────────────── admin: journal (needs slug + publish handling) ───────────────────────────
 
-  async createJournalPost(dto: JournalPostDto) {
+  async createJournalPost(input: JournalPostDto) {
+    const dto = cleanHtmlFields(input as unknown as Record<string, unknown>, ['body', 'excerpt']) as unknown as JournalPostDto;
     const slug = await this.uniqueJournalSlug(dto.slug ?? slugify(dto.title));
     return this.prisma.journalPost.create({
       data: {
@@ -126,7 +128,8 @@ export class ContentService {
     });
   }
 
-  async updateJournalPost(id: string, dto: UpdateJournalPostDto) {
+  async updateJournalPost(id: string, input: UpdateJournalPostDto) {
+    const dto = cleanHtmlFields(input as unknown as Record<string, unknown>, ['body', 'excerpt']) as unknown as UpdateJournalPostDto;
     const existing = await this.prisma.journalPost.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Yazı bulunamadı');
     const slug = dto.slug && dto.slug !== existing.slug ? await this.uniqueJournalSlug(dto.slug, id) : undefined;

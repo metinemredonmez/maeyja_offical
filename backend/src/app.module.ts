@@ -38,7 +38,8 @@ import { UsersModule } from './modules/users/users.module';
       inject: [ConfigService],
       useFactory: (config: ConfigService<Env, true>) => ({
         secret: config.get('JWT_ACCESS_SECRET', { infer: true }),
-        signOptions: { expiresIn: config.get('JWT_ACCESS_TTL', { infer: true }) as `${number}m` },
+        signOptions: { expiresIn: config.get('JWT_ACCESS_TTL', { infer: true }) as `${number}m`, algorithm: 'HS256', issuer: 'maeyja-api', audience: 'maeyja' },
+        verifyOptions: { algorithms: ['HS256'], issuer: 'maeyja-api', audience: 'maeyja' },
       }),
     }),
     ThrottlerModule.forRootAsync({

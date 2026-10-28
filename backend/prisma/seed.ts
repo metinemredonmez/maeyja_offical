@@ -28,6 +28,9 @@ async function main() {
   // ── Admin
   const email = process.env.SEED_ADMIN_EMAIL;
   const password = process.env.SEED_ADMIN_PASSWORD;
+  if (process.env.NODE_ENV === 'production' && email && (!password || password.length < 15 || /changeme/i.test(password))) {
+    throw new Error('SEED_ADMIN_PASSWORD prod için güçlü olmalı (≥15 karakter, örnek değer değil)');
+  }
   if (email && password) {
     await prisma.user.upsert({
       where: { email },

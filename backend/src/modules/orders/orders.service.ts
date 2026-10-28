@@ -239,7 +239,11 @@ export class OrdersService {
   async exportCsv(q: AdminOrderQueryDto) {
     const rows = await this.prisma.order.findMany({ where: this.adminWhere(q), orderBy: { createdAt: 'desc' }, take: 5000, include: { items: true } });
     const header = ['Sipariş No', 'Tarih', 'Durum', 'E-posta', 'Ad Soyad', 'Telefon', 'Şehir', 'Ürünler', 'Ara Toplam', 'İndirim', 'Kargo', 'KDV', 'Toplam', 'Ödeme', 'Kupon', 'Fatura Tipi', 'TCKN/VKN', 'Vergi Dairesi', 'Firma'];
-    const cell = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    // Quote every cell and neutralise spreadsheet formula triggers (=, +, -, @, tab, CR).
+    const cell = (v: unknown) => {
+      const str = String(v ?? '').replace(/"/g, '""');
+      return `"${/^[=+\-@\t\r]/.test(str) ? `'${str}` : str}"`;
+    };
     const lines = rows.map((o) => {
       const s = o.shippingAddress as Record<string, string>;
       const b = o.billingAddress as Record<string, string>;
