@@ -21,7 +21,7 @@
 
 ## 3. İstek listesi (MVP kapsamı)
 
-### Web (mağaza) — en önemli
+### Web (mağaza) — ✅ tamamlandı (web/)
 - [ ] Ana sayfa: admin'den yönetilen bölümler (hero video/görsel, öne çıkanlar, atölye hikâyesi, basın, satış noktaları, newsletter)
 - [ ] Ürün sayfası: solda dikey galeri, sağda sticky kutu; renk swatch → galeri değişir; fiyat butonda; akordeon (Detaylar / Malzeme-Bakım / Ölçüler / Teslimat-İade / Atölye); "Gelince haber ver"
 - [ ] Liste: 2/3 kolon, hover'da ikinci görsel, renk/beden/fiyat filtre, sıralama
@@ -33,7 +33,7 @@
 - [ ] SEO (meta, OG, JSON-LD Product), sitemap (dil başına)
 - [ ] Lighthouse 90+, görsel optimizasyonu (WebP renditions backend'den geliyor)
 
-### Admin
+### Admin — ✅ tamamlandı (admin/)
 - [ ] Dashboard: 30 günlük ciro grafiği, bekleyen kargo, düşük stok, iade talepleri, okunmamış mesaj
 - [ ] Ürün formu: varyant matrisi (renk × beden), stok, görsel sürükle-bırak, görsel→renk eşleme, 11 dil sekmesi (boş alan TR'ye düşer), SEO
 - [ ] Sipariş: liste/filtre, detay, durum geçişi, kargo bilgisi + takip linki, CSV dışa aktarma, iade yönetimi
@@ -93,7 +93,8 @@
 - Örnek tasarımlar (4 pano: Ana sayfa A ve B, ürün listesi, ürün sayfası): https://claude.ai/artifact/WPU3jsuv9aJZJEpoFiLJfP
 
 ## 6. Sıradaki adımlar
-1. **web/** — Next.js 16 mağaza (Konsept A), backend'e bağlı.
-2. **admin/** — Next.js 16 + Tailwind + shadcn; önce ürün formu ve sipariş detayı.
-3. Sunucu: hazal sunucusuna SSH ile kurulum ([SERVER-SETUP.md](../deploy/SERVER-SETUP.md)); iyzico sandbox anahtarları; OneSignal app.
-4. **mobile/** — Emre'nin tasarımı geldiğinde Expo.
+1. **Sunucu:** hazal sunucusuna kurulum ([SERVER-SETUP.md](../deploy/SERVER-SETUP.md)) + [GUVENLIK.md](GUVENLIK.md) bölüm 4 (ufw, fail2ban, SSH, yedek); DNS (maeyja.com, www, admin, api); certbot.
+2. **Anahtarlar:** iyzico (önce sandbox), OneSignal app, SMTP, `APP_ENCRYPTION_KEY`; prod `.env`'de `MFA_REQUIRED_FOR_STAFF=true`.
+3. **İçerik:** gerçek ürün fotoğrafları/video, fiyat, KVKK/mesafeli satış metinleri (admin → Sayfalar), Instagram bio linkini düzelt.
+4. **mobile/** — Emre'nin tasarımı geldiğinde Expo (OneSignal, deep link, iyzico WebView).
+5. P1 güvenlik maddeleri (GUVENLIK.md): CAPTCHA, HIBP şifre kontrolü, oturum listesi, CLI MFA sıfırlama.
