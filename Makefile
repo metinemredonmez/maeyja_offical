@@ -51,4 +51,4 @@ logs:
 	ssh -t $(SSH_HOST) 'pm2 logs --lines 100'
 
 status:
-	ssh $(SSH_HOST) 'pm2 status && curl -s http://127.0.0.1:4000/health && echo'
+	ssh $(SSH_HOST) 'cd $(REMOTE_DIR) && . deploy/ports.env && pm2 status && curl -s http://127.0.0.1:$$API_PORT/health && echo'

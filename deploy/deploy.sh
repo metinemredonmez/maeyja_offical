@@ -7,6 +7,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+# Loopback portları (paylaşımlı sunucu): tek kaynak deploy/ports.env — ecosystem.config.js de aynı dosyayı okur.
+. "$ROOT/deploy/ports.env"
+: "${API_PORT:=4100}" "${WEB_PORT:=3101}" "${ADMIN_PORT:=3100}"
 
 TARGETS=("$@")
 [ ${#TARGETS[@]} -eq 0 ] && TARGETS=(backend web admin)
@@ -14,7 +17,7 @@ TARGETS=("$@")
 deploy_backend() {
   echo "▶ backend"
   cd "$ROOT/backend"
-  npm ci --omit=dev --no-audit --no-fund
+  npm ci --no-audit --no-fund   # devDeps dahil: nest build / prisma / ts-node (seed) için gerekli
   npx prisma generate
   npx prisma migrate deploy
   npm run build
@@ -22,7 +25,7 @@ deploy_backend() {
   cd "$ROOT"
   pm2 reload ecosystem.config.js --only maeyja-api --update-env
   sleep 2
-  curl -fsS http://127.0.0.1:4000/health >/dev/null || { echo "✗ API health check başarısız"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }
+  curl -fsS "http://127.0.0.1:${API_PORT}/health" >/dev/null || { echo "✗ API health check başarısız (:${API_PORT})"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }
   echo "✓ backend"
 }
 
@@ -43,9 +46,9 @@ deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = po
 for t in "${TARGETS[@]}"; do
   case "$t" in
     backend|api) deploy_backend ;;
-    web)         deploy_next web   maeyja-web   3001 ;;
-    admin)       deploy_next admin maeyja-admin 3000 ;;
-    all)         deploy_backend; deploy_next web maeyja-web 3001; deploy_next admin maeyja-admin 3000 ;;
+    web)         deploy_next web   maeyja-web   "$WEB_PORT" ;;
+    admin)       deploy_next admin maeyja-admin "$ADMIN_PORT" ;;
+    all)         deploy_backend; deploy_next web maeyja-web "$WEB_PORT"; deploy_next admin maeyja-admin "$ADMIN_PORT" ;;
     *)           echo "Bilinmeyen hedef: $t (backend|web|admin|all)"; exit 1 ;;
   esac
 done
