@@ -554,3 +554,79 @@ export interface EmailCampaignDetail extends EmailCampaign {
   failures: { email: string; error: string | null }[];
   mailEnabled: boolean;
 }
+
+// ───────── Mailbox (webmail) ─────────
+export type MailDirection = 'INBOUND' | 'OUTBOUND';
+export type MailFolder = 'INBOX' | 'SENT';
+
+export interface MailAccount {
+  id: string;
+  email: string;
+  fromName: string | null;
+  imapHost: string;
+  imapPort: number;
+  imapSecure: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  /** Accept a self-signed TLS certificate (our own mail server on 127.0.0.1). */
+  allowSelfSigned: boolean;
+  isActive: boolean;
+  isDefault: boolean;
+  signatureHtml: string | null;
+  lastFetchAt: string | null;
+  lastTestAt: string | null;
+  lastTestOk: boolean | null;
+  lastError: string | null;
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface MailAddress {
+  name: string | null;
+  address: string;
+}
+
+export interface MailMessageSummary {
+  id: string;
+  accountId: string;
+  accountEmail: string;
+  direction: MailDirection;
+  from: MailAddress;
+  to: MailAddress[];
+  subject: string | null;
+  snippet: string;
+  isRead: boolean;
+  hasAttachments: boolean;
+  date: string;
+}
+
+export interface MailAttachmentMeta {
+  index: number;
+  filename: string;
+  contentType: string;
+  size: number;
+}
+
+export interface MailMessage extends MailMessageSummary {
+  cc: MailAddress[];
+  replyTo: MailAddress[];
+  /** Sanitised server-side; only ever rendered inside a sandboxed iframe. */
+  html: string | null;
+  text: string | null;
+  attachments: MailAttachmentMeta[];
+  messageId: string | null;
+  inReplyTo: string | null;
+  status: 'SENT' | 'FAILED' | null;
+  error: string | null;
+}
+
+export interface MailTestResult {
+  imap: { ok: boolean; error?: string };
+  smtp: { ok: boolean; error?: string };
+}
+
+export interface MailSyncResult {
+  fetched: number;
+  errors: { email: string; error: string }[];
+}

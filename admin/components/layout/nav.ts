@@ -7,6 +7,7 @@ import {
   HelpCircleIcon,
   HomeIcon,
   ImageIcon,
+  InboxIcon,
   LayersIcon,
   LayoutDashboardIcon,
   MailIcon,
@@ -71,6 +72,7 @@ export const NAV: NavGroup[] = [
   {
     label: 'Pazarlama',
     items: [
+      { href: '/mail', label: 'Gelen kutusu', icon: InboxIcon, roles: ALL },
       { href: '/campaigns', label: 'E-posta kampanyaları', icon: SendIcon, roles: ALL },
       { href: '/newsletter', label: 'Bülten', icon: MailIcon, roles: ALL },
       { href: '/messages', label: 'Mesajlar', icon: MessageSquareIcon, roles: ALL },

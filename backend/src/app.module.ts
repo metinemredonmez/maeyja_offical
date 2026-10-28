@@ -15,6 +15,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CartModule } from './modules/cart/cart.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CampaignsModule } from './modules/campaigns/campaigns.module';
+import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { ContentModule } from './modules/content/content.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
@@ -65,6 +66,7 @@ import { UsersModule } from './modules/users/users.module';
     WishlistModule,
     ContentModule,
     CampaignsModule,
+    MailboxModule,
     DashboardModule,
   ],
   providers: [

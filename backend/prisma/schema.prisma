@@ -786,3 +786,85 @@ model EmailCampaignRecipient {
   @@unique([campaignId, email])
   @@index([campaignId, status])
 }
+
+// ───────── Mailbox: IMAP/SMTP accounts read & answered inside the admin (ported from fly) ─────────
+enum MailDirection {
+  INBOUND
+  OUTBOUND
+}
+
+model MailAccount {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordEnc     String // AES-256-GCM (APP_ENCRYPTION_KEY); never returned by the API
+  fromName        String?
+  imapHost        String
+  imapPort        Int       @default(993)
+  imapSecure      Boolean   @default(true)
+  smtpHost        String
+  smtpPort        Int       @default(465)
+  smtpSecure      Boolean   @default(true)
+  allowSelfSigned Boolean   @default(false) // our own mail server on the same box uses a self-signed cert
+  isActive        Boolean   @default(true)
+  isDefault       Boolean   @default(false)
+  signatureHtml   String?   @db.Text
+  /// INBOX UIDVALIDITY + highest imported UID: incremental sync, restarted if the server renumbers
+  uidValidity     String?
+  lastUid         Int       @default(0)
+  lastFetchAt     DateTime?
+  lastTestAt      DateTime?
+  lastTestOk      Boolean?
+  lastError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages MailMessage[]
+}
+
+model MailMessage {
+  id             String        @id @default(cuid())
+  accountId      String
+  direction      MailDirection
+  uid            Int? // IMAP UID (inbound)
+  messageId      String? // Message-ID header
+  inReplyTo      String?
+  references     String?       @db.Text
+  fromName       String?
+  fromAddress    String
+  to             Json // [{ name, address }]
+  cc             Json?
+  replyTo        Json?
+  subject        String?
+  text           String?       @db.Text
+  html           String?       @db.Text // sanitised on import
+  snippet        String
+  hasAttachments Boolean       @default(false)
+  isRead         Boolean       @default(false)
+  status         String? // outbound: SENT | FAILED
+  error          String?
+  date           DateTime
+  sentById       String?
+  deletedAt      DateTime? // hidden in the panel; the copy on the mail server is untouched
+  createdAt      DateTime      @default(now())
+
+  account     MailAccount      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  attachments MailAttachment[]
+
+  @@unique([accountId, messageId])
+  @@index([accountId, direction, date])
+  @@index([direction, isRead, deletedAt])
+}
+
+model MailAttachment {
+  id          String @id @default(cuid())
+  messageId   String
+  index       Int
+  filename    String
+  contentType String
+  size        Int
+  data        Bytes
+
+  message MailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, index])
+}
