@@ -36,11 +36,14 @@ export function Topbar({ user, onOpenSearch, onOpenMenu }: Props) {
             <span className="hidden max-w-40 truncate sm:inline">{fullName(user)}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-normal">
-              <p className="truncate text-sm font-medium">{fullName(user)}</p>
-              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{user ? USER_ROLE[user.role] : ''}</p>
-            </DropdownMenuLabel>
+            {/* Base UI requires GroupLabel inside a Group, otherwise opening the menu throws (error #31). */}
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="font-normal">
+                <p className="truncate text-sm font-medium">{fullName(user)}</p>
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">{user ? USER_ROLE[user.role] : ''}</p>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem render={<Link href="/profile" />}>
