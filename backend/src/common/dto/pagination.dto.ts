@@ -23,6 +23,13 @@ export class PaginationQueryDto {
   @IsString()
   @MaxLength(100)
   q?: string;
+
+  /** Read by the `@Lang()` decorator; declared here so the whitelist validator accepts it. */
+  @ApiPropertyOptional({ description: 'UI language (tr, en, …)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5)
+  lang?: string;
 }
 
 export interface Paginated<T> {

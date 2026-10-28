@@ -20,26 +20,32 @@ sudo -u postgres psql -c "CREATE DATABASE maeyja OWNER maeyja;"
 ```bash
 mkdir -p /var/www && cd /var/www
 git clone https://github.com/metinemredonmez/maeyja_offical maeyja
-cd maeyja/backend
-cp .env.example .env && nano .env       # DATABASE_URL, JWT_ACCESS_SECRET (openssl rand -base64 48), API_URL=https://api.maeyja.com, SMTP, IYZICO, ONESIGNAL
-cd .. && ./deploy/deploy.sh
+cd maeyja
+cp backend/.env.example backend/.env && nano backend/.env   # DATABASE_URL, JWT_ACCESS_SECRET (openssl rand -base64 48), API_URL=https://api.maeyja.com, WEB_URL, ADMIN_URL, CORS_ORIGINS, UPLOAD_PUBLIC_URL=https://api.maeyja.com/uploads, SMTP, IYZICO, ONESIGNAL, SWAGGER_ENABLED=false
+cp web/.env.example web/.env.local && nano web/.env.local     # API_URL=http://127.0.0.1:4000/api, NEXT_PUBLIC_SITE_URL=https://maeyja.com, IMAGE_HOSTS=api.maeyja.com
+cp admin/.env.example admin/.env.local && nano admin/.env.local # API_URL=http://127.0.0.1:4000/api, NEXT_PUBLIC_SITE_URL=https://admin.maeyja.com
+./deploy/deploy.sh
 pm2 save && pm2 startup                  # çıktıdaki komutu çalıştır
 ```
 
 ## 4. nginx + TLS
 ```bash
-cp deploy/nginx-api.conf /etc/nginx/sites-available/api.maeyja.com
-ln -s /etc/nginx/sites-available/api.maeyja.com /etc/nginx/sites-enabled/
+cp deploy/nginx-maeyja.conf /etc/nginx/sites-available/maeyja
+ln -s /etc/nginx/sites-available/maeyja /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
-certbot --nginx -d api.maeyja.com
+certbot --nginx -d maeyja.com -d www.maeyja.com -d admin.maeyja.com -d api.maeyja.com
 ```
-DNS: `api.maeyja.com` A kaydı → sunucu IP. (Şu an maeyja.com hosting firmasının "yapım aşamasında" sayfasını gösteriyor, 443 kapalı.)
+DNS A kayıtları → sunucu IP: `maeyja.com`, `www`, `admin`, `api`. (Şu an maeyja.com hosting firmasının "yapım aşamasında" sayfasını gösteriyor; DNS taşınınca eski hosting kapatılır.)
+Sertifika sonrası `nginx-maeyja.conf` başındaki TLS snippet'ini `/etc/nginx/snippets/maeyja-tls.conf` olarak kaydedip her 443 bloğuna `include` et (HSTS dahil). Sertifika yenileme certbot'un systemd timer'ı ile otomatik; `certbot renew --dry-run` ile doğrula.
 
 ## 5. Doğrulama
 ```bash
 curl -s https://api.maeyja.com/health
+curl -sI https://maeyja.com | grep -i -E "strict-transport|content-security"
 pm2 status
 ```
+Güvenlik sıkılaştırma adımları (ufw, fail2ban, SSH, otomatik güncelleme, yedek): [../docs/GUVENLIK.md](../docs/GUVENLIK.md).
 Swagger prod'da kapalı; açmak için `.env` → `SWAGGER_ENABLED=true` → `/api/docs`.
 
 ## Her deploy

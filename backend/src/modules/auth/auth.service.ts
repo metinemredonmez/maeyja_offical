@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { mailLocale, templates } from '../notifications/mail.templates';
 import { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { LoginGuardService } from './login-guard.service';
 
 const BCRYPT_ROUNDS = 12;
 const VERIFY_TTL_MS = 48 * 3600_000;
@@ -44,6 +45,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService<Env, true>,
     private readonly mail: MailService,
+    private readonly loginGuard: LoginGuardService,
   ) {}
 
   async register(dto: RegisterDto, meta: ClientMeta) {
@@ -77,14 +79,25 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, meta: ClientMeta, staffOnly = false) {
+    const ip = meta.ip ?? 'unknown';
+    this.loginGuard.assertAllowed(dto.email, ip);
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     // Compare against a dummy hash when the user doesn't exist so timing doesn't leak accounts.
     const ok = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
-    if (!user || !ok || user.deletedAt) throw new UnauthorizedException('E-posta veya şifre hatalı');
+    if (!user || !ok || user.deletedAt) {
+      this.loginGuard.recordFailure(dto.email, ip);
+      this.logger.warn(`failed login for ${dto.email} from ${ip}${staffOnly ? ' (admin)' : ''}`);
+      throw new UnauthorizedException('E-posta veya şifre hatalı');
+    }
     if (!user.isActive) throw new ForbiddenException('Hesabınız askıya alınmış');
-    if (staffOnly && !STAFF_ROLES.includes(user.role)) throw new ForbiddenException('Yönetim paneline erişim yetkiniz yok');
+    if (staffOnly && !STAFF_ROLES.includes(user.role)) {
+      this.loginGuard.recordFailure(dto.email, ip);
+      throw new ForbiddenException('Yönetim paneline erişim yetkiniz yok');
+    }
 
+    this.loginGuard.recordSuccess(dto.email);
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    if (staffOnly) this.logger.log(`admin login: ${user.email} from ${ip}`);
     return this.issueSession(user, meta);
   }
 

@@ -1,12 +1,29 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength, registerDecorator } from 'class-validator';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 
 const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
 export const PASSWORD_RULE = /^(?=.*[A-Za-zÇĞİÖŞÜçğıöşü])(?=.*\d).{8,72}$/;
 const PASSWORD_MSG = 'Şifre en az 8 karakter olmalı, harf ve rakam içermelidir';
+
+/** Most common leaked passwords that still satisfy the regex. */
+const COMMON_PASSWORDS = new Set(['password1', 'password123', 'qwerty123', 'abc12345', '12345678a', 'iloveyou1', 'letmein123', 'welcome123', 'admin123', 'admin1234', 'maeyja123', 'passw0rd', 'p@ssw0rd', 'sifre123', 'sifre1234', 'istanbul1', 'galatasaray1', 'fenerbahce1', '123456789a', 'qwertyuiop1']);
+
+export function IsNotCommonPassword() {
+  return (target: object, propertyName: string) => {
+    registerDecorator({
+      name: 'isNotCommonPassword',
+      target: target.constructor,
+      propertyName,
+      validator: {
+        validate: (value: unknown) => typeof value !== 'string' || !COMMON_PASSWORDS.has(value.toLowerCase()),
+        defaultMessage: () => 'Bu şifre çok yaygın; daha güçlü bir şifre seçin',
+      },
+    });
+  };
+}
 
 export class RegisterDto {
   @ApiProperty()
@@ -18,6 +35,7 @@ export class RegisterDto {
   @ApiProperty()
   @IsString()
   @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsNotCommonPassword()
   password: string;
 
   @ApiProperty()
@@ -84,6 +102,7 @@ export class ResetPasswordDto {
   @ApiProperty()
   @IsString()
   @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsNotCommonPassword()
   password: string;
 }
 
@@ -103,5 +122,6 @@ export class ChangePasswordDto {
   @ApiProperty()
   @IsString()
   @Matches(PASSWORD_RULE, { message: PASSWORD_MSG })
+  @IsNotCommonPassword()
   newPassword: string;
 }

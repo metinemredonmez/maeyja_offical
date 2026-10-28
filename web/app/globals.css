@@ -1,0 +1,167 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ground: #f6f4f0;
+  --color-stone: #e8e3da;
+  --color-stone-dark: #ddd6cb;
+  --color-sand: #ece8e1;
+  --color-line: #e3ded6;
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #3a3733;
+  --color-muted: #6b6762;
+  --color-brand: #a3121b;
+  --color-white: #ffffff;
+
+  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+
+  --tracking-label: 0.14em;
+  --tracking-logo: 0.42em;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: #1a1a1a;
+    color: #f6f4f0;
+  }
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 1px solid #1a1a1a;
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+  .btn,
+  .btn-primary,
+  .btn-outline {
+    display: inline-flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding-inline: 2rem;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    transition: color 150ms, background-color 150ms, border-color 150ms;
+  }
+  .btn:disabled,
+  .btn-primary:disabled,
+  .btn-outline:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  .btn-primary {
+    background: var(--color-ink);
+    color: var(--color-ground);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-brand);
+  }
+  .btn-outline {
+    border: 1px solid var(--color-ink);
+    color: var(--color-ink);
+    background: transparent;
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-ink);
+    color: var(--color-ground);
+  }
+  .link-underline {
+    border-bottom: 1px solid var(--color-ink);
+    padding-bottom: 0.25rem;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  .link-underline:hover {
+    border-color: var(--color-brand);
+    color: var(--color-brand);
+  }
+  .field {
+    width: 100%;
+    border: 1px solid var(--color-line);
+    background: transparent;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    color: var(--color-ink);
+  }
+  .field::placeholder {
+    color: var(--color-muted);
+  }
+  .field:focus {
+    border-color: var(--color-ink);
+    outline: none;
+  }
+  .prose-cms {
+    font-size: 15px;
+    line-height: 1.75;
+    color: var(--color-ink-soft);
+  }
+  .prose-cms h2 {
+    margin: 2.5rem 0 1rem;
+    font-family: var(--font-serif);
+    font-size: 1.875rem;
+    font-weight: 300;
+    color: var(--color-ink);
+  }
+  .prose-cms h3 {
+    margin: 2rem 0 0.75rem;
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    color: var(--color-ink);
+  }
+  .prose-cms p {
+    margin-bottom: 1rem;
+  }
+  .prose-cms a {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .prose-cms a:hover {
+    color: var(--color-brand);
+  }
+  .prose-cms ul,
+  .prose-cms ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+    list-style: disc;
+  }
+  .prose-cms img {
+    margin: 2rem 0;
+    width: 100%;
+  }
+  .prose-cms blockquote {
+    margin: 2rem 0;
+    border-left: 1px solid var(--color-ink);
+    padding-left: 1.5rem;
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-style: italic;
+  }
+}
+
+/* Image placeholder until product photography lands */
+.ph {
+  background: var(--color-sand);
+}
