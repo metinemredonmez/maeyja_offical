@@ -20,6 +20,14 @@ try {
   /* defaults above */
 }
 
+/**
+ * Next 16 builds the middleware URL as `<proto>://localhost:<port>` but compares rewrites against
+ * `<proto>://<-H value>:<port>`. With `-H 127.0.0.1` behind nginx (X-Forwarded-Proto: https) every
+ * next-intl rewrite (`/` → `/tr`) looks external and is proxied to https://localhost → 500.
+ * So bind as `localhost`, and force IPv4 resolution so it still listens on 127.0.0.1 only.
+ */
+const NEXT_ENV = { NODE_ENV: 'production', NODE_OPTIONS: '--dns-result-order=ipv4first' };
+
 module.exports = {
   apps: [
     {
@@ -39,8 +47,8 @@ module.exports = {
       name: 'maeyja-web',
       cwd: './web',
       script: 'node_modules/.bin/next',
-      args: `start -H 127.0.0.1 -p ${ports.WEB_PORT}`,
-      env: { NODE_ENV: 'production' },
+      args: `start -H localhost -p ${ports.WEB_PORT}`,
+      env: NEXT_ENV,
       max_memory_restart: '500M',
       out_file: '/var/log/pm2/maeyja-web.out.log',
       error_file: '/var/log/pm2/maeyja-web.err.log',
@@ -51,8 +59,8 @@ module.exports = {
       name: 'maeyja-admin',
       cwd: './admin',
       script: 'node_modules/.bin/next',
-      args: `start -H 127.0.0.1 -p ${ports.ADMIN_PORT}`,
-      env: { NODE_ENV: 'production' },
+      args: `start -H localhost -p ${ports.ADMIN_PORT}`,
+      env: NEXT_ENV,
       max_memory_restart: '500M',
       out_file: '/var/log/pm2/maeyja-admin.out.log',
       error_file: '/var/log/pm2/maeyja-admin.err.log',

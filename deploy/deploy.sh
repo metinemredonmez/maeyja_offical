@@ -14,6 +14,13 @@ cd "$ROOT"
 TARGETS=("$@")
 [ ${#TARGETS[@]} -eq 0 ] && TARGETS=(backend web admin)
 
+# pm2 `reload` args/env değişikliklerini uygulamaz; fork modunda zaten restart demek → sil + baştan başlat.
+# Yalnızca maeyja-* süreçlerine dokunur (sunucudaki diğer projeler etkilenmez).
+pm2_restart() {             # $1 = pm2 adı
+  pm2 delete "$1" >/dev/null 2>&1 || true
+  pm2 start ecosystem.config.js --only "$1"
+}
+
 # Uygulamanın açılmasını bekle (Nest/Next ilk açılışta 3-15 sn sürebilir); 45 sn içinde cevap yoksa hata.
 wait_http() {               # $1 = url
   for _ in $(seq 1 45); do
@@ -32,7 +39,7 @@ deploy_backend() {
   npm run build
   npm run db:seed            # idempotent: yalnızca eksik varsayılanları doldurur
   cd "$ROOT"
-  pm2 reload ecosystem.config.js --only maeyja-api --update-env
+  pm2_restart maeyja-api
   wait_http "http://127.0.0.1:${API_PORT}/health" || { echo "✗ API 45 sn içinde açılmadı (:${API_PORT})"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }
   echo "✓ backend"
 }
@@ -45,7 +52,7 @@ deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = po
   rm -rf .next                # yarım kalan build'den 500 almamak için temiz build
   npm run build
   cd "$ROOT"
-  pm2 reload ecosystem.config.js --only "$2" --update-env
+  pm2_restart "$2"
   wait_http "http://127.0.0.1:$3/" || { echo "✗ $1 45 sn içinde açılmadı (:$3)"; pm2 logs "$2" --lines 50 --nostream; exit 1; }
   echo "✓ $1"
 }
