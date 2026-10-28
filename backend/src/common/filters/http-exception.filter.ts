@@ -14,11 +14,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Beklenmeyen bir hata oluştu';
     let details: unknown = undefined;
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const body = exception.getResponse();
       message = typeof body === 'string' ? body : ((body as { message?: string | string[] }).message ?? exception.message);
+      // Machine-readable code (e.g. MFA_SETUP_REQUIRED) — the admin uses it to redirect to MFA setup.
+      if (typeof body === 'object' && typeof (body as { code?: unknown }).code === 'string') code = (body as { code: string }).code;
     } else if (exception instanceof Prisma.PrismaClientKnownRequestError) {
       // Translate the common Prisma errors into client errors instead of 500s.
       const map: Record<string, [number, string]> = {
@@ -41,6 +44,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       success: false,
       statusCode: status,
       message,
+      ...(code ? { code } : {}),
       ...(details ? { details } : {}),
       path: req.originalUrl,
       timestamp: new Date().toISOString(),

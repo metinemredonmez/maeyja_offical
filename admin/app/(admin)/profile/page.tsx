@@ -18,7 +18,7 @@ import { QueryState } from '@/components/shared/query-state';
 import { ToneBadge } from '@/components/shared/status-badge';
 import { USER_ROLE } from '@/lib/labels';
 import { fullName } from '@/lib/format';
-import { useMe, useMfaBackupCodes, useMfaDisable, useMfaEnable, useMfaSetup, useMfaStatus } from '@/lib/queries/auth';
+import { useLogout, useMe, useMfaBackupCodes, useMfaDisable, useMfaEnable, useMfaSetup, useMfaStatus } from '@/lib/queries/auth';
 import { useChangePassword } from '@/lib/queries/system';
 import { changePasswordSchema, mfaDisableSchema, mfaVerifySchema, type ChangePasswordValues, type MfaDisableValues, type MfaVerifyValues } from '@/lib/schemas/auth';
 import type { MfaSetup } from '@/lib/types';
@@ -103,6 +103,7 @@ function BackupCodes({ codes, onDone }: { codes: string[]; onDone: () => void })
 function SetupDialog({ onClose }: { onClose: () => void }) {
   const setup = useMfaSetup();
   const enable = useMfaEnable();
+  const logout = useLogout();
   const [data, setData] = useState<MfaSetup | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
   const form = useForm<MfaVerifyValues>({ resolver: zodResolver(mfaVerifySchema), defaultValues: { code: '' } });
@@ -127,10 +128,17 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
       <DialogContent className="sm:max-w-md" showCloseButton={!codes}>
         <DialogHeader>
           <DialogTitle>{codes ? 'Yedek kodlarınız' : 'İki adımlı doğrulamayı kur'}</DialogTitle>
-          <DialogDescription>{codes ? 'Kurulum tamamlandı. Kodları kaydedin.' : 'Google Authenticator, 1Password veya Authy gibi bir uygulama ile QR kodu tarayın, ardından üretilen 6 haneli kodu girin.'}</DialogDescription>
+          <DialogDescription>{codes ? 'Kurulum tamamlandı. Kodları kaydedin; ardından kodla yeniden giriş yapacaksınız.' : 'Google Authenticator, 1Password veya Authy gibi bir uygulama ile QR kodu tarayın, ardından üretilen 6 haneli kodu girin.'}</DialogDescription>
         </DialogHeader>
         {codes ? (
-          <BackupCodes codes={codes} onDone={onClose} />
+          <BackupCodes
+            codes={codes}
+            onDone={() => {
+              // Enabling revoked every session; the current token has no second factor yet → sign in again with the code.
+              toast.success('İki adımlı doğrulama açıldı — yeniden giriş yapın');
+              void logout();
+            }}
+          />
         ) : (
           <form onSubmit={onSubmit} className="grid gap-4" noValidate>
             <FormError error={setup.error ?? enable.error} />
