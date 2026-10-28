@@ -14,6 +14,15 @@ cd "$ROOT"
 TARGETS=("$@")
 [ ${#TARGETS[@]} -eq 0 ] && TARGETS=(backend web admin)
 
+# Uygulamanın açılmasını bekle (Nest/Next ilk açılışta 3-15 sn sürebilir); 45 sn içinde cevap yoksa hata.
+wait_http() {               # $1 = url
+  for _ in $(seq 1 45); do
+    curl -fsS -o /dev/null "$1" 2>/dev/null && return 0
+    sleep 1
+  done
+  return 1
+}
+
 deploy_backend() {
   echo "▶ backend"
   cd "$ROOT/backend"
@@ -24,8 +33,7 @@ deploy_backend() {
   npm run db:seed            # idempotent: yalnızca eksik varsayılanları doldurur
   cd "$ROOT"
   pm2 reload ecosystem.config.js --only maeyja-api --update-env
-  sleep 2
-  curl -fsS "http://127.0.0.1:${API_PORT}/health" >/dev/null || { echo "✗ API health check başarısız (:${API_PORT})"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }
+  wait_http "http://127.0.0.1:${API_PORT}/health" || { echo "✗ API 45 sn içinde açılmadı (:${API_PORT})"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }
   echo "✓ backend"
 }
 
@@ -38,8 +46,7 @@ deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = po
   npm run build
   cd "$ROOT"
   pm2 reload ecosystem.config.js --only "$2" --update-env
-  sleep 2
-  curl -fsS -o /dev/null "http://127.0.0.1:$3/" || { echo "✗ $1 açılmadı"; pm2 logs "$2" --lines 50 --nostream; exit 1; }
+  wait_http "http://127.0.0.1:$3/" || { echo "✗ $1 45 sn içinde açılmadı (:$3)"; pm2 logs "$2" --lines 50 --nostream; exit 1; }
   echo "✓ $1"
 }
 
