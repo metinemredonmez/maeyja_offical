@@ -1,28 +1,33 @@
-/* Idempotent seed: safe to run on every deploy. Run with `npm run db:seed`. */
+/* Idempotent seed: safe to run on every deploy. Run with `npm run db:seed`. Products: `npm run db:seed:catalog`. */
 import 'dotenv/config';
-import { HomeSectionType, PrismaClient, ProductStatus, UserRole } from '@prisma/client';
+import { HomeSectionType, Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
 
 const prisma = new PrismaClient();
 
-const COLORS = [
-  { slug: 'red', name: 'Kırmızı', hex: '#A3121B', en: 'Red' },
-  { slug: 'black', name: 'Siyah', hex: '#141414', en: 'Black' },
-  { slug: 'white', name: 'Beyaz', hex: '#F2EFEA', en: 'White' },
-  { slug: 'green', name: 'Yeşil', hex: '#2F4A36', en: 'Green' },
-  { slug: 'bicolor', name: 'Çift Renk', hex: '#141414', hex2: '#A3121B', en: 'Bicolor' },
-];
+/**
+ * Adds languages/fields that are missing from a `translations` column. Anything already there — e.g. text
+ * an admin edited — is kept, so this can run on every deploy. Returns null when nothing changed.
+ */
+export function fillTranslations(current: unknown, seeded: Translations): Translations | null {
+  const out: Translations = JSON.parse(JSON.stringify(current && typeof current === 'object' ? current : {}));
+  let changed = false;
+  for (const [lang, fields] of Object.entries(seeded)) {
+    for (const [key, value] of Object.entries(fields)) {
+      if (!out[lang]?.[key]) {
+        (out[lang] ??= {})[key] = value;
+        changed = true;
+      }
+    }
+  }
+  return changed ? out : null;
+}
 
-const LEGAL_PAGES = [
-  { slug: 'about', title: 'Hakkımızda', en: 'About' },
-  { slug: 'shipping-returns', title: 'Kargo ve İade', en: 'Shipping & Returns' },
-  { slug: 'distance-sales-agreement', title: 'Mesafeli Satış Sözleşmesi', en: 'Distance Sales Agreement' },
-  { slug: 'preliminary-information', title: 'Ön Bilgilendirme Formu', en: 'Preliminary Information Form' },
-  { slug: 'kvkk', title: 'KVKK Aydınlatma Metni', en: 'Personal Data Notice' },
-  { slug: 'privacy', title: 'Gizlilik ve Çerez Politikası', en: 'Privacy & Cookie Policy' },
-  { slug: 'terms', title: 'Kullanım Koşulları', en: 'Terms of Use' },
-  { slug: 'care', title: 'Deri Bakım Rehberi', en: 'Leather Care Guide' },
-];
+const json = (t: Translations) => t as Prisma.InputJsonValue;
+
+/** Homepage texts from the very first seed that are replaced by the current copy (unless an admin changed them). */
+const LEGACY_HOME: Record<string, Record<string, string>> = { FEATURED_PRODUCTS: { title: 'Signature' } };
 
 async function main() {
   // ── Admin
@@ -49,80 +54,39 @@ async function main() {
 
   // ── Colours
   for (const [i, c] of COLORS.entries()) {
-    await prisma.color.upsert({
+    const { base, translations } = split({ name: c.name });
+    const row = await prisma.color.upsert({
       where: { slug: c.slug },
-      create: { slug: c.slug, name: c.name, hex: c.hex, hex2: c.hex2, sortOrder: i, translations: { en: { name: c.en } } },
+      create: { slug: c.slug, name: base.name, hex: c.hex, hex2: c.hex2, sortOrder: i, translations: json(translations) },
       update: {},
     });
+    const merged = fillTranslations(row.translations, translations);
+    if (merged) await prisma.color.update({ where: { id: row.id }, data: { translations: json(merged) } });
   }
-  const colors = Object.fromEntries((await prisma.color.findMany()).map((c) => [c.slug, c]));
+  // First-seed swatches that don't match the real leather; only fixed if nobody edited them.
+  await prisma.color.updateMany({ where: { slug: 'bicolor', hex2: '#A3121B' }, data: { hex2: '#E9E2D6' } });
+  await prisma.color.updateMany({ where: { slug: 'green', hex: '#2F4A36' }, data: { hex: '#1F3B3A' } });
 
   // ── Taxonomy
-  const bags = await prisma.category.upsert({
-    where: { slug: 'bags' },
-    create: { slug: 'bags', name: 'Çantalar', sortOrder: 0, translations: { en: { name: 'Bags' } } },
-    update: {},
-  });
-  await prisma.category.upsert({
-    where: { slug: 'ready-to-wear' },
-    create: { slug: 'ready-to-wear', name: 'Giyim', sortOrder: 1, isActive: false, translations: { en: { name: 'Ready-to-wear' } } },
-    update: {},
-  });
-  const signature = await prisma.collection.upsert({
-    where: { slug: 'signature' },
-    create: {
-      slug: 'signature',
-      name: 'Signature',
-      description: 'İstanbul’da elde üretilen, heykelsi formlu ikonik çanta.',
-      translations: { en: { description: 'The sculptural icon, handcrafted in Istanbul.' } },
-    },
-    update: {},
-  });
-
-  // ── The bag (placeholder price and copy — edit from the admin panel)
-  const existing = await prisma.product.findUnique({ where: { slug: 'maeyja-signature-bag' } });
-  if (!existing) {
-    await prisma.product.create({
-      data: {
-        slug: 'maeyja-signature-bag',
-        name: 'Signature Bag',
-        subtitle: 'El yapımı dana derisi',
-        description: 'Tek parça deriden şekillendirilen heykelsi form. Gizli fermuar detayı, ayarlanamaz omuz askısı.',
-        story: 'Her çanta İstanbul’daki atölyemizde usta zanaatkârlar tarafından elde kesilip dikilir. Bir çantanın tamamlanması yaklaşık iki gün sürer.',
-        material: '%100 dana derisi, iç astar süet',
-        care: 'Doğrudan güneş ışığından ve nemden uzak tutun. Kendi toz torbasında saklayın.',
-        dimensions: '32 × 24 × 12 cm · askı 58 cm',
-        madeIn: 'İstanbul, Türkiye',
-        status: ProductStatus.ACTIVE,
-        isFeatured: true,
-        basePrice: 14500,
-        taxRate: 20,
-        categoryId: bags.id,
-        tags: ['bag', 'leather', 'signature', 'canta'],
-        publishedAt: new Date(),
-        translations: {
-          en: {
-            subtitle: 'Handcrafted calf leather',
-            description: 'A sculptural form shaped from a single piece of leather. Hidden zip detail, fixed shoulder strap.',
-            story: 'Every bag is hand-cut and stitched by master artisans in our Istanbul atelier. Each piece takes about two days to complete.',
-            material: '100% calf leather, suede lining',
-            care: 'Keep away from direct sunlight and moisture. Store in its dust bag.',
-            madeIn: 'Istanbul, Türkiye',
-          },
-        },
-        variants: {
-          create: [
-            { sku: 'MY-SIG-RED', colorId: colors.red.id, stock: 6, sortOrder: 0 },
-            { sku: 'MY-SIG-BLK', colorId: colors.black.id, stock: 4, sortOrder: 1 },
-            { sku: 'MY-SIG-WHT', colorId: colors.white.id, stock: 3, sortOrder: 2 },
-            { sku: 'MY-SIG-GRN', colorId: colors.green.id, stock: 0, sortOrder: 3 },
-            { sku: 'MY-SIG-BIC', colorId: colors.bicolor.id, price: 15500, stock: 2, sortOrder: 4 },
-          ],
-        },
-        collections: { create: [{ collectionId: signature.id }] },
-      },
+  for (const c of CATEGORIES) {
+    const { base, translations } = split({ name: c.name });
+    const row = await prisma.category.upsert({
+      where: { slug: c.slug },
+      create: { slug: c.slug, name: base.name, sortOrder: c.sortOrder, isActive: c.isActive, translations: json(translations) },
+      update: {},
     });
-    console.log('✓ product: Signature Bag (placeholder price — update in admin)');
+    const merged = fillTranslations(row.translations, translations);
+    if (merged) await prisma.category.update({ where: { id: row.id }, data: { translations: json(merged) } });
+  }
+  {
+    const { base, translations } = split(SIGNATURE_COLLECTION);
+    const row = await prisma.collection.upsert({
+      where: { slug: 'signature' },
+      create: { slug: 'signature', name: 'Signature', description: base.description, translations: json(translations) },
+      update: {},
+    });
+    const merged = fillTranslations(row.translations, translations);
+    if (merged) await prisma.collection.update({ where: { id: row.id }, data: { translations: json(merged) } });
   }
 
   // ── Settings
@@ -132,13 +96,16 @@ async function main() {
     update: {},
   });
 
-  // ── Pages
-  for (const p of LEGAL_PAGES) {
-    await prisma.page.upsert({
+  // ── Pages (bodies are written in the admin)
+  for (const p of PAGES) {
+    const { base, translations } = split({ title: p.title });
+    const row = await prisma.page.upsert({
       where: { slug: p.slug },
-      create: { slug: p.slug, title: p.title, body: `<p>${p.title} metni buraya gelecek.</p>`, translations: { en: { title: p.en } } },
+      create: { slug: p.slug, title: base.title, body: `<p>${base.title} metni buraya gelecek.</p>`, translations: json(translations) },
       update: {},
     });
+    const merged = fillTranslations(row.translations, translations);
+    if (merged) await prisma.page.update({ where: { id: row.id }, data: { translations: json(merged) } });
   }
 
   // ── Press & stockists
@@ -151,53 +118,51 @@ async function main() {
     await prisma.stockist.create({ data: { name: 'Beymen İstinye Park', city: 'İstanbul', address: 'İstinye Park AVM, Sarıyer', sortOrder: 0 } });
   }
 
-  // ── FAQ
-  if (!(await prisma.faq.count())) {
-    await prisma.faq.createMany({
-      data: [
-        { group: 'Sipariş', question: 'Siparişim ne zaman kargoya verilir?', answer: 'Stoktaki ürünler 1–3 iş günü içinde kargoya verilir.', sortOrder: 0 },
-        { group: 'İade', question: 'İade süresi kaç gün?', answer: 'Teslimattan itibaren 14 gün içinde iade talebi oluşturabilirsiniz.', sortOrder: 1 },
-        { group: 'Bakım', question: 'Deri çantamı nasıl temizlerim?', answer: 'Kuru, yumuşak bir bezle silin; kimyasal temizleyici kullanmayın.', sortOrder: 2 },
-      ],
-    });
+  // ── FAQ (existing rows are matched by their Turkish question)
+  for (const f of FAQS) {
+    const { base, translations } = split({ group: f.group, question: f.question, answer: f.answer });
+    const row =
+      (await prisma.faq.findFirst({ where: { question: base.question } })) ??
+      (await prisma.faq.create({ data: { ...base, sortOrder: f.sortOrder, translations: json(translations) } }));
+    const merged = fillTranslations(row.translations, translations);
+    if (merged) await prisma.faq.update({ where: { id: row.id }, data: { translations: json(merged) } });
   }
 
   // ── Homepage
   if (!(await prisma.homeSection.count())) {
     await prisma.homeSection.createMany({
       data: [
-        {
-          type: HomeSectionType.HERO,
-          title: 'Hand crafted elegance.',
-          subtitle: 'İstanbul’da elde üretildi.',
-          ctaLabel: 'Keşfet',
-          ctaUrl: '/products/maeyja-signature-bag',
-          sortOrder: 0,
-          translations: { en: { subtitle: 'Handmade in Istanbul.', ctaLabel: 'Discover' } },
-        },
-        { type: HomeSectionType.FEATURED_PRODUCTS, title: 'Signature', sortOrder: 1, payload: { limit: 4 } },
-        {
-          type: HomeSectionType.CRAFT_STORY,
-          title: 'Atölyeden',
-          body: 'Tek parça deri, iki gün süren el işçiliği ve sayılı üretim.',
-          ctaLabel: 'Hikâyemiz',
-          ctaUrl: '/about',
-          sortOrder: 2,
-          translations: { en: { title: 'From the atelier', body: 'A single piece of leather, two days of handwork, limited production.', ctaLabel: 'Our story' } },
-        },
-        { type: HomeSectionType.PRESS, title: 'Basında', sortOrder: 3, translations: { en: { title: 'Press' } } },
-        { type: HomeSectionType.STOCKISTS, title: 'Satış Noktaları', sortOrder: 4, translations: { en: { title: 'Stockists' } } },
-        { type: HomeSectionType.NEWSLETTER, title: 'Yeni koleksiyonlardan ilk siz haberdar olun', sortOrder: 5, translations: { en: { title: 'Be the first to know' } } },
+        { type: HomeSectionType.HERO, title: 'Hand crafted elegance.', ctaUrl: '/products', sortOrder: 0 },
+        { type: HomeSectionType.FEATURED_PRODUCTS, sortOrder: 1, payload: { limit: 4 } },
+        { type: HomeSectionType.CRAFT_STORY, ctaUrl: '/about', sortOrder: 2 },
+        { type: HomeSectionType.PRESS, sortOrder: 3 },
+        { type: HomeSectionType.STOCKISTS, sortOrder: 4 },
+        { type: HomeSectionType.NEWSLETTER, sortOrder: 5 },
       ],
     });
+  }
+  // Fill empty base text and missing languages per section type; text edited in the admin is left alone.
+  for (const s of await prisma.homeSection.findMany()) {
+    const copy = HOME[s.type];
+    if (!copy) continue;
+    const { base, translations } = split(copy);
+    const emptyBase = Object.fromEntries(
+      Object.entries(base).filter(([k]) => !s[k as keyof typeof s] || LEGACY_HOME[s.type]?.[k] === s[k as keyof typeof s]),
+    );
+    const merged = fillTranslations(s.translations, translations);
+    if (merged || Object.keys(emptyBase).length) {
+      await prisma.homeSection.update({ where: { id: s.id }, data: { ...emptyBase, ...(merged ? { translations: json(merged) } : {}) } });
+    }
   }
 
   console.log('✓ seed complete');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+if (require.main === module) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}

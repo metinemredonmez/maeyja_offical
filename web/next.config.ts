@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   images: {
     formats: ['image/avif', 'image/webp'],
+    // Local dev only: the API is on 127.0.0.1, which Next refuses to optimise by default (SSRF guard).
+    // In production IMAGE_HOSTS is the public API host, so this stays false.
+    dangerouslyAllowLocalIP: imageHosts.every((h) => h === 'localhost' || h === '127.0.0.1'),
     remotePatterns: imageHosts.flatMap((hostname) => [
       { protocol: 'https' as const, hostname },
       { protocol: 'http' as const, hostname },

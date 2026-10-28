@@ -21,6 +21,12 @@ describe('i18n', () => {
     expect(localize(entity, 'tr')).toEqual({ name: 'Kırmızı', note: 'TR' });
   });
 
+  it('falls back to English before Turkish for untranslated languages', () => {
+    const entity = { name: 'Kırmızı', note: 'TR', translations: { en: { name: 'Red', note: 'EN' }, de: { name: 'Rot', note: '' } } };
+    expect(localize(entity, 'de')).toEqual({ name: 'Rot', note: 'EN' });
+    expect(localize(entity, 'ja')).toEqual({ name: 'Red', note: 'EN' });
+  });
+
   it('resolves Accept-Language style input', () => {
     expect(resolveLocale('en-US,en;q=0.9')).toBe('en');
     expect(resolveLocale('pt-BR,pt;q=0.9,ja;q=0.8')).toBe('ja');

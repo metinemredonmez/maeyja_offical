@@ -50,7 +50,9 @@ export class MediaService {
 
     const renditions: Record<string, string> = {};
     let largestKey = '';
-    for (const width of WIDTHS.filter((w) => w <= meta.width! || w === WIDTHS[0])) {
+    // Standard widths below the source plus the source itself (capped): a 600px photo keeps a 600px rendition.
+    const widths = [...new Set([...WIDTHS.filter((w) => w < meta.width!), Math.min(meta.width!, WIDTHS[WIDTHS.length - 1])])];
+    for (const width of widths) {
       const key = `${folder}/${id}-${width}.webp`;
       const buffer = await image.clone().resize({ width, withoutEnlargement: true }).webp({ quality: 82 }).toBuffer();
       await this.write(key, buffer);

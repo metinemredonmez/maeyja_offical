@@ -16,16 +16,18 @@ type WithTranslations = { translations?: unknown };
 
 /**
  * Overlays `translations[lang]` onto the entity's default (Turkish) fields and drops the raw column.
- * Missing or empty translated values fall back to the default text.
+ * A missing or empty value falls back to English, then to the default text — so a Russian visitor
+ * reads English rather than Turkish when a field has not been translated yet.
  */
 export function localize<T extends WithTranslations>(entity: T, lang: Locale): Omit<T, 'translations'> {
   const { translations, ...rest } = entity;
   if (lang === DEFAULT_LOCALE || !translations || typeof translations !== 'object') return rest;
-  const overlay = (translations as Record<string, Record<string, unknown>>)[lang];
-  if (!overlay) return rest;
+  const all = translations as Record<string, Record<string, unknown> | undefined>;
   const out: Record<string, unknown> = { ...rest };
-  for (const [key, value] of Object.entries(overlay)) {
-    if (value !== null && value !== undefined && value !== '' && key in rest) out[key] = value;
+  for (const overlay of lang === 'en' ? [all.en] : [all.en, all[lang]]) {
+    for (const [key, value] of Object.entries(overlay ?? {})) {
+      if (value !== null && value !== undefined && value !== '' && key in rest) out[key] = value;
+    }
   }
   return out as Omit<T, 'translations'>;
 }

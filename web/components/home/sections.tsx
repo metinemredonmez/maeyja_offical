@@ -43,6 +43,7 @@ const Cta = ({ s, className = 'btn-primary self-start' }: { s: HomeSection; clas
 
 /** Passe-partout hero: framed media with the headline sitting on it. Video is muted and loops. */
 function Hero({ s, first }: { s: HomeSection; first: boolean }) {
+  const media = Boolean(s.videoUrl || s.imageUrl);
   return (
     <section className="px-4 pt-6 md:px-12 md:pt-8">
       <div className="relative flex min-h-[70vh] items-end overflow-hidden bg-stone md:min-h-[760px]">
@@ -56,10 +57,12 @@ function Hero({ s, first }: { s: HomeSection; first: boolean }) {
             <Image src={s.mobileImageUrl ?? s.imageUrl} alt="" fill priority={first} sizes="100vw" className="object-cover md:hidden" />
           </>
         ) : null}
-        <div className="relative flex max-w-2xl flex-col gap-5 p-8 md:p-14">
+        {/* Photo/video behind the headline: a soft scrim from the bottom keeps the text legible. */}
+        {media ? <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" aria-hidden="true" /> : null}
+        <div className={`relative flex max-w-2xl flex-col gap-5 p-8 md:p-14 ${media ? 'text-white' : ''}`}>
           {s.title ? <h1 className="font-serif text-5xl font-light leading-none tracking-tight md:text-[80px]">{s.title}</h1> : null}
-          {s.subtitle ? <p className="text-[15px] text-ink-soft">{s.subtitle}</p> : null}
-          <Cta s={s} />
+          {s.subtitle ? <p className={`text-[15px] ${media ? 'text-white/85' : 'text-ink-soft'}`}>{s.subtitle}</p> : null}
+          <Cta s={s} className={media ? 'btn-primary self-start !bg-white !text-ink hover:!bg-ground' : undefined} />
         </div>
       </div>
     </section>
