@@ -130,8 +130,15 @@ make ship T=backend  # sadece API (T=web, T=admin)
 Loglar: `make logs` · durum: `make status`.
 
 ## Yedek
+[backup.sh](backup.sh) her gece 03:30'da veritabanını, görselleri, maeyja.com mail kutularını ve `.env` dosyalarını
+`/var/backups/maeyja` altına alır (yalnızca root, 14 gün saklanır). Kurulum:
 ```bash
-# günlük cron: 0 3 * * *
-pg_dump -U maeyja maeyja | gzip > /var/backups/maeyja-$(date +%F).sql.gz
-tar czf /var/backups/maeyja-uploads-$(date +%F).tgz -C /var/www/maeyja/backend uploads
+install -m 700 deploy/backup.sh /usr/local/bin/maeyja-backup.sh
+echo '30 3 * * * root /usr/local/bin/maeyja-backup.sh >> /var/log/maeyja-backup.log 2>&1' > /etc/cron.d/maeyja-backup
 ```
+Yedekler aynı sunucuda durduğu için sunucu kaybına karşı korumaz; ara ara Mac'e çek:
+`rsync -a hazal:/var/backups/maeyja/ ~/Yedekler/maeyja/`. Geri yükleme komutları script'in başında.
+
+## HSTS
+certbot'tan sonra maeyja'nın 443 bloklarına `add_header Strict-Transport-Security "max-age=31536000" always;`
+(includeSubDomains yok — mail.maeyja.com nginx'te değil).
