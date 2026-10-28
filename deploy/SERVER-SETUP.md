@@ -43,9 +43,13 @@ pm2 status
 Swagger prod'da kapalı; açmak için `.env` → `SWAGGER_ENABLED=true` → `/api/docs`.
 
 ## Her deploy
+Mac'ten tek komut (commit'li her şeyi push eder, sunucuda `git pull` + build + pm2 reload):
 ```bash
-cd /var/www/maeyja && git pull --ff-only && ./deploy/deploy.sh
+make ship            # hepsi
+make ship T=backend  # sadece API (T=web, T=admin)
 ```
+`~/.ssh/config`'te sunucu adı `hazal` değilse: `make ship SSH_HOST=<ad>`. Sunucunun kendisinde: `make server-deploy`.
+Loglar: `make logs` · durum: `make status`.
 
 ## Yedek
 ```bash
