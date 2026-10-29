@@ -157,21 +157,16 @@ async function main() {
 
   // Campaign photos/films (model shots): replace the seeded stand-ins only — anything picked in the admin stays.
   const heroNow = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO }, orderBy: { sortOrder: 'asc' } });
-  // The hero went table photo → Rome (film) → Iceland's black-sand coast (film); each step only replaces what the seed itself put there.
-  if (heroNow && (isSeeded(heroNow.imageUrl, '_home/01-hero') || isSeeded(heroNow.imageUrl, '_home/10-campaign-rome'))) {
-    const wide = await importImage('_home', '10-campaign-blacksand.webp', 'Origami');
-    const tall = await importImage('_home', '11-campaign-blacksand-mobile.webp', 'Origami');
-    const film = await importVideo('_home', 'hero-blacksand-v2.mp4', 'Origami');
-    const seededFilm = !heroNow.videoUrl || heroNow.videoUrl.includes('/catalog/_home/hero-rome');
+  // The hero went table photo → Rome (film) → Iceland's black-sand coast. The first black-sand set put the Origami on a long
+  // shoulder strap it doesn't have (it has two short handles), so it is replaced too. Only what the seed itself put there changes.
+  const seededHero = ['_home/01-hero', '_home/10-campaign-rome', '_home/10-campaign-blacksand'];
+  if (heroNow && seededHero.some((file) => isSeeded(heroNow.imageUrl, file))) {
+    const wide = await importImage('_home', '10-campaign-iceland-coast.webp', 'Origami');
+    const tall = await importImage('_home', '11-campaign-iceland-coast-mobile.webp', 'Origami');
+    const film = await importVideo('_home', 'hero-iceland-coast.mp4', 'Origami');
+    const seededFilm = !heroNow.videoUrl || /\/catalog\/_home\/hero-(rome|blacksand)/.test(heroNow.videoUrl);
     await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(seededFilm ? { videoUrl: film } : {}) } });
-    console.log('✓ hero: İzlanda siyah kum sahili' + (film ? ' + video' : ''));
-  }
-  // The first black-sand film was three still shots; v2 has the basalt shot in real motion.
-  const stillFilm = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { endsWith: '/catalog/_home/hero-blacksand.mp4' } } });
-  if (stillFilm) {
-    const film = await importVideo('_home', 'hero-blacksand-v2.mp4', 'Origami');
-    if (film) await prisma.homeSection.update({ where: { id: stillFilm.id }, data: { videoUrl: film } });
-    console.log('✓ hero: siyah kum filmi v2');
+    console.log('✓ hero: İzlanda siyah kum sahili, kısa kulplu Origami' + (film ? ' + video' : ''));
   }
   // The banner's earlier stand-ins (Drape table photo, then a Rome film whose bag wasn't true to the Drape) give way
   // to a close shot where the bag matches the product. Only seeded media is replaced.
