@@ -41,7 +41,7 @@ export default async function JournalPostPage({ params }: { params: Params }) {
           <Image src={post.coverImageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
         </div>
       ) : null}
-      <div className="prose-cms mx-auto max-w-3xl" dangerouslySetInnerHTML={{ __html: cleanHtml(post.body) }} />
+      <div className="prose-cms mx-auto max-w-3xl" dangerouslySetInnerHTML={{ __html: cleanHtml(post.body, locale) }} />
     </article>
   );
 }

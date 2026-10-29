@@ -31,7 +31,7 @@ export default async function CmsPage({ params }: { params: Params }) {
   return (
     <article className="mx-auto max-w-3xl px-4 pt-12 md:pt-20">
       <h1 className="mb-10 font-serif text-5xl font-light leading-none md:text-[56px]">{page.title}</h1>
-      <div className="prose-cms" dangerouslySetInnerHTML={{ __html: cleanHtml(page.body) }} />
+      <div className="prose-cms" dangerouslySetInnerHTML={{ __html: cleanHtml(page.body, locale) }} />
     </article>
   );
 }

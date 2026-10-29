@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { PAGE_BODIES } from './seed-pages';
 import { ABOUT_BODY, CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -106,6 +107,11 @@ async function main() {
     });
     const merged = fillTranslations(row.translations, translations);
     if (merged) await prisma.page.update({ where: { id: row.id }, data: { translations: json(merged) } });
+  }
+  // Store and legal pages: replace the original placeholders only (text written in the admin stays).
+  for (const [slug, body] of Object.entries(PAGE_BODIES)) {
+    const updated = await prisma.page.updateMany({ where: { slug, body: { contains: 'metni buraya gelecek' } }, data: { body } });
+    if (updated.count) console.log(`✓ sayfa metni eklendi: ${slug}`);
   }
   // About: replace the original placeholder only (text written in the admin stays).
   const about = await prisma.page.findUnique({ where: { slug: 'about' } });

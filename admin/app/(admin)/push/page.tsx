@@ -78,6 +78,9 @@ function PushPageInner() {
   const { set, page, limit } = useListParams({});
   const query = usePushCampaigns({ page, limit });
   const providerEnabled = query.data?.providerEnabled ?? true;
+  // OneSignal rejects a send with no subscribed device, so wait for the first app install.
+  const deviceCount = query.data?.devices.reduce((n, d) => n + d._count, 0) ?? 0;
+  const noDevices = Boolean(query.data) && deviceCount === 0;
   const columns: Column<PushCampaign>[] = [
     {
       key: 'title',
@@ -116,10 +119,19 @@ function PushPageInner() {
           </div>
         </div>
       )}
+      {providerEnabled && noDevices && (
+        <div role="status" className="mb-4 flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-900">
+          <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <p className="font-medium">Henüz bildirim alacak cihaz yok</p>
+            <p className="text-xs">Bildirimler mobil uygulamayı yükleyip izin veren kullanıcılara gider. Uygulama yayınlanıp ilk cihaz kaydolunca gönderim açılır.</p>
+          </div>
+        </div>
+      )}
       <div className="grid gap-5 lg:grid-cols-[380px_1fr]">
         <div className="space-y-5">
           <Section title="Yeni bildirim">
-            <PushForm disabled={!providerEnabled} />
+            <PushForm disabled={!providerEnabled || noDevices} />
           </Section>
           <Section title="Aktif cihazlar">
             {query.data?.devices.length ? (

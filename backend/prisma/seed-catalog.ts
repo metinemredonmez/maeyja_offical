@@ -11,6 +11,7 @@ import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/
 import { join, resolve } from 'path';
 import sharp from 'sharp';
 import { HOME_V2, PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
+import { JOURNAL_POSTS } from './seed-pages';
 
 const prisma = new PrismaClient();
 const ASSETS = join(__dirname, 'seed-assets', 'catalog');
@@ -188,6 +189,25 @@ async function main() {
     const studio = await importImage('_home', '13-campaign-studio.webp', 'Origami — stüdyo');
     await prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'sideways', sortOrder: at, imageUrl: studio.url, ctaUrl: '/products', ...sidewaysCopy.base, translations: sidewaysCopy.translations } });
     console.log('✓ ana sayfa: yan yatık manken bandı');
+  }
+
+  // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).
+  for (const [i, post] of JOURNAL_POSTS.entries()) {
+    if (await prisma.journalPost.findUnique({ where: { slug: post.slug } })) continue;
+    const cover = await importImage(post.cover[0], post.cover[1], post.title);
+    await prisma.journalPost.create({
+      data: {
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        body: post.body,
+        coverImageUrl: cover.url,
+        status: 'PUBLISHED',
+        // A day apart, newest first in the list.
+        publishedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
+      },
+    });
+    console.log(`✓ journal: ${post.title}`);
   }
 
   console.log('✓ katalog tamam');
