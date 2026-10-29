@@ -22,7 +22,9 @@ export function HeaderShell({ children }: { children: ReactNode }) {
 
     const measure = () => {
       if (!logo || reduce) return;
-      el.style.setProperty('--s', String(Math.max(1, (innerWidth * 0.92) / logo.offsetWidth)));
+      // About 60% of the width on desktop, a little more on phones.
+      const share = innerWidth < 768 ? 0.78 : 0.58;
+      el.style.setProperty('--s', String(Math.max(1, (innerWidth * share) / logo.offsetWidth)));
       // Giant wordmark sits just under the menu row.
       el.style.setProperty('--y0', `${el.offsetHeight - logo.offsetTop + 8}px`);
     };

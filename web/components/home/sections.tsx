@@ -96,7 +96,7 @@ function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?:
       {media ? <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent via-35% to-black/55" aria-hidden="true" /> : null}
       <div className="hero-fade relative flex w-full flex-col gap-8 px-5 pb-10 md:flex-row md:items-end md:justify-between md:px-12 md:pb-14">
         <div className="intro-rise flex max-w-3xl flex-col gap-5">
-          {s.title ? <h1 className="display text-[44px] md:text-[84px]">{s.title}</h1> : null}
+          {s.title ? <h1 className="display text-[36px] md:text-[60px]">{s.title}</h1> : null}
           {s.subtitle ? <p className={`label ${media ? 'text-white/85' : 'text-ink-soft'}`}>{s.subtitle}</p> : null}
           <Cta s={s} className="link-underline mt-2 self-start" />
         </div>
