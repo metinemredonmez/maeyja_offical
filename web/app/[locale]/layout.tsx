@@ -15,6 +15,7 @@ import { Header } from '@/components/header';
 import { Footer } from '@/components/footer';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { NewsletterPopup } from '@/components/newsletter/newsletter-popup';
+import { AssistantPanel } from '@/components/assistant/assistant-panel';
 import '../globals.css';
 
 const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400', '500'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap' });
@@ -70,6 +71,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} />
             <CartDrawer />
             <NewsletterPopup />
+            {settings?.assistant?.enabled ? <AssistantPanel welcome={settings.assistant.welcome?.[locale] || settings.assistant.welcome?.en || ''} /> : null}
             <Toaster position="bottom-center" toastOptions={{ className: 'font-sans text-sm' }} />
           </Providers>
         </NextIntlClientProvider>

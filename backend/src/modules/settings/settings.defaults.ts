@@ -26,6 +26,16 @@ export const SETTING_DEFAULTS = {
     guestCheckout: true,
     maxQtyPerItem: 5,
   },
+  /** Storefront chat assistant (Claude). Off until switched on in the admin. */
+  assistant: {
+    enabled: false,
+    welcome: {
+      tr: 'Merhaba, size nasıl yardımcı olabilirim? Modellerimiz, renkler, ölçüler, kargo ve iade hakkında sorabilirsiniz.',
+      en: 'Hello, how can I help? Ask me about our bags, colours, sizes, shipping or returns.',
+    } as Record<string, string>,
+    /** Extra rules and facts from the owner, appended to the assistant's instructions. */
+    instructions: '',
+  },
   bankTransfer: {
     enabled: false,
     bankName: '',

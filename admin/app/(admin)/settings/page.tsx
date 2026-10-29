@@ -13,7 +13,7 @@ import { QueryState } from '@/components/shared/query-state';
 import { useSaveSetting, useSettings } from '@/lib/queries/system';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
-const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT' };
+const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -175,6 +175,37 @@ function BankTransferTab({ value }: { value: Settings['bankTransfer'] }) {
   );
 }
 
+function AssistantTab({ value }: { value: Settings['assistant'] }) {
+  const d = useDraft('assistant', value);
+  const set = (patch: Partial<Settings['assistant']>) => d.setDraft({ ...d.draft, ...patch });
+  return (
+    <Section
+      title="Sohbet asistanı"
+      description="Sitenin sağ altındaki asistan (Claude). Ürünleri, fiyat ve stokları, SSS'yi, kargo-iade, bakım ve Uzmanlık sayfalarını kendisi okur; ziyaretçinin dilinde cevap verir. Sohbetler saklanmaz."
+    >
+      <div className="grid gap-4">
+        <SwitchField label="Asistan açık" description="Kapalıyken sitede görünmez." checked={d.draft.enabled} onCheckedChange={(v) => set({ enabled: v })} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Karşılama mesajı (TR)" htmlFor="as-welcome-tr">
+            <Textarea id="as-welcome-tr" rows={3} value={d.draft.welcome?.tr ?? ''} onChange={(e) => set({ welcome: { ...d.draft.welcome, tr: e.target.value } })} />
+          </Field>
+          <Field label="Karşılama mesajı (EN — diğer diller de bunu görür)" htmlFor="as-welcome-en">
+            <Textarea id="as-welcome-en" rows={3} value={d.draft.welcome?.en ?? ''} onChange={(e) => set({ welcome: { ...d.draft.welcome, en: e.target.value } })} />
+          </Field>
+        </div>
+        <Field
+          label="Kurallar ve ek bilgiler"
+          htmlFor="as-instructions"
+          hint="Ör. “Kişiye özel üretim sorulursa hello@maeyja.com'a yönlendir.” · “Kasım sonuna kadar Beymen İstinye'de pop-up var.” Fiyat, stok ve sayfalar zaten otomatik okunur."
+        >
+          <Textarea id="as-instructions" rows={6} maxLength={4000} value={d.draft.instructions ?? ''} onChange={(e) => set({ instructions: e.target.value })} />
+        </Field>
+      </div>
+      <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
+    </Section>
+  );
+}
+
 export default function SettingsPage() {
   const query = useSettings();
   return (
@@ -204,6 +235,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="bankTransfer">
               <BankTransferTab key={JSON.stringify(s.bankTransfer)} value={s.bankTransfer} />
+            </TabsContent>
+            <TabsContent value="assistant">
+              <AssistantTab key={JSON.stringify(s.assistant)} value={s.assistant} />
             </TabsContent>
           </Tabs>
         )}

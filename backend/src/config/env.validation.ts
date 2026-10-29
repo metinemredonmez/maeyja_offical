@@ -51,6 +51,8 @@ export const envSchema = Joi.object({
   // Claude: admin "Otomatik çevir" + filling missing translations every 10 minutes (off when the key is empty)
   ANTHROPIC_API_KEY: Joi.string().allow('').default(''),
   AI_AUTO_TRANSLATE: Joi.boolean().default(true),
+  // Storefront assistant: messages per day for the whole store (cost ceiling)
+  AI_CHAT_DAILY_LIMIT: Joi.number().integer().min(0).default(1500),
 
   ORDER_PAYMENT_TIMEOUT_MINUTES: Joi.number().integer().min(5).default(30),
   BANK_TRANSFER_TIMEOUT_HOURS: Joi.number().integer().min(1).default(48),
@@ -111,6 +113,7 @@ export interface Env {
   ONESIGNAL_API_KEY: string;
   ANTHROPIC_API_KEY: string;
   AI_AUTO_TRANSLATE: boolean;
+  AI_CHAT_DAILY_LIMIT: number;
   ORDER_PAYMENT_TIMEOUT_MINUTES: number;
   BANK_TRANSFER_TIMEOUT_HOURS: number;
   SWAGGER_ENABLED: boolean;
