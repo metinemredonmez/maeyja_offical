@@ -7,7 +7,7 @@
  */
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, ProductStatus } from '@prisma/client';
-import { mkdir, readFile, readdir, writeFile } from 'fs/promises';
+import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import sharp from 'sharp';
 import { HOME_V2, PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
@@ -42,6 +42,20 @@ async function importImage(folder: string, file: string, alt: string) {
   });
   return { url, width: meta.width!, height: meta.height! };
 }
+
+/** Copies a campaign video next to the uploads and registers it; null when the file is not in the seed assets. */
+async function importVideo(folder: string, file: string, alt: string) {
+  const src = join(ASSETS, folder, file);
+  if (!(await access(src).then(() => true, () => false))) return null;
+  const key = `catalog/${folder}/${file}`;
+  await mkdir(join(UPLOAD_DIR, 'catalog', folder), { recursive: true });
+  await copyFile(src, join(UPLOAD_DIR, key));
+  const url = `${PUBLIC_BASE}/${key}`;
+  await prisma.media.upsert({ where: { key }, create: { url, key, mimeType: 'video/mp4', size: (await stat(src)).size, alt }, update: {} });
+  return url;
+}
+
+const isSeeded = (url: string | null, file: string) => !url || url.includes(`/catalog/${file}`);
 
 async function main() {
   const colors = Object.fromEntries((await prisma.color.findMany()).map((c) => [c.slug, c]));
@@ -125,7 +139,8 @@ async function main() {
     }
     const left = await importImage('origami', '06-red.webp', 'Origami');
     const right = await importImage('valise', '06-ivory.webp', 'Valise');
-    const banner = await importImage('drape', '06-green.webp', 'Drape');
+    const banner = await importImage('_home', '12-campaign-rome-steps.webp', 'Drape');
+    const bannerVideo = await importVideo('_home', 'band-rome-steps.mp4', 'Drape');
     const diptych = split(HOME_V2.DIPTYCH);
     const strip = split(HOME_V2.STRIP);
     const bannerCopy = split(HOME_V2.BANNER);
@@ -134,10 +149,36 @@ async function main() {
       data: [
         { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', ...diptych.base, translations: diptych.translations },
         { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'strip', sortOrder: 3, payload: {}, ...strip.base, translations: strip.translations },
-        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
+        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, videoUrl: bannerVideo, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
       ],
     });
     console.log('✓ ana sayfa: yan yana fotoğraflar, model şeridi ve banner eklendi');
+  }
+
+  // Campaign photos/films (model shots): replace the seeded stand-ins only — anything picked in the admin stays.
+  const heroNow = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO }, orderBy: { sortOrder: 'asc' } });
+  if (heroNow && isSeeded(heroNow.imageUrl, '_home/01-hero')) {
+    const wide = await importImage('_home', '10-campaign-rome.webp', 'Origami');
+    const tall = await importImage('_home', '11-campaign-rome-mobile.webp', 'Origami');
+    const film = await importVideo('_home', 'hero-rome.mp4', 'Origami');
+    await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(film && !heroNow.videoUrl ? { videoUrl: film } : {}) } });
+    console.log('✓ hero: mankenli kampanya görseli' + (film ? ' + video' : ''));
+  }
+  // The first Faz 1 run put a Drape table photo in the banner; swap it for the campaign film.
+  const oldBanner = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.EDITORIAL, layout: 'full', imageUrl: { contains: '/catalog/drape/06-green' } } });
+  if (oldBanner) {
+    const banner = await importImage('_home', '12-campaign-rome-steps.webp', 'Drape');
+    const film = await importVideo('_home', 'band-rome-steps.mp4', 'Drape');
+    await prisma.homeSection.update({ where: { id: oldBanner.id }, data: { imageUrl: banner.url, ...(film && !oldBanner.videoUrl ? { videoUrl: film } : {}) } });
+  }
+  // Manu-style sideways model band, right after the model strip (once).
+  if (!(await prisma.homeSection.count({ where: { layout: 'sideways' } }))) {
+    const strip = await prisma.homeSection.findFirst({ where: { layout: 'strip' } });
+    const at = (strip?.sortOrder ?? 3) + 1;
+    await prisma.homeSection.updateMany({ where: { sortOrder: { gte: at } }, data: { sortOrder: { increment: 1 } } });
+    const studio = await importImage('_home', '13-campaign-studio.webp', 'Origami — stüdyo');
+    await prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'sideways', sortOrder: at, imageUrl: studio.url } });
+    console.log('✓ ana sayfa: yan yatık manken bandı');
   }
 
   console.log('✓ katalog tamam');

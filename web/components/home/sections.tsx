@@ -59,7 +59,16 @@ function Body({ html, className }: { html: string | null; className?: string }) 
 
 /** Photo or silent looping video filling its (relative) parent. */
 function Media({ s, sizes, priority = false, mobile = true }: { s: HomeSection; sizes: string; priority?: boolean; mobile?: boolean }) {
-  if (s.videoUrl) return <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 h-full w-full object-cover" />;
+  if (s.videoUrl) {
+    // Phones get the portrait still (and no video download) when one is set; wider screens get the film.
+    if (!mobile || !s.mobileImageUrl) return <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 h-full w-full object-cover" />;
+    return (
+      <>
+        <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 hidden h-full w-full object-cover md:block" />
+        <Image src={s.mobileImageUrl} alt="" fill priority={priority} sizes="100vw" className="object-cover md:hidden" />
+      </>
+    );
+  }
   if (!s.imageUrl) return null;
   if (!mobile || !s.mobileImageUrl) return <Image src={s.imageUrl} alt="" fill priority={priority} sizes={sizes} className="object-cover" />;
   return (
@@ -237,7 +246,7 @@ function Diptych({ s }: { s: HomeSection }) {
 
 /**
  * Edge-to-edge photo or video (Polène's film, Mlouye's banners). With a product picked in the admin a tall
- * product card floats on the left (Polène) and the title moves to the right.
+ * product card floats in the lower left (Polène) and the title moves to the top left.
  */
 function FullBleed({ s }: { s: HomeSection }) {
   const media = Boolean(s.videoUrl || s.imageUrl);
@@ -247,13 +256,19 @@ function FullBleed({ s }: { s: HomeSection }) {
       <div className="parallax absolute inset-0" style={drift('9%')}>
         <Media s={s} sizes="100vw" />
       </div>
-      {media ? <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 via-45% to-transparent" aria-hidden="true" /> : null}
+      {/* With a product card the copy moves to the top left (the card holds the lower left), so the shade follows it. */}
+      {media ? (
+        <div
+          className={`absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 via-45% to-transparent ${product ? 'md:bg-gradient-to-b md:from-black/40 md:via-transparent md:via-40% md:to-black/20' : ''}`}
+          aria-hidden="true"
+        />
+      ) : null}
       {product ? <ProductPanel p={product} /> : null}
-      <div className={`reveal relative flex max-w-2xl flex-col gap-5 px-5 pb-10 md:px-12 md:pb-14 ${product ? 'md:ml-auto md:items-end md:text-right' : ''}`}>
+      <div className={`reveal relative flex max-w-2xl flex-col gap-5 px-5 pb-10 md:px-12 md:pb-14 ${product ? 'md:absolute md:top-24 md:left-0 md:pb-0' : ''}`}>
         {s.subtitle ? <p className="label opacity-85">{s.subtitle}</p> : null}
         {s.title ? <h2 className="display text-[40px] md:text-[72px]">{s.title}</h2> : null}
         <Body html={s.body} className="max-w-md text-[15px] leading-relaxed opacity-90" />
-        <Cta s={s} className={`link-underline ${product ? 'md:self-end' : 'self-start'}`} />
+        <Cta s={s} />
       </div>
     </section>
   );
