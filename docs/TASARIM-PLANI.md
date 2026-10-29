@@ -20,7 +20,7 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 3. **Yan yana iki büyük fotoğraf (Manu + Liffner):** farklı hızda parallax, altlarında kısa başlık + link.
 4. **Kategori şeridi (Liffner):** dekupe ürün görselleri + altında kategori adı (Omuz, Kova, Mini, Kutu…).
 5. **Vitrin / atölye bölümü (Polène):** tam genişlik görsel (admin Medya'daki vitrin görseli), sol altta başlık + "Keşfet".
-6. **Kampanya bannerı / video (Mlouye):** tam genişlik, üstünde ürün/kampanya adı.
+6. **Kampanya bannerı / video (Mlouye):** tam genişlik, üstünde ürün/kampanya adı. (Faz 3'te "Üzerimde gör" ara bannerı da buraya eklenir.)
 7. Basın şeridi · Satış noktaları · Bülten (yeni tipografiyle).
 
 ## Faz 2 — Ürün listesi + ürün sayfası
@@ -39,6 +39,16 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 - Admin'deki çeviri sekmelerine **"Otomatik çevir"** düğmesi: Türkçe metinden 10 dile tek tıkla doldurur (ürün, sayfa, journal, ana sayfa, SSS, renk/kategori, kampanya). Çeviri düzenlenebilir taslak olarak gelir; kaydetmeden önce bakılır.
 - Ürün açıklamalarında marka dili korunur (model adları çevrilmez, "N°01" kalır).
 
+**C. Sanal dene — "Üzerimde gör" (ai-beauty'deki deneme altyapısından)**
+- Ürün sayfasında **"Üzerimde gör"** düğmesi: ziyaretçi kendi fotoğrafını yükler (ya da çeker), seçili çanta omzunda/elinde
+  görünür; önce/sonra kaydırıcı, indir/paylaş.
+- ai-beauty'deki gibi fal.ai üzerinden (`FAL_KEY`). Oradaki giysi deneme modelleri (FASHN, IDM-VTON) çanta için uygun
+  olmayabilir; çok görselli düzenleme modelleri gerçek çanta fotoğraflarımızla denenip en doğal sonucu veren seçilir.
+- **KVKK:** fotoğraf kişisel veri ve yurt dışına (fal.ai) gider → ayrı, önceden işaretlenmemiş açık rıza; fotoğraf
+  saklanmaz (iş bitince silinir); 18 yaş beyanı; KVKK metnine eklenir. Kötüye kullanıma karşı hız ve günlük sınır.
+- **Ana sayfada ara banner:** "Yeni · Çantanı üzerinde gör" — kısa video/örnek görselle tam genişlik tanıtım bandı;
+  ürün kartlarında küçük "Dene" etiketi.
+
 **Gereken:** Anthropic (Claude) API anahtarı → sunucuda `backend/.env` (`ANTHROPIC_API_KEY`). Model seçimi uygulama sırasında güncel modellere göre yapılır (sohbet hızlı/ekonomik, çeviri kaliteli).
 
 ## Faz 4 — Atölye / Journal + cila
@@ -52,5 +62,5 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 - Ayarlar → "Asistan" sekmesi.
 
 ## Senden gerekenler
-- Anthropic API anahtarı (Faz 3 için).
+- Anthropic API anahtarı ve fal.ai anahtarı (Faz 3 için).
 - Fotoğraflar: stüdyo (aynı açık bej fon) + kampanya (manken, İstanbul mimarisi); 5–10 sn sessiz döngü videolar (opsiyonel, Mlouye tarzı). Gelene kadar mevcut en iyi kareler ve vitrin görseli kullanılır.
