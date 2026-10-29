@@ -188,30 +188,53 @@ function ModelStrip({ s }: { s: HomeSection }) {
   );
 }
 
-/** Two large photos side by side moving at different speeds (Manu Atelier / Liffner). */
+/**
+ * Two still-lifes laid out like an editorial spread (Manu Atelier / Liffner): a large picture on the left, the
+ * copy and a smaller picture on the right, each drifting at its own speed. Products picked in the admin turn
+ * the pictures into links captioned with the model's name and price.
+ */
 function Diptych({ s }: { s: HomeSection }) {
   const second = s.secondImageUrl ?? s.mobileImageUrl;
+  const [left, right] = s.products ?? [];
   return (
-    <section className="px-4 pt-24 md:px-12 md:pt-36">
-      <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-        <div className="reveal relative aspect-[4/5] overflow-hidden bg-stone">
-          <div className="parallax absolute inset-0" style={drift('5%')}>
-            {s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" /> : null}
+    <section className="px-4 pt-24 md:px-12 md:pt-40">
+      <div className="grid gap-y-14 md:grid-cols-12 md:gap-x-6">
+        <Still url={s.imageUrl} product={left} shift="5%" sizes="(min-width: 768px) 58vw, 100vw" className="md:col-span-7" />
+        <div className="flex flex-col gap-14 md:col-span-4 md:col-start-9 md:gap-24">
+          <div className="reveal flex flex-col gap-5 md:pt-28">
+            {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
+            {s.title ? <h2 className="display text-[36px] leading-[1.05] md:text-[52px]">{s.title}</h2> : null}
+            <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
+            <Cta s={s} />
           </div>
+          <Still url={second} product={right} shift="12%" sizes="(min-width: 768px) 33vw, 80vw" className="ml-auto w-[82%] md:ml-0 md:w-full" />
         </div>
-        <div className="reveal relative aspect-[4/5] overflow-hidden bg-stone md:mt-28">
-          <div className="parallax absolute inset-0" style={drift('13%')}>
-            {second ? <Image src={second} alt="" fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" /> : null}
-          </div>
-        </div>
-      </div>
-      <div className="reveal mx-auto mt-12 flex max-w-xl flex-col items-center gap-5 text-center md:-mt-6">
-        {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
-        {s.title ? <h2 className="display text-[36px] md:text-[56px]">{s.title}</h2> : null}
-        <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
-        <Cta s={s} className="link-underline" />
       </div>
     </section>
+  );
+}
+
+function Still({ url, product, shift, sizes, className }: { url: string | null; product?: Card; shift: string; sizes: string; className: string }) {
+  const locale = useLocale();
+  const picture = (
+    <span className="relative block aspect-[4/5] overflow-hidden bg-stone">
+      <span className="parallax absolute inset-0 block" style={drift(shift)}>
+        {url ? <Image src={url} alt={product?.name ?? ''} fill sizes={sizes} className="object-cover transition duration-[1.6s] ease-out group-hover:scale-[1.04]" /> : null}
+      </span>
+    </span>
+  );
+  if (!product) return <div className={`reveal ${className}`}>{picture}</div>;
+  return (
+    <Link href={`/products/${product.slug}`} className={`group reveal block ${className}`}>
+      {picture}
+      <span className="mt-4 flex items-baseline justify-between gap-4">
+        <span className="font-serif text-[22px] font-light leading-none group-hover:text-brand">{product.name}</span>
+        <span className="label text-muted">
+          {modelNo(product.number) ? `${modelNo(product.number)} · ` : ''}
+          {money(product.price, locale)}
+        </span>
+      </span>
+    </Link>
   );
 }
 

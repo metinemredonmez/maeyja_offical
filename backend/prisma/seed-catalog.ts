@@ -192,6 +192,32 @@ async function main() {
     console.log('✓ ana sayfa: yan yatık manken bandı');
   }
 
+  // The diptych's first pictures were the plain table shots of the Origami and the Valise; they give way to
+  // still-lifes on travertine, captioned with both bags. Pictures or products picked in the admin stay.
+  const diptychNow = await prisma.homeSection.findFirst({ where: { layout: 'diptych' } });
+  if (diptychNow && isSeeded(diptychNow.imageUrl, 'origami/06-red') && isSeeded(diptychNow.secondImageUrl, 'valise/06-ivory')) {
+    const left = await importImage('_home', '14-still-origami.webp', 'Origami');
+    const right = await importImage('_home', '15-still-valise.webp', 'Valise');
+    const pair = await prisma.product.findMany({ where: { slug: { in: ['origami', 'valise'] } }, select: { id: true, slug: true } });
+    const ids = ['origami', 'valise'].flatMap((slug) => pair.filter((p) => p.slug === slug).map((p) => p.id));
+    const payload = (diptychNow.payload ?? {}) as { productIds?: string[] };
+    await prisma.homeSection.update({
+      where: { id: diptychNow.id },
+      data: { imageUrl: left.url, secondImageUrl: right.url, ...(payload.productIds?.length ? {} : { payload: { ...payload, productIds: ids } }) },
+    });
+    console.log('✓ ana sayfa: yan yana natürmortlar');
+  }
+  // The sideways model and the Drape band move up, right after the collection, ahead of the diptych — only while
+  // the page is still in the order the seed built (any reordering in the admin is left alone).
+  const built = ['HERO', 'grid', 'diptych', 'strip', 'sideways', 'split', 'full', 'PRESS', 'STOCKISTS', 'NEWSLETTER'];
+  const wanted = ['HERO', 'grid', 'sideways', 'full', 'diptych', 'strip', 'split', 'PRESS', 'STOCKISTS', 'NEWSLETTER'];
+  const sections = await prisma.homeSection.findMany({ orderBy: { sortOrder: 'asc' } });
+  const keys = sections.map((sec) => sec.layout ?? sec.type);
+  if (keys.join() === built.join()) {
+    await prisma.$transaction(sections.map((sec, i) => prisma.homeSection.update({ where: { id: sec.id }, data: { sortOrder: wanted.indexOf(keys[i]) } })));
+    console.log('✓ ana sayfa: manken ve Drape bandı yukarı');
+  }
+
   // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).
   for (const [i, post] of JOURNAL_POSTS.entries()) {
     if (await prisma.journalPost.findUnique({ where: { slug: post.slug } })) continue;

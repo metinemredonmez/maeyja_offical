@@ -66,12 +66,14 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
       translations: (section?.translations as Record<string, Record<string, string>>) ?? {},
     },
   });
+  // The side-by-side layout captions both photos, so it takes two products; every other card takes one.
+  const cards = form.watch('layout') === 'diptych' ? 2 : 1;
 
   const onSubmit = form.handleSubmit(async (raw) => {
     const v = homeSectionSchema.parse(raw);
     const nul = <T,>(x: T | undefined) => x ?? (section ? null : undefined);
     const payload: Record<string, unknown> = {};
-    if ((type === 'HERO' || type === 'EDITORIAL') && v.productIds.length) payload.productIds = v.productIds.slice(0, 1);
+    if ((type === 'HERO' || type === 'EDITORIAL') && v.productIds.length) payload.productIds = v.productIds.slice(0, cards);
     if (type === 'FEATURED_PRODUCTS') {
       if (v.productIds.length) payload.productIds = v.productIds;
       if (v.limit) payload.limit = v.limit;
@@ -150,8 +152,11 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                   </>
                 )}
                 {(type === 'HERO' || type === 'EDITORIAL') && (
-                  <Field label="Ürün kartı (opsiyonel)" hint={type === 'HERO' ? 'Görselin köşesinde küçük ürün kartı' : 'Tam genişlik düzende solda uzun ürün kartı (Polène)'}>
-                    <Controller control={form.control} name="productIds" render={({ field }) => <ProductPicker value={field.value} onChange={field.onChange} max={1} />} />
+                  <Field
+                    label={cards === 2 ? 'Ürünler (opsiyonel)' : 'Ürün kartı (opsiyonel)'}
+                    hint={type === 'HERO' ? 'Görselin köşesinde küçük ürün kartı' : cards === 2 ? 'Soldaki ve sağdaki fotoğrafın altında ad ve fiyat; fotoğraf ürüne gider' : 'Tam genişlik düzende solda uzun ürün kartı (Polène)'}
+                  >
+                    <Controller control={form.control} name="productIds" render={({ field }) => <ProductPicker value={field.value} onChange={field.onChange} max={cards} />} />
                   </Field>
                 )}
                 {HAS_VIDEO.includes(type) && (

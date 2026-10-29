@@ -29,11 +29,11 @@ export class ContentService {
         switch (s.type) {
           case 'HERO':
           case 'EDITORIAL': {
-            // Optional floating product card on the hero or a full-width band (Polène-style).
+            // Optional product cards: one floats on the hero or a full-width band (Polène-style); the diptych captions two.
             if (!payload.productIds?.length) return base;
             const all = await this.catalog.products({ page: 1, limit: 100 } as ProductQueryDto, lang);
-            const card = all.items.find((p) => p.id === payload.productIds![0]);
-            return { ...base, products: card ? [card] : [] };
+            const byId = new Map(all.items.map((p) => [p.id, p]));
+            return { ...base, products: payload.productIds.map((id) => byId.get(id)).filter(Boolean) };
           }
           case 'FEATURED_PRODUCTS': {
             if (payload.productIds?.length) {
