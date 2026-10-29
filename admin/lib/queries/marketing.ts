@@ -1,6 +1,7 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api, qs } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
 import type { CampaignAudience, ContactMessage, EmailCampaign, EmailCampaignDetail, Paginated, PushCampaign, PushListResponse, PushTarget, Subscriber } from '@/lib/types';
@@ -46,7 +47,12 @@ export const useSendPush = () =>
   useApiMutation<PushCampaign, SendPushInput>({
     mutationFn: (body) => api.post('/admin/push', body),
     invalidate: [marketingKeys.push],
-    success: (c) => (c.status === 'SENT' ? `Gönderildi (${c.recipients ?? 0} alıcı)` : `Gönderilemedi: ${c.error ?? 'bilinmeyen hata'}`),
+    // A rejected send still comes back 200 with status FAILED — show it as an error, not a success.
+    success: false,
+    onSuccess: (c) => {
+      if (c.status === 'SENT') toast.success(`Gönderildi (${c.recipients ?? 0} alıcı)`);
+      else toast.error(`Gönderilemedi: ${c.error ?? 'bilinmeyen hata'}`);
+    },
   });
 
 // ───────────── E-mail campaigns ─────────────
