@@ -38,6 +38,7 @@ deploy_backend() {
   npx prisma migrate deploy
   npm run build
   npm run db:seed            # idempotent: yalnızca eksik varsayılanları doldurur
+  npm run db:seed:catalog    # idempotent: eksik ürün/ana sayfa görselleri ve yeni ana sayfa bölümleri (bir kez)
   cd "$ROOT"
   pm2_restart maeyja-api
   wait_http "http://127.0.0.1:${API_PORT}/health" || { echo "✗ API 45 sn içinde açılmadı (:${API_PORT})"; pm2 logs maeyja-api --lines 50 --nostream; exit 1; }

@@ -6,6 +6,8 @@ import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** Section layouts the storefront knows; which ones apply depends on the section type. */
+export const HOME_LAYOUTS = ['split', 'diptych', 'full', 'grid', 'strip'] as const;
 const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
 export class HomeSectionDto {
@@ -15,7 +17,9 @@ export class HomeSectionDto {
   @IsOptional() @IsString() @MaxLength(20000) body?: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() mobileImageUrl?: string;
+  @IsOptional() @IsString() secondImageUrl?: string;
   @IsOptional() @IsString() videoUrl?: string;
+  @IsOptional() @IsIn(HOME_LAYOUTS) layout?: string;
   @IsOptional() @IsString() @MaxLength(60) ctaLabel?: string;
   @IsOptional() @IsString() @MaxLength(300) ctaUrl?: string;
   @IsOptional() @IsObject() payload?: Record<string, unknown>;

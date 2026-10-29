@@ -17,7 +17,27 @@ import { homeSectionSchema, type HomeSectionFormValues } from '@/lib/schemas/con
 import type { HomeSection, HomeSectionType } from '@/lib/types';
 
 const HAS_MEDIA: HomeSectionType[] = ['HERO', 'EDITORIAL', 'CRAFT_STORY', 'COLLECTION'];
-const HAS_VIDEO: HomeSectionType[] = ['HERO'];
+const HAS_VIDEO: HomeSectionType[] = ['HERO', 'EDITORIAL', 'CRAFT_STORY'];
+/** Storefront layouts per section type; the first one is the default. */
+const LAYOUTS: Partial<Record<HomeSectionType, { value: string; label: string }[]>> = {
+  EDITORIAL: [
+    { value: 'split', label: 'Görsel + metin' },
+    { value: 'diptych', label: 'Yan yana iki fotoğraf' },
+    { value: 'full', label: 'Tam genişlik banner' },
+  ],
+  CRAFT_STORY: [
+    { value: 'full', label: 'Tam genişlik görsel' },
+    { value: 'split', label: 'Görsel + metin' },
+  ],
+  FEATURED_PRODUCTS: [
+    { value: 'grid', label: 'Ürün ızgarası' },
+    { value: 'strip', label: 'Model şeridi (dekupe)' },
+  ],
+  COLLECTION: [
+    { value: 'grid', label: 'Ürün ızgarası' },
+    { value: 'strip', label: 'Model şeridi (dekupe)' },
+  ],
+};
 const HAS_BODY: HomeSectionType[] = ['EDITORIAL', 'CRAFT_STORY', 'HERO'];
 const HAS_CTA: HomeSectionType[] = ['HERO', 'EDITORIAL', 'CRAFT_STORY', 'COLLECTION', 'FEATURED_PRODUCTS'];
 
@@ -33,7 +53,9 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
       body: section?.body ?? '',
       imageUrl: section?.imageUrl ?? '',
       mobileImageUrl: section?.mobileImageUrl ?? '',
+      secondImageUrl: section?.secondImageUrl ?? '',
       videoUrl: section?.videoUrl ?? '',
+      layout: section?.layout ?? LAYOUTS[type]?.[0].value ?? '',
       ctaLabel: section?.ctaLabel ?? '',
       ctaUrl: section?.ctaUrl ?? '',
       productIds: section?.payload?.productIds ?? [],
@@ -48,6 +70,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
     const v = homeSectionSchema.parse(raw);
     const nul = <T,>(x: T | undefined) => x ?? (section ? null : undefined);
     const payload: Record<string, unknown> = {};
+    if (type === 'HERO' && v.productIds.length) payload.productIds = v.productIds.slice(0, 1);
     if (type === 'FEATURED_PRODUCTS') {
       if (v.productIds.length) payload.productIds = v.productIds;
       if (v.limit) payload.limit = v.limit;
@@ -65,7 +88,9 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
         body: nul(HAS_BODY.includes(type) ? v.body : undefined) as string | undefined,
         imageUrl: nul(HAS_MEDIA.includes(type) ? v.imageUrl : undefined) as string | undefined,
         mobileImageUrl: nul(HAS_MEDIA.includes(type) ? v.mobileImageUrl : undefined) as string | undefined,
+        secondImageUrl: nul(type === 'EDITORIAL' ? v.secondImageUrl : undefined) as string | undefined,
         videoUrl: nul(HAS_VIDEO.includes(type) ? v.videoUrl : undefined) as string | undefined,
+        layout: nul(LAYOUTS[type] ? v.layout || undefined : undefined) as string | undefined,
         ctaLabel: nul(HAS_CTA.includes(type) ? v.ctaLabel : undefined) as string | undefined,
         ctaUrl: nul(HAS_CTA.includes(type) ? v.ctaUrl : undefined) as string | undefined,
         payload,
@@ -103,6 +128,11 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                     <Input id="ctaUrl" maxLength={300} {...form.register('ctaUrl')} />
                   </Field>
                 )}
+                {LAYOUTS[type] && (
+                  <Field label="Düzen" htmlFor="layout">
+                    <Controller control={form.control} name="layout" render={({ field }) => <SimpleSelect id="layout" value={field.value ?? ''} onChange={field.onChange} options={LAYOUTS[type]!} />} />
+                  </Field>
+                )}
                 {HAS_MEDIA.includes(type) && (
                   <>
                     <Field label="Görsel" error={form.formState.errors.imageUrl}>
@@ -111,7 +141,17 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                     <Field label="Mobil görsel (opsiyonel)" error={form.formState.errors.mobileImageUrl}>
                       <Controller control={form.control} name="mobileImageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
                     </Field>
+                    {type === 'EDITORIAL' && (
+                      <Field label="İkinci görsel (yan yana düzende sağdaki)" error={form.formState.errors.secondImageUrl}>
+                        <Controller control={form.control} name="secondImageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
+                      </Field>
+                    )}
                   </>
+                )}
+                {type === 'HERO' && (
+                  <Field label="Yüzen ürün kartı (opsiyonel)" hint="Görselin köşesinde küçük ürün kartı olarak görünür">
+                    <Controller control={form.control} name="productIds" render={({ field }) => <ProductPicker value={field.value} onChange={field.onChange} max={1} />} />
+                  </Field>
                 )}
                 {HAS_VIDEO.includes(type) && (
                   <Field label="Video (MP4/WebM, opsiyonel)" error={form.formState.errors.videoUrl}>

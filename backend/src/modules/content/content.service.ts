@@ -27,13 +27,22 @@ export class ContentService {
         const base = localize(s, lang);
         const payload = (s.payload ?? {}) as { productIds?: string[]; collectionSlug?: string; limit?: number };
         switch (s.type) {
+          case 'HERO': {
+            // Optional floating product card on the hero (Polène-style).
+            if (!payload.productIds?.length) return base;
+            const all = await this.catalog.products({ page: 1, limit: 100 } as ProductQueryDto, lang);
+            const card = all.items.find((p) => p.id === payload.productIds![0]);
+            return { ...base, products: card ? [card] : [] };
+          }
           case 'FEATURED_PRODUCTS': {
             if (payload.productIds?.length) {
               const all = await this.catalog.products({ page: 1, limit: 100 } as ProductQueryDto, lang);
               const byId = new Map(all.items.map((p) => [p.id, p]));
               return { ...base, products: payload.productIds.map((id) => byId.get(id)).filter(Boolean) };
             }
-            const list = await this.catalog.products({ page: 1, limit: payload.limit ?? 8, featured: true } as ProductQueryDto, lang);
+            // The model strip shows every model unless products are picked; the grid shows featured ones.
+            const strip = s.layout === 'strip';
+            const list = await this.catalog.products({ page: 1, limit: payload.limit ?? (strip ? 24 : 8), ...(strip ? {} : { featured: true }) } as ProductQueryDto, lang);
             return { ...base, products: list.items };
           }
           case 'COLLECTION': {

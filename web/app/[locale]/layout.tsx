@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC } from 'next/font/google';
+import { Cormorant_Garamond, Inter, Noto_Sans_JP, Noto_Sans_KR, Noto_Sans_SC, Tenor_Sans } from 'next/font/google';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -18,6 +18,8 @@ import '../globals.css';
 
 const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400', '500'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap' });
 const inter = Inter({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--font-inter', display: 'swap' });
+// Menu, labels and buttons: small spaced capitals (Polène's sans counterpart).
+const tenor = Tenor_Sans({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: '400', variable: '--font-tenor', display: 'swap' });
 // CJK fallbacks are only attached on their locales so Latin pages stay light.
 const notoJp = Noto_Sans_JP({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-cjk', display: 'swap', preload: false });
 const notoKr = Noto_Sans_KR({ subsets: ['latin'], weight: ['300', '400', '500'], variable: '--font-cjk', display: 'swap', preload: false });
@@ -54,7 +56,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const cjk = locale === 'ja' ? notoJp : locale === 'ko' ? notoKr : locale === 'zh' ? notoSc : null;
 
   return (
-    <html lang={locale} className={cn(cormorant.variable, inter.variable, cjk?.variable)}>
+    <html lang={locale} className={cn(cormorant.variable, inter.variable, tenor.variable, cjk?.variable)}>
       <body className={cn('flex min-h-screen flex-col', cjk && 'font-[var(--font-inter),var(--font-cjk),sans-serif]')}>
         <NextIntlClientProvider>
           <Providers nonce={nonce}>

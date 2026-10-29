@@ -22,9 +22,21 @@ type CardSource = Prisma.ProductGetPayload<{ include: typeof cardInclude }>;
 export const effectivePrice = (variant: { price: Prisma.Decimal | null }, product: { basePrice: Prisma.Decimal }) =>
   toNumber(variant.price ?? product.basePrice);
 
+const PRODUCT_ORDER: Prisma.ProductOrderByWithRelationInput[] = [{ sortOrder: 'asc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }];
+
 @Injectable()
 export class CatalogService {
+  private numbers: { at: number; byId: Map<string, number> } | null = null;
+
   constructor(private readonly prisma: PrismaService) {}
+
+  /** Model number (N°01, N°02…) = position in the admin's product order among products a shopper can see. */
+  async modelNumbers() {
+    if (this.numbers && Date.now() - this.numbers.at < 60_000) return this.numbers.byId;
+    const rows = await this.prisma.product.findMany({ where: VISIBLE_PRODUCT, select: { id: true }, orderBy: PRODUCT_ORDER });
+    this.numbers = { at: Date.now(), byId: new Map(rows.map((r, i) => [r.id, i + 1])) };
+    return this.numbers.byId;
+  }
 
   async categories(lang: Locale) {
     const rows = await this.prisma.category.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
@@ -83,13 +95,9 @@ export class CatalogService {
         : {}),
     };
 
-    const rows = await this.prisma.product.findMany({
-      where,
-      include: cardInclude,
-      orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
-    });
+    const [rows, numbers] = await Promise.all([this.prisma.product.findMany({ where, include: cardInclude, orderBy: PRODUCT_ORDER }), this.modelNumbers()]);
 
-    let cards = rows.map((p) => this.toCard(p, lang));
+    let cards = rows.map((p) => this.toCard(p, lang, numbers));
     if (q.minPrice !== undefined) cards = cards.filter((c) => c.price >= q.minPrice!);
     if (q.maxPrice !== undefined) cards = cards.filter((c) => c.price <= q.maxPrice!);
     if (q.sort === 'price_asc') cards.sort((a, b) => a.price - b.price);
@@ -130,6 +138,7 @@ export class CatalogService {
     }));
     const prices = variantViews.map((v) => v.price);
 
+    const numbers = await this.modelNumbers();
     const related = await this.prisma.product.findMany({
       where: { ...VISIBLE_PRODUCT, id: { not: p.id }, ...(p.categoryId ? { categoryId: p.categoryId } : {}), variants: { some: LIVE_VARIANT } },
       include: cardInclude,
@@ -139,6 +148,7 @@ export class CatalogService {
 
     return {
       ...localized,
+      number: numbers.get(p.id) ?? null,
       basePrice: toNumber(p.basePrice),
       compareAtPrice: p.compareAtPrice ? toNumber(p.compareAtPrice) : null,
       priceRange: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
@@ -149,7 +159,7 @@ export class CatalogService {
       colors: this.uniqueColors(variants, lang),
       sizes: [...new Set(variants.map((v) => v.size).filter((s): s is string => Boolean(s)))],
       inStock: variantViews.some((v) => v.inStock),
-      related: related.map((r) => this.toCard(r, lang)),
+      related: related.map((r) => this.toCard(r, lang, numbers)),
     };
   }
 
@@ -167,13 +177,14 @@ export class CatalogService {
 
   // ─────────────────────────── shaping ───────────────────────────
 
-  toCard(p: CardSource, lang: Locale) {
+  toCard(p: CardSource, lang: Locale, numbers?: Map<string, number>) {
     const prices = p.variants.map((v) => effectivePrice(v, p));
     const price = prices.length ? Math.min(...prices) : toNumber(p.basePrice);
     const { name, subtitle } = localize({ name: p.name, subtitle: p.subtitle, translations: p.translations }, lang);
     return {
       id: p.id,
       slug: p.slug,
+      number: numbers?.get(p.id) ?? null,
       name,
       subtitle,
       price,

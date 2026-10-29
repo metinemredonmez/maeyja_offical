@@ -12,4 +12,7 @@ export function formatDate(iso: string | null | undefined, locale = 'tr', opts: 
   return new Intl.DateTimeFormat(INTL_LOCALE[locale] ?? 'tr-TR', opts).format(new Date(iso));
 }
 
+/** `N°01` — MAEYJA's numbered model names. */
+export const modelNo = (n: number | null | undefined) => (n ? `N°${String(n).padStart(2, '0')}` : null);
+
 export const cn = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(' ');

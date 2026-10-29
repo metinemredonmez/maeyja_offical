@@ -343,3 +343,32 @@ export const PRODUCTS: SeedProduct[] = [
     },
   },
 ];
+
+// ───────── Homepage, Faz 1 additions (diptych, model strip, banner) ─────────
+export const HOME_V2: Record<'DIPTYCH' | 'STRIP' | 'BANNER', Record<string, L>> = {
+  DIPTYCH: {
+    title: { tr: 'Gündelik heykeller', en: 'Everyday sculptures', ru: 'Скульптуры на каждый день', nl: 'Sculpturen voor elke dag', de: 'Skulpturen für jeden Tag', fr: 'Des sculptures au quotidien', it: 'Sculture di ogni giorno', es: 'Esculturas para cada día', ko: '일상의 조각', ja: '日常の彫刻', zh: '日常的雕塑' },
+    body: {
+      tr: 'Tek parça deriden katlanarak biçimlenen formlar; her biri İstanbul’daki atölyemizde elde dikilir.',
+      en: 'Forms folded from a single piece of leather, each one stitched by hand in our Istanbul atelier.',
+      ru: 'Формы, сложенные из цельного куска кожи; каждая сшита вручную в нашей мастерской в Стамбуле.',
+      nl: 'Vormen gevouwen uit één stuk leer, elk met de hand gestikt in ons atelier in Istanbul.',
+      de: 'Formen, aus einem einzigen Stück Leder gefaltet und in unserem Istanbuler Atelier von Hand genäht.',
+      fr: 'Des formes pliées dans une seule pièce de cuir, chacune cousue main dans notre atelier d’Istanbul.',
+      it: 'Forme piegate da un unico pezzo di pelle, ognuna cucita a mano nel nostro atelier di Istanbul.',
+      es: 'Formas plegadas a partir de una sola pieza de piel, cada una cosida a mano en nuestro taller de Estambul.',
+      ko: '한 장의 가죽을 접어 완성한 형태, 이스탄불 아틀리에에서 하나하나 손으로 바느질합니다.',
+      ja: '一枚の革を折りたたんで生まれるフォルム。すべてイスタンブールのアトリエで手縫いされています。',
+      zh: '由一整块皮革折叠而成的造型，每一只都在我们伊斯坦布尔的工坊手工缝制。',
+    },
+    ctaLabel: HOME.HERO.ctaLabel,
+  },
+  STRIP: {
+    title: { tr: 'Modeller', en: 'The models', ru: 'Модели', nl: 'De modellen', de: 'Die Modelle', fr: 'Les modèles', it: 'I modelli', es: 'Los modelos', ko: '모델', ja: 'モデル', zh: '款式' },
+  },
+  BANNER: {
+    subtitle: { tr: 'Yeni renk', en: 'New colour', ru: 'Новый цвет', nl: 'Nieuwe kleur', de: 'Neue Farbe', fr: 'Nouvelle couleur', it: 'Nuovo colore', es: 'Nuevo color', ko: '새로운 컬러', ja: '新色', zh: '新色' },
+    title: { tr: 'Drape, şişe yeşili', en: 'Drape in bottle green', ru: 'Drape в бутылочно-зелёном', nl: 'Drape in flessengroen', de: 'Drape in Flaschengrün', fr: 'Drape en vert bouteille', it: 'Drape verde bottiglia', es: 'Drape en verde botella', ko: '보틀 그린 Drape', ja: 'Drape、ボトルグリーン', zh: 'Drape 瓶绿色' },
+    ctaLabel: HOME.HERO.ctaLabel,
+  },
+};

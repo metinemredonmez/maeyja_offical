@@ -10,7 +10,7 @@ import { HomeSectionType, Prisma, PrismaClient, ProductStatus } from '@prisma/cl
 import { mkdir, readFile, readdir, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import sharp from 'sharp';
-import { PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
+import { HOME_V2, PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
 
 const prisma = new PrismaClient();
 const ASSETS = join(__dirname, 'seed-assets', 'catalog');
@@ -113,6 +113,30 @@ async function main() {
   if (craft && !craft.imageUrl) {
     const img = await importImage('_home', '02-craft.webp', 'MAEYJA atölye');
     await prisma.homeSection.update({ where: { id: craft.id }, data: { imageUrl: img.url } });
+  }
+
+  // Faz 1 homepage (once — skipped as soon as any section has a layout): a diptych, the model strip and a
+  // full-width banner slot in between the existing blocks. Photos are stand-ins until the campaign shoot.
+  if (!(await prisma.homeSection.count({ where: { layout: { not: null } } }))) {
+    const order: Partial<Record<HomeSectionType, number>> = { HERO: 0, FEATURED_PRODUCTS: 1, CRAFT_STORY: 4, PRESS: 6, STOCKISTS: 7, NEWSLETTER: 8 };
+    for (const [type, sortOrder] of Object.entries(order)) {
+      const layout = type === 'FEATURED_PRODUCTS' ? 'grid' : type === 'CRAFT_STORY' ? 'split' : undefined;
+      await prisma.homeSection.updateMany({ where: { type: type as HomeSectionType }, data: { sortOrder, ...(layout ? { layout } : {}) } });
+    }
+    const left = await importImage('origami', '06-red.webp', 'Origami');
+    const right = await importImage('valise', '06-ivory.webp', 'Valise');
+    const banner = await importImage('drape', '06-green.webp', 'Drape');
+    const diptych = split(HOME_V2.DIPTYCH);
+    const strip = split(HOME_V2.STRIP);
+    const bannerCopy = split(HOME_V2.BANNER);
+    await prisma.homeSection.createMany({
+      data: [
+        { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', ...diptych.base, translations: diptych.translations },
+        { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'strip', sortOrder: 3, payload: {}, ...strip.base, translations: strip.translations },
+        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', ...bannerCopy.base, translations: bannerCopy.translations },
+      ],
+    });
+    console.log('✓ ana sayfa: yan yana fotoğraflar, model şeridi ve banner eklendi');
   }
 
   console.log('✓ katalog tamam');

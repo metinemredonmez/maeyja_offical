@@ -370,7 +370,9 @@ export interface HomeSection {
   body: string | null;
   imageUrl: string | null;
   mobileImageUrl: string | null;
+  secondImageUrl: string | null;
   videoUrl: string | null;
+  layout: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
   payload: { productIds?: string[]; collectionSlug?: string; limit?: number } | null;

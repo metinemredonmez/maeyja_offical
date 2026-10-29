@@ -554,7 +554,9 @@ model HomeSection {
   body           String?         @db.Text
   imageUrl       String?
   mobileImageUrl String?
+  secondImageUrl String? // right-hand photo of a side-by-side (diptych) layout
   videoUrl       String?
+  layout         String? // per type: EDITORIAL split|diptych|full, CRAFT_STORY split|full, product blocks grid|strip
   ctaLabel       String?
   ctaUrl         String?
   payload        Json? // type-specific, e.g. { productIds: [] } or { collectionSlug }

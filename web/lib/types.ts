@@ -18,6 +18,8 @@ export interface ColorSwatch {
 export interface ProductCard {
   id: string;
   slug: string;
+  /** Model number from the admin's product order: 1 → N°01. */
+  number?: number | null;
   name: string;
   subtitle: string | null;
   price: number;
@@ -201,7 +203,9 @@ export interface HomeSection {
   body: string | null;
   imageUrl: string | null;
   mobileImageUrl: string | null;
+  secondImageUrl?: string | null;
   videoUrl: string | null;
+  layout?: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
   payload: Record<string, unknown> | null;
