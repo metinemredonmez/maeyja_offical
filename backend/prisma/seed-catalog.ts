@@ -218,6 +218,23 @@ async function main() {
     console.log('✓ ana sayfa: manken ve Drape bandı yukarı');
   }
 
+  // Each bag's second picture is a campaign or still-life photo: on the product page it opens the left column
+  // (Polène) and on the listing it is the hover picture. Added once per bag, only while its first photo is the seeded one.
+  const lifestyle = await readdir(join(ASSETS, '_lifestyle')).catch(() => [] as string[]);
+  for (const file of lifestyle.filter((f) => f.endsWith('.webp'))) {
+    const [slug, colorSlug] = file.replace(/\.webp$/, '').split('-');
+    const product = await prisma.product.findUnique({ where: { slug }, include: { images: { orderBy: { sortOrder: 'asc' } } } });
+    if (!product?.images[0]?.url.includes(`/catalog/${slug}/01-`) || product.images.some((i) => i.url.includes('/catalog/_lifestyle/'))) continue;
+    const color = colors[colorSlug];
+    const alt = `${product.name} — ${color?.name ?? ''}`.trim();
+    const img = await importImage('_lifestyle', file, alt);
+    await prisma.$transaction([
+      prisma.productImage.updateMany({ where: { productId: product.id, sortOrder: { gte: 1 } }, data: { sortOrder: { increment: 1 } } }),
+      prisma.productImage.create({ data: { productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: 1, colorId: color?.id ?? null } }),
+    ]);
+    console.log(`✓ ${product.name}: kampanya fotoğrafı ikinci sırada`);
+  }
+
   // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).
   for (const [i, post] of JOURNAL_POSTS.entries()) {
     if (await prisma.journalPost.findUnique({ where: { slug: post.slug } })) continue;

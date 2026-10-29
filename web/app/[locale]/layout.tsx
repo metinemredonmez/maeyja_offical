@@ -66,7 +66,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       <body className={cn('flex min-h-screen flex-col', cjk && 'font-[var(--font-inter),var(--font-cjk),sans-serif]')}>
         <NextIntlClientProvider>
           <Providers nonce={nonce}>
-            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} models={models} stockists={stockists} />
+            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} models={models} stockists={stockists} contactEmail={settings?.store.email || null} />
             <main className="flex-1">{children}</main>
             <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} />
             <CartDrawer />

@@ -11,11 +11,27 @@ import { MegaItem } from './mega-menu';
 
 type MenuModel = Pick<ProductCard, 'slug' | 'name' | 'number'>;
 
-export function Header({ announcement, user, models, stockists }: { announcement: string | null; user: User | null; models: MenuModel[]; stockists: Stockist[] }) {
+/** Models shown as still-life tiles in the Bags menu (pictures in public/menu/bags-{slug}.webp). */
+const BAG_TILES = ['origami', 'tulip', 'frame'];
+
+export function Header({
+  announcement,
+  user,
+  models,
+  stockists,
+  contactEmail,
+}: {
+  announcement: string | null;
+  user: User | null;
+  models: MenuModel[];
+  stockists: Stockist[];
+  contactEmail: string | null;
+}) {
   const t = useTranslations('nav');
   const tc = useTranslations('common');
   const ts = useTranslations('stockists');
   const th = useTranslations('home');
+  const tf = useTranslations('footer');
   const mobileLinks = [
     { href: '/products', label: t('bags') },
     { href: '/expertise', label: t('expertise') },
@@ -45,9 +61,10 @@ export function Header({ announcement, user, models, stockists }: { announcement
                   {tc('viewAll')}
                 </Link>
               </div>
-              <MenuTile href={models[0] ? `/products/${models[0].slug}` : '/products'} src="/menu/bags-studio.webp" label={models[0] ? `${modelNo(models[0].number) ?? ''} ${models[0].name}`.trim() : t('bags')} />
-              <MenuTile href="/products" src="/menu/bags-all.webp" label={tc('viewAll')} />
-              <MenuTile href="/expertise" src="/menu/expertise.webp" label={t('expertise')} />
+              {BAG_TILES.map((slug) => {
+                const m = models.find((x) => x.slug === slug);
+                return m ? <MenuTile key={slug} href={`/products/${slug}`} src={`/menu/bags-${slug}.webp`} label={`${modelNo(m.number) ?? ''} ${m.name}`.trim()} /> : null;
+              })}
             </div>
           </MegaItem>
           <MegaItem label={t('expertise')}>
@@ -62,7 +79,8 @@ export function Header({ announcement, user, models, stockists }: { announcement
                   <li><Link href="/about" className="hover:text-brand">{th('ourStory')}</Link></li>
                 </ul>
               </div>
-              <MenuTile href="/expertise" src="/menu/expertise.webp" label={t('expertise')} />
+              <MenuTile href="/expertise#craft" src="/menu/expertise-craft.webp" label={t('craft')} />
+              <MenuTile href="/about" src="/menu/expertise-story.webp" label={th('ourStory')} />
             </div>
           </MegaItem>
           <Link href="/journal" className="hover:text-brand">
@@ -103,7 +121,11 @@ export function Header({ announcement, user, models, stockists }: { announcement
                     {tc('viewAll')}
                   </Link>
                 </div>
-                <MenuTile href="/stockists" src="/menu/stores.webp" label={ts('title')} />
+                {stockists[0] ? (
+                  <StoreTile heading={stockists[0].city} href="/stockists" src="/menu/store-city.webp" title={stockists[0].name} line={stockists[0].address} />
+                ) : null}
+                <StoreTile heading={ts('online')} href="/products" src="/menu/store-online.webp" title="maeyja.com" line={ts('worldwide')} />
+                <StoreTile heading={tf('contact')} href="/contact" src="/menu/store-contact.webp" title={contactEmail ?? tf('contact')} line={null} />
               </div>
             </MegaItem>
           </div>
@@ -125,6 +147,20 @@ function MenuTile({ href, src, label }: { href: string; src: string; label: stri
         <Image src={src} alt="" fill sizes="22vw" className="object-cover transition duration-700 group-hover:scale-[1.03]" />
       </span>
       <span className="label text-ink">{label}</span>
+    </Link>
+  );
+}
+
+/** A column of the Stores menu (Polène): the place in muted serif, a picture, then the name and one line under it. */
+function StoreTile({ heading, href, src, title, line }: { heading: string; href: string; src: string; title: string; line: string | null }) {
+  return (
+    <Link href={href} className="group flex flex-col gap-3">
+      <span className="font-serif text-xl font-light text-muted">{heading}</span>
+      <span className="relative block aspect-[4/5] overflow-hidden bg-stone">
+        <Image src={src} alt="" fill sizes="22vw" className="object-cover transition duration-700 group-hover:scale-[1.03]" />
+      </span>
+      <span className="label text-ink group-hover:text-brand">{title}</span>
+      {line ? <span className="-mt-1.5 text-xs text-muted">{line}</span> : null}
     </Link>
   );
 }
