@@ -113,6 +113,18 @@ async function main() {
     const updated = await prisma.page.updateMany({ where: { slug, body: { contains: 'metni buraya gelecek' } }, data: { body } });
     if (updated.count) console.log(`✓ sayfa metni eklendi: ${slug}`);
   }
+  // Care guide went out claiming "full-grain" leather; the products only say genuine leather. Fix the Turkish
+  // and drop the translated bodies so the translator redoes them from the corrected text.
+  const care = await prisma.page.findUnique({ where: { slug: 'care' } });
+  if (care?.body.includes('tam tahıllı, doğal dokusunu koruyan deriden')) {
+    const t = (care.translations ?? {}) as Translations;
+    const cleared = Object.fromEntries(Object.entries(t).map(([lang, fields]) => [lang, Object.fromEntries(Object.entries(fields ?? {}).filter(([k]) => k !== 'body'))]));
+    await prisma.page.update({
+      where: { id: care.id },
+      data: { body: care.body.replace('tam tahıllı, doğal dokusunu koruyan deriden', 'hakiki deriden'), translations: json(cleared) },
+    });
+    console.log('✓ bakım rehberi düzeltildi (deri ifadesi)');
+  }
   // About: replace the original placeholder only (text written in the admin stays).
   const about = await prisma.page.findUnique({ where: { slug: 'about' } });
   if (about && /metni buraya gelecek/.test(about.body)) {
