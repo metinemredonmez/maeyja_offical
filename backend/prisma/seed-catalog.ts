@@ -161,10 +161,17 @@ async function main() {
   if (heroNow && (isSeeded(heroNow.imageUrl, '_home/01-hero') || isSeeded(heroNow.imageUrl, '_home/10-campaign-rome'))) {
     const wide = await importImage('_home', '10-campaign-blacksand.webp', 'Origami');
     const tall = await importImage('_home', '11-campaign-blacksand-mobile.webp', 'Origami');
-    const film = await importVideo('_home', 'hero-blacksand.mp4', 'Origami');
+    const film = await importVideo('_home', 'hero-blacksand-v2.mp4', 'Origami');
     const seededFilm = !heroNow.videoUrl || heroNow.videoUrl.includes('/catalog/_home/hero-rome');
     await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(seededFilm ? { videoUrl: film } : {}) } });
     console.log('✓ hero: İzlanda siyah kum sahili' + (film ? ' + video' : ''));
+  }
+  // The first black-sand film was three still shots; v2 has the basalt shot in real motion.
+  const stillFilm = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { endsWith: '/catalog/_home/hero-blacksand.mp4' } } });
+  if (stillFilm) {
+    const film = await importVideo('_home', 'hero-blacksand-v2.mp4', 'Origami');
+    if (film) await prisma.homeSection.update({ where: { id: stillFilm.id }, data: { videoUrl: film } });
+    console.log('✓ hero: siyah kum filmi v2');
   }
   // The banner's earlier stand-ins (Drape table photo, then a Rome film whose bag wasn't true to the Drape) give way
   // to a close shot where the bag matches the product. Only seeded media is replaced.
