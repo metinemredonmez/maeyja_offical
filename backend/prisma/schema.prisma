@@ -751,6 +751,7 @@ model EmailCampaign {
   subject         String
   preheader       String? // preview line shown next to the subject in the inbox
   title           String? // heading inside the email
+  imageUrl        String? // full-width cover image under the logo
   body            String           @db.Text // sanitised HTML
   ctaLabel        String?
   ctaUrl          String?

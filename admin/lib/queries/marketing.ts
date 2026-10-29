@@ -60,6 +60,7 @@ export type CampaignInput = {
   subject: string;
   preheader: string | null;
   title: string | null;
+  imageUrl: string | null;
   body: string;
   ctaLabel: string | null;
   ctaUrl: string | null;

@@ -99,6 +99,8 @@ function CampaignReport({ c }: { c: EmailCampaignDetail }) {
       <Section title="İçerik">
         <div className="space-y-3">
           {c.preheader && <p className="text-xs text-muted-foreground">Önizleme: {c.preheader}</p>}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {c.imageUrl && <img src={c.imageUrl} alt="" className="w-full rounded-lg border" />}
           {c.title && <h2 className="text-lg font-medium">{c.title}</h2>}
           <div className="prose prose-sm prose-neutral max-w-none" dangerouslySetInnerHTML={{ __html: sanitize(c.body) }} />
           {c.ctaLabel && c.ctaUrl && (

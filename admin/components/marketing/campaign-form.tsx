@@ -6,6 +6,7 @@ import { AlertTriangleIcon, UsersIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
 import { Section } from '@/components/shared/primitives';
+import { ImageUrlField } from '@/components/shared/media-picker';
 import { RichText } from '@/components/shared/rich-text';
 import { LOCALE_LABELS, LOCALES } from '@/lib/i18n';
 import { CAMPAIGN_AUDIENCE } from '@/lib/labels';
@@ -46,6 +47,7 @@ export function CampaignForm({
       subject: campaign?.subject ?? '',
       preheader: campaign?.preheader ?? '',
       title: campaign?.title ?? '',
+      imageUrl: campaign?.imageUrl ?? '',
       body: campaign?.body ?? '',
       ctaLabel: campaign?.ctaLabel ?? '',
       ctaUrl: campaign?.ctaUrl ?? '',
@@ -64,6 +66,7 @@ export function CampaignForm({
       subject: v.subject,
       preheader: v.preheader ?? null,
       title: v.title ?? null,
+      imageUrl: v.imageUrl ?? null,
       body: v.body,
       ctaLabel: v.ctaLabel ?? null,
       ctaUrl: v.ctaUrl ?? null,
@@ -83,6 +86,9 @@ export function CampaignForm({
             </Field>
             <Field label="Önizleme satırı" error={errors.preheader} htmlFor="preheader" hint="Gelen kutusunda konunun yanında görünen kısa metin">
               <Input id="preheader" maxLength={200} {...form.register('preheader')} />
+            </Field>
+            <Field label="Kapak görseli" error={errors.imageUrl} hint="Logonun altında tam genişlikte görünür (opsiyonel, en az 1200 px genişlik önerilir)">
+              <Controller control={form.control} name="imageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
             </Field>
             <Field label="Başlık" error={errors.title} htmlFor="title" hint="E-postanın içindeki büyük başlık (opsiyonel)">
               <Input id="title" maxLength={160} {...form.register('title')} />
