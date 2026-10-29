@@ -69,3 +69,16 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 ## Senden gerekenler
 - Anthropic API anahtarı + Google AI (Gemini) ve/veya fal.ai anahtarı (Faz 3 için).
 - Fotoğraflar: stüdyo (aynı açık bej fon) + kampanya (manken, İstanbul mimarisi); 5–10 sn sessiz döngü videolar (opsiyonel, Mlouye tarzı). Gelene kadar mevcut en iyi kareler ve vitrin görseli kullanılır.
+
+## Ek istekler (29 Ekim, canlıya bakarken)
+- **Ürün sayfası (Polène):** solda büyük fotoğraflar alt alta; sağda ortalı ince serif ad, renk adı, fiyat, büyük dekupe
+  çanta, renk seçimi çantanın küçük görselleriyle, tam genişlik siyah "Sepete ekle" + favori, yatay sekmeler
+  (Tanım · Detaylar · Malzemeler · Teslimat ve iade), açıklama serif. ← sıradaki iş
+- **Açılır menüler (Polène):** Çantalar (modele göre N°01…N°08 listesi + görsel kutular), Uzmanlık (Tasarım · Malzemeler ·
+  Dikiş · Zanaatkârlar sayfaları), Mağazalar (mağaza havasında görseller). Görseller "çantalarımız mağazaya yerleşmiş gibi"
+  natürmortlar — gerçek bir mağazanın fotoğrafı gibi etiketlenmez.
+- **Görseller (fal.ai kredisi gerekiyor):** yan yana fotoğraflara gerçekçi İtalya doğa/detay sahneleri (Polène'in yayla,
+  kar, kumaş üstünde yakın çekim havası); Drape'in video bandı çantaya daha sadık yeniden; menüler için natürmortlar.
+  İstanbul sahnesi yok (Roma/İtalya/doğa).
+- **Otomatik çeviri + sohbet asistanı:** Claude API anahtarı gelince (Faz 3).
+- **Sipariş bildirimi telefona:** e-posta zaten gidiyor; Telegram ya da SMS (sağlayıcı hesabı) seçilecek.
