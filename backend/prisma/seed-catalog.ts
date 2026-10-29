@@ -157,12 +157,14 @@ async function main() {
 
   // Campaign photos/films (model shots): replace the seeded stand-ins only — anything picked in the admin stays.
   const heroNow = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO }, orderBy: { sortOrder: 'asc' } });
-  if (heroNow && isSeeded(heroNow.imageUrl, '_home/01-hero')) {
-    const wide = await importImage('_home', '10-campaign-rome.webp', 'Origami');
-    const tall = await importImage('_home', '11-campaign-rome-mobile.webp', 'Origami');
-    const film = await importVideo('_home', 'hero-rome-v2.mp4', 'Origami');
-    await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(film && !heroNow.videoUrl ? { videoUrl: film } : {}) } });
-    console.log('✓ hero: mankenli kampanya görseli' + (film ? ' + video' : ''));
+  // The hero went table photo → Rome (film) → Iceland's black-sand coast (film); each step only replaces what the seed itself put there.
+  if (heroNow && (isSeeded(heroNow.imageUrl, '_home/01-hero') || isSeeded(heroNow.imageUrl, '_home/10-campaign-rome'))) {
+    const wide = await importImage('_home', '10-campaign-blacksand.webp', 'Origami');
+    const tall = await importImage('_home', '11-campaign-blacksand-mobile.webp', 'Origami');
+    const film = await importVideo('_home', 'hero-blacksand.mp4', 'Origami');
+    const seededFilm = !heroNow.videoUrl || heroNow.videoUrl.includes('/catalog/_home/hero-rome');
+    await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(seededFilm ? { videoUrl: film } : {}) } });
+    console.log('✓ hero: İzlanda siyah kum sahili' + (film ? ' + video' : ''));
   }
   // The banner's earlier stand-ins (Drape table photo, then a Rome film whose bag wasn't true to the Drape) give way
   // to a close shot where the bag matches the product. Only seeded media is replaced.
@@ -174,12 +176,6 @@ async function main() {
     const seededFilm = !oldBanner.videoUrl || oldBanner.videoUrl.includes('/catalog/_home/band-rome-steps');
     await prisma.homeSection.update({ where: { id: oldBanner.id }, data: { imageUrl: banner.url, ...(seededFilm ? { videoUrl: null } : {}) } });
     console.log('✓ banner: Drape yakın çekim');
-  }
-  // First hero film showed the bag's back (invented by the AI) when she turned away; v2 never turns.
-  const oldFilm = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { endsWith: '/catalog/_home/hero-rome.mp4' } } });
-  if (oldFilm) {
-    const film = await importVideo('_home', 'hero-rome-v2.mp4', 'Origami');
-    if (film) await prisma.homeSection.update({ where: { id: oldFilm.id }, data: { videoUrl: film } });
   }
   // Copy over the sideways model (only while it has none).
   const sidewaysCopy = split(HOME_V2.SIDEWAYS);
