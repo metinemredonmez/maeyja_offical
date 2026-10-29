@@ -37,6 +37,8 @@ export const envSchema = Joi.object({
   SMTP_USER: Joi.string().allow('').default(''),
   SMTP_PASS: Joi.string().allow('').default(''),
   MAIL_FROM: Joi.string().default('MAEYJA <hello@maeyja.com>'),
+  // Where customer replies to automatic emails go (e.g. support@); empty → back to MAIL_FROM
+  MAIL_REPLY_TO: Joi.string().email().allow('').default(''),
   ADMIN_NOTIFY_EMAIL: Joi.string().allow('').default(''),
 
   IYZICO_API_KEY: Joi.string().allow('').default(''),
@@ -96,6 +98,7 @@ export interface Env {
   SMTP_USER: string;
   SMTP_PASS: string;
   MAIL_FROM: string;
+  MAIL_REPLY_TO: string;
   ADMIN_NOTIFY_EMAIL: string;
   IYZICO_API_KEY: string;
   IYZICO_SECRET_KEY: string;

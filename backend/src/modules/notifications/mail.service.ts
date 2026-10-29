@@ -32,6 +32,7 @@ export class MailService {
     if (!this.transporter) throw new Error('SMTP ayarlı değil');
     await this.transporter.sendMail({
       from: this.config.get('MAIL_FROM', { infer: true }),
+      replyTo: this.config.get('MAIL_REPLY_TO', { infer: true }) || undefined,
       to,
       subject: content.subject,
       html: content.html,
@@ -50,6 +51,7 @@ export class MailService {
     try {
       await this.transporter.sendMail({
         from: this.config.get('MAIL_FROM', { infer: true }),
+      replyTo: this.config.get('MAIL_REPLY_TO', { infer: true }) || undefined,
         to,
         subject: content.subject,
         html: content.html,
