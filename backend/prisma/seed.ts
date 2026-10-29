@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
+import { ABOUT_BODY, CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
 
 const prisma = new PrismaClient();
 
@@ -106,6 +106,13 @@ async function main() {
     });
     const merged = fillTranslations(row.translations, translations);
     if (merged) await prisma.page.update({ where: { id: row.id }, data: { translations: json(merged) } });
+  }
+  // About: replace the original placeholder only (text written in the admin stays).
+  const about = await prisma.page.findUnique({ where: { slug: 'about' } });
+  if (about && /metni buraya gelecek/.test(about.body)) {
+    const t = (about.translations ?? {}) as Translations;
+    await prisma.page.update({ where: { id: about.id }, data: { body: ABOUT_BODY.tr, translations: json({ ...t, en: { ...t.en, body: ABOUT_BODY.en } }) } });
+    console.log('✓ hakkımızda metni eklendi');
   }
 
   // ── Press & stockists

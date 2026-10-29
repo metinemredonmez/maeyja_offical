@@ -103,6 +103,28 @@ export const PAGES: { slug: string; title: L }[] = [
   { slug: 'care', title: { tr: 'Deri Bakım Rehberi', en: 'Leather Care Guide', ru: 'Уход за кожей', nl: 'Leerverzorging', de: 'Lederpflege', fr: 'Guide d’entretien du cuir', it: 'Guida alla cura della pelle', es: 'Guía de cuidado del cuero', ko: '가죽 관리 가이드', ja: 'レザーケアガイド', zh: '皮革护理指南' } },
 ];
 
+/**
+ * About page body (TR + EN; other languages fall back to English until they are translated in the admin).
+ * Sources: ELLE Türkiye, 30.10.2019 ("MAEYJA çantaları estetik ve fonksiyonelliği buluşturuyor") and the
+ * designer's public profile. Edit freely in the admin — the seed only replaces the original placeholder.
+ */
+export const ABOUT_BODY: Partial<L> & { tr: string; en: string } = {
+  tr: `<h2>Canan Delettre</h2>
+<p>MAEYJA, tasarımcı Canan Delettre’nin markası. Paris’teki Créapole tasarım okulunda yetişen Delettre, çantalarını Fransa’da tasarlıyor; her parça İstanbul’daki usta deri zanaatkârlarının elinde hayat buluyor.</p>
+<p>Mimari, tasarım, sanat ve müzikten beslenen MAEYJA çantaları ilk bakışta yalın görünür; asıl hikâye detaylarda saklıdır. Delettre’nin aradığı şey; işlevsel, pratik, duygusal, estetik ve şehirli olan arasındaki doğru dengedir: kusursuz ve zarif, ama resmiyetten uzak.</p>
+<h2>Atölye</h2>
+<p>Her model tek parça deriden katlanarak biçimlenir. Kesim, dikiş ve son dokunuşlar İstanbul’daki atölyede elde yapılır; üretim sayılıdır.</p>
+<h2>Basında ve mağazalarda</h2>
+<p>MAEYJA, ELLE Türkiye ve Vogue Türkiye’de yer aldı; Beymen İstinye’de ve maeyja.com’da satılıyor.</p>`,
+  en: `<h2>Canan Delettre</h2>
+<p>MAEYJA is the label of designer Canan Delettre. Trained at Créapole design school in Paris, she designs her bags in France, and every piece is brought to life by master leather artisans in Istanbul.</p>
+<p>Drawing on architecture, design, art and music, a MAEYJA bag looks simple at first glance — the story is in the details. What Delettre looks for is the right balance between the functional, the practical, the emotional, the aesthetic and the urban: precise and elegant, but never formal.</p>
+<h2>The atelier</h2>
+<p>Each model is folded into shape from a single piece of leather. Cutting, stitching and finishing are done by hand in the Istanbul atelier, in limited numbers.</p>
+<h2>Press &amp; stockists</h2>
+<p>MAEYJA has been featured in ELLE Türkiye and Vogue Türkiye, and is available at Beymen İstinye and on maeyja.com.</p>`,
+};
+
 // ───────── FAQ (matched by the Turkish question) ─────────
 export const FAQS: { sortOrder: number; group: L; question: L; answer: L }[] = [
   {
