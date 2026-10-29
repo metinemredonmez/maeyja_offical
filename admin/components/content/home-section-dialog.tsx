@@ -23,7 +23,8 @@ const LAYOUTS: Partial<Record<HomeSectionType, { value: string; label: string }[
   EDITORIAL: [
     { value: 'split', label: 'Görsel + metin' },
     { value: 'diptych', label: 'Yan yana iki fotoğraf' },
-    { value: 'full', label: 'Tam genişlik banner' },
+    { value: 'full', label: 'Tam genişlik banner / video' },
+    { value: 'sideways', label: 'Yan yatık manken (tam genişlik)' },
   ],
   CRAFT_STORY: [
     { value: 'full', label: 'Tam genişlik görsel' },
@@ -70,7 +71,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
     const v = homeSectionSchema.parse(raw);
     const nul = <T,>(x: T | undefined) => x ?? (section ? null : undefined);
     const payload: Record<string, unknown> = {};
-    if (type === 'HERO' && v.productIds.length) payload.productIds = v.productIds.slice(0, 1);
+    if ((type === 'HERO' || type === 'EDITORIAL') && v.productIds.length) payload.productIds = v.productIds.slice(0, 1);
     if (type === 'FEATURED_PRODUCTS') {
       if (v.productIds.length) payload.productIds = v.productIds;
       if (v.limit) payload.limit = v.limit;
@@ -148,8 +149,8 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                     )}
                   </>
                 )}
-                {type === 'HERO' && (
-                  <Field label="Yüzen ürün kartı (opsiyonel)" hint="Görselin köşesinde küçük ürün kartı olarak görünür">
+                {(type === 'HERO' || type === 'EDITORIAL') && (
+                  <Field label="Ürün kartı (opsiyonel)" hint={type === 'HERO' ? 'Görselin köşesinde küçük ürün kartı' : 'Tam genişlik düzende solda uzun ürün kartı (Polène)'}>
                     <Controller control={form.control} name="productIds" render={({ field }) => <ProductPicker value={field.value} onChange={field.onChange} max={1} />} />
                   </Field>
                 )}

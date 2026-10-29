@@ -18,6 +18,7 @@ function csp(nonce: string) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ''}`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: blob: https:`,
+    `media-src 'self' blob: https:${dev ? ' http:' : ''}`,
     `font-src 'self' data:`,
     `connect-src 'self'${dev ? ' ws:' : ''}`,
     `frame-src https://*.iyzipay.com https://www.iyzico.com`,

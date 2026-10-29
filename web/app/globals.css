@@ -191,6 +191,11 @@
       animation-timeline: scroll(root);
       animation-range: 0 100vh;
     }
+    .hero-fade {
+      animation: mj-fade linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 70vh;
+    }
     @media (min-width: 768px) {
       .parallax {
         animation: mj-parallax linear both;
@@ -210,9 +215,48 @@
     transform: none;
   }
 }
+/* The hero lags far behind the page, so the next sections slide over it like a curtain (Wandler). */
 @keyframes mj-drift {
   to {
-    transform: translateY(28%);
+    transform: translateY(42%);
+  }
+}
+@keyframes mj-fade {
+  to {
+    opacity: 0;
+    transform: translateY(-48px);
+  }
+}
+/* First paint: the hero settles from a slight zoom, then the headline rises. */
+@media (prefers-reduced-motion: no-preference) {
+  .intro-zoom {
+    animation: mj-intro-zoom 2.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .intro-rise {
+    animation: mj-reveal 1.3s cubic-bezier(0.2, 0.7, 0.2, 1) 0.6s both;
+  }
+}
+@keyframes mj-intro-zoom {
+  from {
+    transform: scale(1.14);
+  }
+  to {
+    transform: none;
+  }
+}
+/* Sideways band: on wider screens the portrait frame is swapped to the band's height × width and turned. */
+.sideways-frame {
+  position: absolute;
+  inset: 0;
+}
+@media (min-width: 768px) {
+  .sideways-frame {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: 100cqh;
+    height: 100cqw;
+    transform: translate(-50%, -50%) rotate(-90deg);
   }
 }
 /* --drift sets the speed: diptych photos use different values so they move apart. */

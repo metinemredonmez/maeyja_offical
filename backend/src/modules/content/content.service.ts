@@ -27,8 +27,9 @@ export class ContentService {
         const base = localize(s, lang);
         const payload = (s.payload ?? {}) as { productIds?: string[]; collectionSlug?: string; limit?: number };
         switch (s.type) {
-          case 'HERO': {
-            // Optional floating product card on the hero (Polène-style).
+          case 'HERO':
+          case 'EDITORIAL': {
+            // Optional floating product card on the hero or a full-width band (Polène-style).
             if (!payload.productIds?.length) return base;
             const all = await this.catalog.products({ page: 1, limit: 100 } as ProductQueryDto, lang);
             const card = all.items.find((p) => p.id === payload.productIds![0]);

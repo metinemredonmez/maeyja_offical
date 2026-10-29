@@ -7,6 +7,7 @@ import { modelNo, money } from '@/lib/format';
 import type { HomeSection, ProductCard } from '@/lib/types';
 import { NewsletterForm } from '@/components/newsletter-form';
 import { Swatch } from '@/components/product/swatch';
+import { AutoVideo } from './auto-video';
 
 /** Renders the admin-managed homepage sections in order. Unknown types are skipped. */
 export function HomeSections({ sections }: { sections: HomeSection[] }) {
@@ -24,7 +25,9 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
           case 'CRAFT_STORY':
             return s.layout === 'split' ? <Split key={s.id} s={s} tinted /> : <FullBleed key={s.id} s={s} />;
           case 'EDITORIAL':
-            return s.layout === 'diptych' ? <Diptych key={s.id} s={s} /> : s.layout === 'full' ? <FullBleed key={s.id} s={s} /> : <Split key={s.id} s={s} />;
+            if (s.layout === 'diptych') return <Diptych key={s.id} s={s} />;
+            if (s.layout === 'sideways') return <Sideways key={s.id} s={s} />;
+            return s.layout === 'full' ? <FullBleed key={s.id} s={s} /> : <Split key={s.id} s={s} />;
           case 'PRESS':
             return <Press key={s.id} s={s} />;
           case 'STOCKISTS':
@@ -56,12 +59,7 @@ function Body({ html, className }: { html: string | null; className?: string }) 
 
 /** Photo or silent looping video filling its (relative) parent. */
 function Media({ s, sizes, priority = false, mobile = true }: { s: HomeSection; sizes: string; priority?: boolean; mobile?: boolean }) {
-  if (s.videoUrl)
-    return (
-      <video className="absolute inset-0 h-full w-full object-cover" autoPlay muted loop playsInline poster={s.imageUrl ?? undefined} aria-hidden="true">
-        <source src={s.videoUrl} />
-      </video>
-    );
+  if (s.videoUrl) return <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 h-full w-full object-cover" />;
   if (!s.imageUrl) return null;
   if (!mobile || !s.mobileImageUrl) return <Image src={s.imageUrl} alt="" fill priority={priority} sizes={sizes} className="object-cover" />;
   return (
@@ -81,12 +79,14 @@ function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?:
   return (
     <section className={`relative flex h-[100svh] min-h-[560px] items-end overflow-hidden bg-stone ${media ? 'text-white' : ''}`}>
       <div className="hero-drift absolute inset-0">
-        <Media s={s} sizes="100vw" priority={first} />
+        <div className="intro-zoom absolute inset-0">
+          <Media s={s} sizes="100vw" priority={first} />
+        </div>
       </div>
       {/* Top shade keeps the white menu legible; bottom shade carries the headline. */}
       {media ? <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent via-35% to-black/55" aria-hidden="true" /> : null}
-      <div className="relative flex w-full flex-col gap-8 px-5 pb-10 md:flex-row md:items-end md:justify-between md:px-12 md:pb-14">
-        <div className="flex max-w-3xl flex-col gap-5">
+      <div className="hero-fade relative flex w-full flex-col gap-8 px-5 pb-10 md:flex-row md:items-end md:justify-between md:px-12 md:pb-14">
+        <div className="intro-rise flex max-w-3xl flex-col gap-5">
           {s.title ? <h1 className="display text-[44px] md:text-[84px]">{s.title}</h1> : null}
           {s.subtitle ? <p className={`label ${media ? 'text-white/85' : 'text-ink-soft'}`}>{s.subtitle}</p> : null}
           <Cta s={s} className="link-underline mt-2 self-start" />
@@ -124,8 +124,8 @@ function ProductTile({ p, priority = false }: { p: ProductCard; priority?: boole
   return (
     <Link href={`/products/${p.slug}`} className="group flex flex-col items-center gap-4 text-center">
       <span className="relative block aspect-[4/5] w-full overflow-hidden bg-stone">
-        {a ? <Image src={a.url} alt={a.alt ?? p.name} fill priority={priority} sizes="(min-width: 768px) 25vw, 50vw" className={`object-cover transition duration-700 group-hover:scale-[1.03] ${b ? 'group-hover:opacity-0' : ''}`} /> : null}
-        {b ? <Image src={b.url} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="object-cover opacity-0 transition duration-700 group-hover:scale-[1.03] group-hover:opacity-100" /> : null}
+        {a ? <Image src={a.url} alt={a.alt ?? p.name} fill priority={priority} sizes="(min-width: 768px) 25vw, 50vw" className={`object-cover transition duration-[900ms] ease-out group-hover:scale-[1.04] ${b ? 'group-hover:opacity-0' : ''}`} /> : null}
+        {b ? <Image src={b.url} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="scale-[1.08] object-cover opacity-0 transition duration-[900ms] ease-out group-hover:scale-100 group-hover:opacity-100" /> : null}
         {!p.inStock ? <span className="label absolute bottom-3 left-3 bg-ground px-2 py-1">{t('soldOut')}</span> : null}
       </span>
       <span className="flex flex-col items-center gap-1.5">
@@ -235,21 +235,70 @@ function Diptych({ s }: { s: HomeSection }) {
   );
 }
 
-/** Edge-to-edge photo or video with the title in the lower left (Polène's boutique image, Mlouye's banners). */
+/**
+ * Edge-to-edge photo or video (Polène's film, Mlouye's banners). With a product picked in the admin a tall
+ * product card floats on the left (Polène) and the title moves to the right.
+ */
 function FullBleed({ s }: { s: HomeSection }) {
   const media = Boolean(s.videoUrl || s.imageUrl);
+  const product = s.products?.[0];
   return (
     <section className={`relative mt-24 flex min-h-[85svh] items-end overflow-hidden bg-stone md:mt-36 ${media ? 'text-white' : ''}`}>
       <div className="parallax absolute inset-0" style={drift('9%')}>
         <Media s={s} sizes="100vw" />
       </div>
       {media ? <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 via-45% to-transparent" aria-hidden="true" /> : null}
-      <div className="reveal relative flex max-w-2xl flex-col gap-5 px-5 pb-10 md:px-12 md:pb-14">
+      {product ? <ProductPanel p={product} /> : null}
+      <div className={`reveal relative flex max-w-2xl flex-col gap-5 px-5 pb-10 md:px-12 md:pb-14 ${product ? 'md:ml-auto md:items-end md:text-right' : ''}`}>
         {s.subtitle ? <p className="label opacity-85">{s.subtitle}</p> : null}
         {s.title ? <h2 className="display text-[40px] md:text-[72px]">{s.title}</h2> : null}
         <Body html={s.body} className="max-w-md text-[15px] leading-relaxed opacity-90" />
-        <Cta s={s} />
+        <Cta s={s} className={`link-underline ${product ? 'md:self-end' : 'self-start'}`} />
       </div>
+    </section>
+  );
+}
+
+/** Polène's tall product card over a film: name and price on top, the bag below on the cream ground. */
+function ProductPanel({ p }: { p: ProductCard }) {
+  const locale = useLocale();
+  const img = p.images[0];
+  return (
+    <Link href={`/products/${p.slug}`} className="group absolute bottom-10 left-12 z-10 hidden w-[300px] flex-col bg-ground text-ink md:flex">
+      <span className="flex flex-col gap-1.5 px-5 pt-5">
+        <span className="font-serif text-[26px] font-light leading-none group-hover:text-brand">{p.name}</span>
+        <span className="label text-muted">
+          {modelNo(p.number) ? `${modelNo(p.number)} · ` : ''}
+          {money(p.price, locale)}
+        </span>
+      </span>
+      <span className="relative block aspect-square w-full">
+        {img ? <Image src={img.url} alt={img.alt ?? p.name} fill sizes="300px" className="object-contain p-6 mix-blend-multiply transition duration-700 group-hover:scale-[1.04]" /> : null}
+      </span>
+    </Link>
+  );
+}
+
+/**
+ * Manu Atelier's sideways portrait: a model photo turned on its side across the full width, drifting with
+ * the scroll. Phones show it upright. Copy (optional) sits centred underneath.
+ */
+function Sideways({ s }: { s: HomeSection }) {
+  return (
+    <section className="pt-24 md:pt-36">
+      <div className="reveal relative h-[78svh] overflow-hidden bg-stone md:h-[92svh]" style={{ containerType: 'size' }}>
+        <div className="parallax absolute inset-0" style={drift('8%')}>
+          <div className="sideways-frame">{s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="100vw" className="object-cover" /> : null}</div>
+        </div>
+      </div>
+      {s.title || s.body || s.ctaLabel ? (
+        <div className="reveal mx-auto mt-12 flex max-w-xl flex-col items-center gap-5 px-4 text-center">
+          {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
+          {s.title ? <h2 className="display text-[36px] md:text-[56px]">{s.title}</h2> : null}
+          <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
+          <Cta s={s} className="link-underline" />
+        </div>
+      ) : null}
     </section>
   );
 }

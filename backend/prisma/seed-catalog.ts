@@ -129,11 +129,12 @@ async function main() {
     const diptych = split(HOME_V2.DIPTYCH);
     const strip = split(HOME_V2.STRIP);
     const bannerCopy = split(HOME_V2.BANNER);
+    const drape = await prisma.product.findUnique({ where: { slug: 'drape' } });
     await prisma.homeSection.createMany({
       data: [
         { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', ...diptych.base, translations: diptych.translations },
         { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'strip', sortOrder: 3, payload: {}, ...strip.base, translations: strip.translations },
-        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', ...bannerCopy.base, translations: bannerCopy.translations },
+        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
       ],
     });
     console.log('✓ ana sayfa: yan yana fotoğraflar, model şeridi ve banner eklendi');

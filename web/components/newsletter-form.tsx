@@ -8,10 +8,12 @@ export function NewsletterForm({
   compact = false,
   source = "footer",
   buttonLabel,
+  onDone,
 }: {
   compact?: boolean;
   source?: string;
   buttonLabel?: string;
+  onDone?: () => void;
 }) {
   const t = useTranslations("newsletter");
   const locale = useLocale();
@@ -26,6 +28,7 @@ export function NewsletterForm({
     try {
       await api.post("/newsletter/subscribe", { email, locale, source });
       setState("done");
+      onDone?.();
     } catch {
       // API messages are Turkish; show the visitor's own language instead.
       setState("error");

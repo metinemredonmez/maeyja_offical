@@ -14,9 +14,9 @@ export function ProductCard({ product, priority = false }: { product: Card; prio
     <Link href={`/products/${product.slug}`} className="group flex flex-col gap-3">
       <div className="ph relative aspect-[4/5] overflow-hidden">
         {first ? (
-          <Image src={first.url} alt={first.alt ?? product.name} fill priority={priority} sizes="(min-width: 1024px) 33vw, 50vw" className={`object-cover transition-opacity duration-500 ${second ? 'group-hover:opacity-0' : ''}`} />
+          <Image src={first.url} alt={first.alt ?? product.name} fill priority={priority} sizes="(min-width: 1024px) 33vw, 50vw" className={`object-cover transition duration-[900ms] ease-out group-hover:scale-[1.04] ${second ? 'group-hover:opacity-0' : ''}`} />
         ) : null}
-        {second ? <Image src={second.url} alt="" fill sizes="(min-width: 1024px) 33vw, 50vw" className="object-cover opacity-0 transition-opacity duration-500 group-hover:opacity-100" /> : null}
+        {second ? <Image src={second.url} alt="" fill sizes="(min-width: 1024px) 33vw, 50vw" className="scale-[1.08] object-cover opacity-0 transition duration-[900ms] ease-out group-hover:scale-100 group-hover:opacity-100" /> : null}
         {!product.inStock ? <span className="label absolute bottom-4 left-4 bg-ground px-2.5 py-1.5">{t('soldOut')}</span> : null}
       </div>
       <div className="flex items-start justify-between gap-3 text-sm">
