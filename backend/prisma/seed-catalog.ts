@@ -160,7 +160,7 @@ async function main() {
   if (heroNow && isSeeded(heroNow.imageUrl, '_home/01-hero')) {
     const wide = await importImage('_home', '10-campaign-rome.webp', 'Origami');
     const tall = await importImage('_home', '11-campaign-rome-mobile.webp', 'Origami');
-    const film = await importVideo('_home', 'hero-rome.mp4', 'Origami');
+    const film = await importVideo('_home', 'hero-rome-v2.mp4', 'Origami');
     await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(film && !heroNow.videoUrl ? { videoUrl: film } : {}) } });
     console.log('✓ hero: mankenli kampanya görseli' + (film ? ' + video' : ''));
   }
@@ -171,13 +171,22 @@ async function main() {
     const film = await importVideo('_home', 'band-rome-steps.mp4', 'Drape');
     await prisma.homeSection.update({ where: { id: oldBanner.id }, data: { imageUrl: banner.url, ...(film && !oldBanner.videoUrl ? { videoUrl: film } : {}) } });
   }
+  // First hero film showed the bag's back (invented by the AI) when she turned away; v2 never turns.
+  const oldFilm = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { endsWith: '/catalog/_home/hero-rome.mp4' } } });
+  if (oldFilm) {
+    const film = await importVideo('_home', 'hero-rome-v2.mp4', 'Origami');
+    if (film) await prisma.homeSection.update({ where: { id: oldFilm.id }, data: { videoUrl: film } });
+  }
+  // Copy over the sideways model (only while it has none).
+  const sidewaysCopy = split(HOME_V2.SIDEWAYS);
+  await prisma.homeSection.updateMany({ where: { layout: 'sideways', title: null }, data: { ...sidewaysCopy.base, ctaUrl: '/products', translations: sidewaysCopy.translations } });
   // Manu-style sideways model band, right after the model strip (once).
   if (!(await prisma.homeSection.count({ where: { layout: 'sideways' } }))) {
     const strip = await prisma.homeSection.findFirst({ where: { layout: 'strip' } });
     const at = (strip?.sortOrder ?? 3) + 1;
     await prisma.homeSection.updateMany({ where: { sortOrder: { gte: at } }, data: { sortOrder: { increment: 1 } } });
     const studio = await importImage('_home', '13-campaign-studio.webp', 'Origami — stüdyo');
-    await prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'sideways', sortOrder: at, imageUrl: studio.url } });
+    await prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'sideways', sortOrder: at, imageUrl: studio.url, ctaUrl: '/products', ...sidewaysCopy.base, translations: sidewaysCopy.translations } });
     console.log('✓ ana sayfa: yan yatık manken bandı');
   }
 

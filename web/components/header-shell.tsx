@@ -22,8 +22,8 @@ export function HeaderShell({ children }: { children: ReactNode }) {
 
     const measure = () => {
       if (!logo || reduce) return;
-      // About 60% of the width on desktop, a little more on phones.
-      const share = innerWidth < 768 ? 0.78 : 0.58;
+      // A masthead, not a wall: about 40% of the width on desktop, more on phones.
+      const share = innerWidth < 768 ? 0.7 : 0.42;
       el.style.setProperty('--s', String(Math.max(1, (innerWidth * share) / logo.offsetWidth)));
       // Giant wordmark sits just under the menu row.
       el.style.setProperty('--y0', `${el.offsetHeight - logo.offsetTop + 8}px`);

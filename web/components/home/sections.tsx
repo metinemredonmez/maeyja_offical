@@ -305,11 +305,19 @@ function Sideways({ s }: { s: HomeSection }) {
         <div className="parallax absolute inset-0" style={drift('8%')}>
           <div className="sideways-frame">{s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="100vw" className="object-cover" /> : null}</div>
         </div>
+        {/* Wide screens: the copy sits on the calm wall in the lower left of the turned photo. */}
+        {s.title || s.subtitle ? (
+          <div className="relative hidden h-full flex-col justify-end gap-5 p-12 pb-14 md:flex">
+            {s.subtitle ? <p className="label text-ink-soft">{s.subtitle}</p> : null}
+            {s.title ? <h2 className="display max-w-xl text-[64px]">{s.title}</h2> : null}
+            <Cta s={s} />
+          </div>
+        ) : null}
       </div>
       {s.title || s.body || s.ctaLabel ? (
-        <div className="reveal mx-auto mt-12 flex max-w-xl flex-col items-center gap-5 px-4 text-center">
+        <div className="reveal mx-auto mt-12 flex max-w-xl flex-col items-center gap-5 px-4 text-center md:hidden">
           {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
-          {s.title ? <h2 className="display text-[36px] md:text-[56px]">{s.title}</h2> : null}
+          {s.title ? <h2 className="display text-[36px]">{s.title}</h2> : null}
           <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
           <Cta s={s} className="link-underline" />
         </div>
