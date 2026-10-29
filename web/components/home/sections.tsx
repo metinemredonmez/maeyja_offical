@@ -4,7 +4,8 @@ import type { CSSProperties } from 'react';
 import { Link } from '@/i18n/navigation';
 import { cleanHtml } from '@/lib/sanitize';
 import { modelNo, money } from '@/lib/format';
-import type { HomeSection, ProductCard } from '@/lib/types';
+import type { HomeSection, ProductCard as Card } from '@/lib/types';
+import { ProductCard } from '@/components/product/product-card';
 import { NewsletterForm } from '@/components/newsletter-form';
 import { Swatch } from '@/components/product/swatch';
 import { AutoVideo } from './auto-video';
@@ -83,7 +84,7 @@ function Media({ s, sizes, priority = false, mobile = true }: { s: HomeSection; 
  * Full-screen hero under the transparent header (Polène + Wandler): the photo drifts slower than
  * the page, the giant wordmark (in the header) shrinks over it, a small product card floats in the corner.
  */
-function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?: ProductCard }) {
+function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?: Card }) {
   const media = Boolean(s.videoUrl || s.imageUrl);
   return (
     <section className={`relative flex h-[100svh] min-h-[560px] items-end overflow-hidden bg-stone ${media ? 'text-white' : ''}`}>
@@ -106,7 +107,7 @@ function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?:
   );
 }
 
-function FloatingCard({ p }: { p: ProductCard }) {
+function FloatingCard({ p }: { p: Card }) {
   const locale = useLocale();
   const img = p.images[0];
   return (
@@ -120,36 +121,6 @@ function FloatingCard({ p }: { p: ProductCard }) {
           {p.name}
         </span>
         <span className="text-sm text-ink-soft">{money(p.price, locale)}</span>
-      </span>
-    </Link>
-  );
-}
-
-/** Centred small-caps name + price + colour dots under a stone tile (Aesther Ekme / Manu). */
-function ProductTile({ p, priority = false }: { p: ProductCard; priority?: boolean }) {
-  const locale = useLocale();
-  const t = useTranslations('common');
-  const [a, b] = p.images;
-  return (
-    <Link href={`/products/${p.slug}`} className="group flex flex-col items-center gap-4 text-center">
-      <span className="relative block aspect-[4/5] w-full overflow-hidden bg-stone">
-        {a ? <Image src={a.url} alt={a.alt ?? p.name} fill priority={priority} sizes="(min-width: 768px) 25vw, 50vw" className={`object-cover transition duration-[900ms] ease-out group-hover:scale-[1.04] ${b ? 'group-hover:opacity-0' : ''}`} /> : null}
-        {b ? <Image src={b.url} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" className="scale-[1.08] object-cover opacity-0 transition duration-[900ms] ease-out group-hover:scale-100 group-hover:opacity-100" /> : null}
-        {!p.inStock ? <span className="label absolute bottom-3 left-3 bg-ground px-2 py-1">{t('soldOut')}</span> : null}
-      </span>
-      <span className="flex flex-col items-center gap-1.5">
-        <span className="label group-hover:text-brand">
-          {modelNo(p.number) ? <span className="text-muted">{modelNo(p.number)}&nbsp;</span> : null}
-          {p.name}
-        </span>
-        <span className="text-[13px] text-ink-soft">{p.hasPriceRange ? `${money(p.price, locale)}+` : money(p.price, locale)}</span>
-        {p.colors.length > 1 ? (
-          <span className="mt-1 flex gap-1.5">
-            {p.colors.slice(0, 6).map((c) => (
-              <Swatch key={c.slug} hex={c.hex} hex2={c.hex2} size={9} title={c.name} />
-            ))}
-          </span>
-        ) : null}
       </span>
     </Link>
   );
@@ -173,7 +144,7 @@ function Featured({ s }: { s: HomeSection }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-6">
         {s.products.slice(0, 8).map((p, i) => (
           <div key={p.id} className="reveal">
-            <ProductTile p={p} priority={i < 2} />
+            <ProductCard product={p} priority={i < 2} />
           </div>
         ))}
       </div>
@@ -275,7 +246,7 @@ function FullBleed({ s }: { s: HomeSection }) {
 }
 
 /** Polène's tall product card over a film: name and price on top, the bag below on the cream ground. */
-function ProductPanel({ p }: { p: ProductCard }) {
+function ProductPanel({ p }: { p: Card }) {
   const locale = useLocale();
   const img = p.images[0];
   return (

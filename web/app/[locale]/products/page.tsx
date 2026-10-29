@@ -36,12 +36,10 @@ export default async function ProductsPage({ params, searchParams }: { params: P
 
   return (
     <div className="px-4 pt-12 md:px-12 md:pt-20">
-      <div className="grid items-end gap-6 md:grid-cols-12">
-        <div className="flex flex-col gap-4 md:col-span-6">
-          <h1 className="font-serif text-5xl font-light leading-none md:text-[56px]">{t('title')}</h1>
-          <p className="max-w-lg text-[15px] leading-relaxed text-ink-soft">{t('intro')}</p>
-        </div>
-        <p className="text-xs text-muted md:col-span-3 md:col-start-10 md:text-right">{t('count', { count: list?.total ?? 0 })}</p>
+      <div className="flex flex-col items-center gap-4 text-center">
+        <h1 className="display text-[40px] md:text-[56px]">{t('title')}</h1>
+        <p className="max-w-md text-[14px] leading-relaxed text-ink-soft">{t('intro')}</p>
+        <p className="label text-muted">{t('count', { count: list?.total ?? 0 })}</p>
       </div>
 
       <Filters facets={list?.facets ?? { colors: [], sizes: [], price: null }} current={{ color: str(sp.color), size: str(sp.size), sort: str(sp.sort) }} />

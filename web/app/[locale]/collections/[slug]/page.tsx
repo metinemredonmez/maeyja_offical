@@ -30,9 +30,9 @@ export default async function CollectionPage({ params }: { params: Params }) {
   if (!c) notFound();
   return (
     <div className="px-4 pt-12 md:px-12 md:pt-20">
-      <div className="mb-12 flex max-w-2xl flex-col gap-4">
-        <h1 className="font-serif text-5xl font-light leading-none md:text-[56px]">{c.name}</h1>
-        {c.description ? <p className="text-[15px] leading-relaxed text-ink-soft">{c.description}</p> : null}
+      <div className="mb-14 flex flex-col items-center gap-4 text-center">
+        <h1 className="display text-[40px] md:text-[56px]">{c.name}</h1>
+        {c.description ? <p className="max-w-md text-[14px] leading-relaxed text-ink-soft">{c.description}</p> : null}
       </div>
       <ProductGrid products={c.products} columns={3} />
     </div>

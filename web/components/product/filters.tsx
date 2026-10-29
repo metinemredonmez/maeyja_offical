@@ -32,7 +32,7 @@ export function Filters({ facets, current }: { facets: ProductList['facets']; cu
   const hasAny = selectedColors.size || selectedSizes.size || current.sort;
 
   return (
-    <div className="mt-10 flex flex-wrap items-center justify-between gap-6 border-y border-line py-4">
+    <div className="mt-10 flex flex-wrap items-center justify-between gap-6 border-y border-line py-3">
       <div className="flex flex-wrap items-center gap-7">
         {facets.colors.length ? (
           <div className="flex items-center gap-3">
