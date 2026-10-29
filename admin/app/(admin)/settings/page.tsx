@@ -13,7 +13,7 @@ import { QueryState } from '@/components/shared/query-state';
 import { useSaveSetting, useSettings } from '@/lib/queries/system';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
-const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan' };
+const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -206,6 +206,19 @@ function AssistantTab({ value }: { value: Settings['assistant'] }) {
   );
 }
 
+function TryOnTab({ value }: { value: Settings['tryon'] }) {
+  const d = useDraft('tryon', value);
+  return (
+    <Section
+      title="Üzerimde gör (sanal deneme)"
+      description="Ürün sayfasında ziyaretçi kendi fotoğrafını yükler, yapay zekâ (Google Gemini) seçili çantayı onun üzerinde gösterir. Ziyaretçi önce açık rıza ve 18 yaş beyanı verir; fotoğraf saklanmaz, sonuç 10 dakika sonra silinir. Görsel başına ücretlidir: ziyaretçi başına saatte 3 / günde 8, mağaza geneli günde 100 deneme sınırı vardır."
+    >
+      <SwitchField label="Sanal deneme açık" description="Sunucuda GEMINI_API_KEY tanımlı olmalı." checked={d.draft.enabled} onCheckedChange={(v) => d.setDraft({ ...d.draft, enabled: v })} />
+      <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
+    </Section>
+  );
+}
+
 export default function SettingsPage() {
   const query = useSettings();
   return (
@@ -238,6 +251,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="assistant">
               <AssistantTab key={JSON.stringify(s.assistant)} value={s.assistant} />
+            </TabsContent>
+            <TabsContent value="tryon">
+              <TryOnTab key={JSON.stringify(s.tryon)} value={s.tryon} />
             </TabsContent>
           </Tabs>
         )}

@@ -12,8 +12,9 @@ const LOW_STOCK = 3;
 export const VISIBLE_PRODUCT: Prisma.ProductWhereInput = { status: ProductStatus.ACTIVE, deletedAt: null };
 const LIVE_VARIANT: Prisma.ProductVariantWhereInput = { isActive: true, deletedAt: null };
 
-const cardInclude = {
-  images: { orderBy: { sortOrder: 'asc' }, take: 6 },
+/** What a product card needs; shared with the wishlist. */
+export const cardInclude = {
+  images: { orderBy: { sortOrder: 'asc' }, take: 6, include: { color: true } },
   variants: { where: LIVE_VARIANT, include: { color: true }, orderBy: { sortOrder: 'asc' } },
 } satisfies Prisma.ProductInclude;
 
@@ -154,7 +155,7 @@ export class CatalogService {
       priceRange: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
       category: category ? localize(category, lang) : null,
       collections: collections.map((c) => localize(c.collection, lang)),
-      images: images.map(({ color, ...img }) => ({ ...img, colorSlug: color?.slug ?? null })),
+      images: images.map(({ color, ...img }) => ({ ...img, alt: this.imageAlt(localized.name, color, lang), colorSlug: color?.slug ?? null })),
       variants: variantViews,
       colors: this.uniqueColors(variants, lang),
       sizes: [...new Set(variants.map((v) => v.size).filter((s): s is string => Boolean(s)))],
@@ -193,10 +194,15 @@ export class CatalogService {
       isFeatured: p.isFeatured,
       publishedAt: p.publishedAt,
       // First two images drive the hover swap on the listing grid.
-      images: p.images.slice(0, 2).map((i) => ({ url: i.url, alt: i.alt, width: i.width, height: i.height })),
+      images: p.images.slice(0, 2).map((i) => ({ url: i.url, alt: this.imageAlt(name, i.color, lang), width: i.width, height: i.height })),
       colors: this.uniqueColors(p.variants, lang),
       inStock: p.variants.some((v) => v.stock > 0),
     };
+  }
+
+  /** Alt text in the reader's language ("Origami — Red"); stored alts are Turkish. */
+  private imageAlt(name: string, color: { name: string; translations: Prisma.JsonValue } | null, lang: Locale) {
+    return color ? `${name} — ${localize({ name: color.name, translations: color.translations }, lang).name}` : name;
   }
 
   private uniqueColors(variants: CardSource['variants'], lang: Locale) {

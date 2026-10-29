@@ -36,6 +36,10 @@ export const SETTING_DEFAULTS = {
     /** Extra rules and facts from the owner, appended to the assistant's instructions. */
     instructions: '',
   },
+  /** "Üzerimde gör" virtual try-on on product pages (Gemini). Off until switched on in the admin. */
+  tryon: {
+    enabled: false,
+  },
   bankTransfer: {
     enabled: false,
     bankName: '',

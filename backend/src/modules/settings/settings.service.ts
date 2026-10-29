@@ -30,12 +30,13 @@ export class SettingsService {
 
   /** What the storefront and mobile app may see. */
   async getPublic() {
-    const [store, shipping, bankTransfer, checkout, assistant] = await Promise.all([
+    const [store, shipping, bankTransfer, checkout, assistant, tryon] = await Promise.all([
       this.get('store'),
       this.get('shipping'),
       this.get('bankTransfer'),
       this.get('checkout'),
       this.get('assistant'),
+      this.get('tryon'),
     ]);
     return {
       store,
@@ -46,6 +47,7 @@ export class SettingsService {
       },
       checkout,
       assistant: { enabled: assistant.enabled, welcome: assistant.welcome },
+      tryon: { enabled: tryon.enabled },
       bankTransfer: bankTransfer.enabled
         ? bankTransfer
         : { enabled: false },

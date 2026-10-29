@@ -52,9 +52,9 @@ export class ContentService {
             return { ...base, products: list.items };
           }
           case 'PRESS':
-            return { ...base, press: await this.press() };
+            return { ...base, press: await this.press(lang) };
           case 'STOCKISTS':
-            return { ...base, stockists: await this.stockists() };
+            return { ...base, stockists: await this.stockists(lang) };
           default:
             return base;
         }
@@ -88,12 +88,14 @@ export class ContentService {
     return localize(post, lang);
   }
 
-  press() {
-    return this.prisma.pressItem.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }] });
+  async press(lang: Locale) {
+    const rows = await this.prisma.pressItem.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { publishedAt: 'desc' }] });
+    return rows.map((r) => localize(r, lang));
   }
 
-  stockists() {
-    return this.prisma.stockist.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { city: 'asc' }] });
+  async stockists(lang: Locale) {
+    const rows = await this.prisma.stockist.findMany({ where: { isActive: true }, orderBy: [{ sortOrder: 'asc' }, { city: 'asc' }] });
+    return rows.map((r) => localize(r, lang));
   }
 
   async faq(lang: Locale) {

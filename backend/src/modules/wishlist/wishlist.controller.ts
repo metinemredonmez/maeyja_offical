@@ -5,7 +5,7 @@ import { AuthUser, CurrentUser } from '../../common/decorators/current-user.deco
 import { Lang } from '../../common/decorators/lang.decorator';
 import { Locale } from '../../common/utils/i18n.util';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CatalogService, VISIBLE_PRODUCT } from '../catalog/catalog.service';
+import { CatalogService, VISIBLE_PRODUCT, cardInclude } from '../catalog/catalog.service';
 
 class WishlistDto {
   @IsString() productId: string;
@@ -25,14 +25,7 @@ export class WishlistController {
     const rows = await this.prisma.wishlistItem.findMany({
       where: { userId: user.id, product: VISIBLE_PRODUCT },
       orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          include: {
-            images: { orderBy: { sortOrder: 'asc' }, take: 6 },
-            variants: { where: { isActive: true, deletedAt: null }, include: { color: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-      },
+      include: { product: { include: cardInclude } },
     });
     return rows.map((r) => ({ addedAt: r.createdAt, product: this.catalog.toCard(r.product, lang) }));
   }

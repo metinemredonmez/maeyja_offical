@@ -2,7 +2,7 @@
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { PAGE_BODIES } from './seed-pages';
+import { KVKK_TRYON, PAGE_BODIES } from './seed-pages';
 import { ABOUT_BODY, CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
 
 const prisma = new PrismaClient();
@@ -124,6 +124,12 @@ async function main() {
       data: { body: care.body.replace('tam tahıllı, doğal dokusunu koruyan deriden', 'hakiki deriden'), translations: json(cleared) },
     });
     console.log('✓ bakım rehberi düzeltildi (deri ifadesi)');
+  }
+  // KVKK notice gains the try-on section (photo processing abroad on explicit consent) if it lacks one.
+  const kvkk = await prisma.page.findUnique({ where: { slug: 'kvkk' } });
+  if (kvkk && !kvkk.body.includes('Sanal deneme') && kvkk.body.includes('<h2>Toplama yöntemi</h2>')) {
+    await prisma.page.update({ where: { id: kvkk.id }, data: { body: kvkk.body.replace('<h2>Toplama yöntemi</h2>', `${KVKK_TRYON}<h2>Toplama yöntemi</h2>`) } });
+    console.log('✓ KVKK: sanal deneme bölümü eklendi');
   }
   // About: replace the original placeholder only (text written in the admin stays).
   const about = await prisma.page.findUnique({ where: { slug: 'about' } });

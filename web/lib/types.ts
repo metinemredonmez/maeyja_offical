@@ -192,6 +192,7 @@ export interface PublicSettings {
   shipping: { flatRate: number; freeShippingThreshold: number; estimatedDays: string };
   checkout: { guestCheckout: boolean; maxQtyPerItem: number };
   assistant?: { enabled: boolean; welcome: Record<string, string> };
+  tryon?: { enabled: boolean };
   bankTransfer: { enabled: boolean; bankName?: string; accountName?: string; iban?: string; note?: Record<string, string> };
 }
 

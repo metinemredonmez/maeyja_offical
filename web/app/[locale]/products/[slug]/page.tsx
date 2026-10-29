@@ -72,7 +72,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   return (
     <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
-      <BuyBox product={p} shipping={settings?.shipping ?? null} wishlisted={wishlist.some((w) => w.product.id === p.id)} crumb={crumb} />
+      <BuyBox product={p} shipping={settings?.shipping ?? null} wishlisted={wishlist.some((w) => w.product.id === p.id)} crumb={crumb} tryon={Boolean(settings?.tryon?.enabled)} />
 
       {/* The atelier note over a full-width photo of the bag. */}
       {p.story ? (

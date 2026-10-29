@@ -15,6 +15,7 @@ const ALLOW: [RegExp, string[]][] = [
   [/^auth\/me$/, ['GET']],
   [/^(catalog|content|settings\/public|cart|checkout|orders|me|newsletter|contact|devices)(\/[\w.-]+)*$/, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']],
   [/^assistant\/chat$/, ['POST']],
+  [/^tryon(\/[\w-]+)?$/, ['GET', 'POST']],
 ];
 /** Request headers that may travel to the API. */
 const FORWARD_HEADERS = ['accept', 'accept-language', 'content-type', 'user-agent'];

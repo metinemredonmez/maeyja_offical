@@ -38,6 +38,8 @@ export type TranslationMap = Partial<Record<Locale, FieldMap>>;
 
 /** Above this much text × languages, each language gets its own request so outputs stay small. */
 const SINGLE_REQUEST_BUDGET = 12_000;
+/** The JSON schema grows with fields × languages; past this, structured output rejects it, so split by language. */
+const SINGLE_REQUEST_SLOTS = 30;
 
 export class Translator {
   private readonly client: Anthropic;
@@ -52,7 +54,8 @@ export class Translator {
     const langs = targets.filter((l) => l !== 'tr');
     if (!Object.keys(source).length || !langs.length) return {};
     const size = Object.values(source).reduce((n, v) => n + v.length, 0);
-    const groups = size * langs.length > SINGLE_REQUEST_BUDGET ? langs.map((l) => [l]) : [langs];
+    const split = size * langs.length > SINGLE_REQUEST_BUDGET || Object.keys(source).length * langs.length > SINGLE_REQUEST_SLOTS;
+    const groups = split ? langs.map((l) => [l]) : [langs];
 
     const out: TranslationMap = {};
     const queue = [...groups];

@@ -19,6 +19,11 @@ const SELLER = `<ul>
 <li><strong>Web sitesi:</strong> maeyja.com</li>
 </ul>`;
 
+/** Inserted into an existing KVKK text (before "Toplama yöntemi") when the try-on section is missing. */
+export const KVKK_TRYON = `<h2>Sanal deneme (Üzerimde gör)</h2>
+<p>“Üzerimde gör” özelliğini kullanırsanız yüklediğiniz fotoğraf, yalnızca seçtiğiniz çantanın sizin üzerinizde gösterildiği görseli oluşturmak için açık rızanızla (KVKK m. 5/1 ve m. 9) yurt dışındaki yapay zekâ hizmet sağlayıcımıza (Google) iletilir. Fotoğraf ve oluşan görsel sunucularımızda kalıcı olarak saklanmaz; görsel en geç 10 dakika sonra silinir. Bu özelliği yalnızca 18 yaşından büyük kullanıcılar, yalnızca kendi fotoğraflarıyla kullanabilir. Rızanızı vermemeniz sitenin diğer bölümlerini kullanmanıza engel değildir.</p>
+`;
+
 export const PAGE_BODIES: Record<string, string> = {
   expertise: `<h2 id="design">Tasarım</h2>
 <p>Her MAEYJA modeli Fransa'da, tasarımcı Canan Delettre'nin elinden çıkar. Mimari, tasarım, sanat ve müzikten beslenen formlar ilk bakışta yalın görünür; asıl hikâye detaylarda saklıdır. Aranan şey, işlevsel, pratik, duygusal, estetik ve şehirli olan arasındaki doğru denge: kusursuz ve zarif, ama resmiyetten uzak.</p>
@@ -135,6 +140,8 @@ ${SELLER}
 <h2>Aktarım</h2>
 <p>Kişisel verileriniz yalnızca yukarıdaki amaçlar için gerekli olduğu ölçüde; kargo firmalarına (teslimat), ödeme kuruluşu iyzico'ya (ödeme), barındırma ve e-posta hizmeti sağlayıcılarına (sitenin ve bildirim e-postalarının çalışması) ve talep hâlinde yetkili kamu kurum ve kuruluşlarına aktarılır.</p>
 <p>E-posta gönderim altyapısı ve mobil bildirim hizmeti gibi bazı hizmet sağlayıcılarımızın sunucuları yurt dışında bulunabilir; bu aktarımlar KVKK'nın 9. maddesine uygun olarak gerçekleştirilir.</p>
+<h2>Sanal deneme (Üzerimde gör)</h2>
+<p>“Üzerimde gör” özelliğini kullanırsanız yüklediğiniz fotoğraf, yalnızca seçtiğiniz çantanın sizin üzerinizde gösterildiği görseli oluşturmak için açık rızanızla (KVKK m. 5/1 ve m. 9) yurt dışındaki yapay zekâ hizmet sağlayıcımıza (Google) iletilir. Fotoğraf ve oluşan görsel sunucularımızda kalıcı olarak saklanmaz; görsel en geç 10 dakika sonra silinir. Bu özelliği yalnızca 18 yaşından büyük kullanıcılar, yalnızca kendi fotoğraflarıyla kullanabilir. Rızanızı vermemeniz sitenin diğer bölümlerini kullanmanıza engel değildir.</p>
 <h2>Toplama yöntemi</h2>
 <p>Verileriniz maeyja.com üzerindeki üyelik, sipariş, iletişim ve bülten formları ile e-posta yazışmaları aracılığıyla, elektronik ortamda toplanır.</p>
 <h2>Haklarınız</h2>

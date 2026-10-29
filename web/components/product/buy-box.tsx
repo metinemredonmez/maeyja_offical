@@ -13,6 +13,7 @@ import { Gallery } from './gallery';
 import { Swatch } from './swatch';
 import { ProductTabs } from './product-tabs';
 import { WishlistButton } from './wishlist-button';
+import { TryOn } from './try-on';
 
 /**
  * Polène-style product view. Left half: the photos of the selected colour stacked. Right half (sticky): name,
@@ -21,7 +22,7 @@ import { WishlistButton } from './wishlist-button';
  * Cut-out photos sit on an explicit cream fill: the sticky panel is its own stacking context, so "multiply"
  * would otherwise blend against nothing and keep the white studio background.
  */
-export function BuyBox({ product, shipping, wishlisted, crumb }: { product: Product; shipping: PublicSettings['shipping'] | null; wishlisted: boolean; crumb: ReactNode }) {
+export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: { product: Product; shipping: PublicSettings['shipping'] | null; wishlisted: boolean; crumb: ReactNode; tryon?: boolean }) {
   const t = useTranslations('product');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -136,6 +137,11 @@ export function BuyBox({ product, shipping, wishlisted, crumb }: { product: Prod
               </div>
             )}
             {variant?.lowStock ? <p className="text-xs text-brand">{tc('lowStock', { count: 3 })}</p> : null}
+            {tryon ? (
+              <div className="flex justify-center pt-1">
+                <TryOn slug={product.slug} color={color} productName={product.name} />
+              </div>
+            ) : null}
           </div>
 
           <ProductTabs items={tabs} />

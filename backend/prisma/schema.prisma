@@ -609,6 +609,7 @@ model PressItem {
   publishedAt DateTime?
   sortOrder   Int       @default(0)
   isActive    Boolean   @default(true)
+  translations Json?
   createdAt   DateTime  @default(now())
 }
 
@@ -623,7 +624,23 @@ model Stockist {
   mapUrl    String?
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
+  translations Json?
   createdAt DateTime @default(now())
+}
+
+/// Which translations the AI wrote, from which Turkish text. When the Turkish changes and the translation
+/// is still the machine's (not edited by hand), it is translated again.
+model TranslationMeta {
+  id        String   @id @default(cuid())
+  model     String
+  rowId     String
+  lang      String
+  field     String
+  srcHash   String
+  outHash   String
+  updatedAt DateTime @updatedAt
+
+  @@unique([model, rowId, lang, field])
 }
 
 model Faq {

@@ -18,8 +18,8 @@ export class ContentController {
   @Get('content/pages/:slug') page(@Param('slug') slug: string, @Lang() lang: Locale) { return this.content.page(slug, lang); }
   @Get('content/journal') journal(@Query() q: PaginationQueryDto, @Lang() lang: Locale) { return this.content.journal(q, lang); }
   @Get('content/journal/:slug') journalPost(@Param('slug') slug: string, @Lang() lang: Locale) { return this.content.journalPost(slug, lang); }
-  @Get('content/press') press() { return this.content.press(); }
-  @Get('content/stockists') stockists() { return this.content.stockists(); }
+  @Get('content/press') press(@Lang() lang: Locale) { return this.content.press(lang); }
+  @Get('content/stockists') stockists(@Lang() lang: Locale) { return this.content.stockists(lang); }
   @Get('content/faq') faq(@Lang() lang: Locale) { return this.content.faq(lang); }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })

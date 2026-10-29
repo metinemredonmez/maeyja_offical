@@ -53,6 +53,9 @@ export const envSchema = Joi.object({
   AI_AUTO_TRANSLATE: Joi.boolean().default(true),
   // Storefront assistant: messages per day for the whole store (cost ceiling)
   AI_CHAT_DAILY_LIMIT: Joi.number().integer().min(0).default(1500),
+  // "Üzerimde gör" (Gemini image editing): key and images per day for the whole store
+  GEMINI_API_KEY: Joi.string().allow('').default(''),
+  TRYON_DAILY_LIMIT: Joi.number().integer().min(0).default(100),
 
   ORDER_PAYMENT_TIMEOUT_MINUTES: Joi.number().integer().min(5).default(30),
   BANK_TRANSFER_TIMEOUT_HOURS: Joi.number().integer().min(1).default(48),
@@ -114,6 +117,8 @@ export interface Env {
   ANTHROPIC_API_KEY: string;
   AI_AUTO_TRANSLATE: boolean;
   AI_CHAT_DAILY_LIMIT: number;
+  GEMINI_API_KEY: string;
+  TRYON_DAILY_LIMIT: number;
   ORDER_PAYMENT_TIMEOUT_MINUTES: number;
   BANK_TRANSFER_TIMEOUT_HOURS: number;
   SWAGGER_ENABLED: boolean;

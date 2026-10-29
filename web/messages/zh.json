@@ -17,5 +17,6 @@
   "journal": { "title": "Journal", "empty": "暂无文章。" },
   "footer": { "shop": "选购", "help": "帮助", "legal": "法律信息", "clothing": "服饰 — 即将上市", "care": "皮革保养指南", "shippingReturns": "配送与退货", "orderStatus": "订单查询", "faq": "常见问题", "contact": "联系我们", "distance": "远程销售协议", "preliminary": "售前信息告知书", "kvkk": "个人数据告知声明", "privacy": "隐私与 Cookie", "terms": "使用条款", "about": "关于我们", "securePayment": "iyzico 安全支付", "rights": "© {year} MAEYJA · 伊斯坦布尔" },
   "unsubscribe": { "title": "退订", "text": "如果您不想再收到 MAEYJA 的邮件，请点击下方按钮。", "button": "退订", "done": "您已成功退订，今后将不再收到营销邮件。", "fail": "该链接无效或已过期。您可以在账户中关闭营销邮件，或联系我们。", "back": "返回商店" },
-  "assistant": { "open": "助手", "title": "MAEYJA 助手", "placeholder": "询问款式、颜色或配送…", "send": "发送", "error": "暂时无法回答。请重试，或发送邮件至 hello@maeyja.com。", "limit": "消息发送过于频繁，请几分钟后再试。", "note": "AI 助手，回答可能不完全准确。请勿分享个人或支付信息。", "reset": "新对话" }
+  "assistant": { "open": "助手", "title": "MAEYJA 助手", "placeholder": "询问款式、颜色或配送…", "send": "发送", "error": "暂时无法回答。请重试，或发送邮件至 hello@maeyja.com。", "limit": "消息发送过于频繁，请几分钟后再试。", "note": "AI 助手，回答可能不完全准确。请勿分享个人或支付信息。", "reset": "新对话" },
+  "tryon": { "button": "上身试戴", "intro": "上传一张清晰的全身或半身照片，AI 将展示您搭配这款包的效果。结果仅为示意图，并非真实产品照片。", "consent": "我同意将我的照片发送至土耳其境外的 AI 服务（Google）以生成此图像。照片不会被保存，结果将在 10 分钟内删除。", "adult": "我已年满 18 岁，照片中的人是我本人。", "privacy": "个人数据声明", "choose": "选择照片", "create": "生成", "working": "生成中…约需 30 秒。", "before": "之前", "after": "之后", "download": "下载", "again": "换一张照片", "error": "无法生成图像，请换一张照片重试。", "limit": "已达到试戴次数上限，请稍后再试。" }
 }
