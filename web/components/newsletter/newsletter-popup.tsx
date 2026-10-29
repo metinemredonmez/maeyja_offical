@@ -28,8 +28,9 @@ const snooze = (days: number) => {
 };
 
 /**
- * Newsletter invitation (Wandler): appears once after 25 s or a few screens of scrolling, then stays away
- * for 30 days whether it was closed or ignored (a year after subscribing). Bottom sheet on phones.
+ * Newsletter invitation (Wandler): greets a first visit a few seconds after the page opens (the hero intro
+ * plays first), then stays away for 30 days whether it was closed or ignored (a year after subscribing).
+ * Bottom sheet on phones.
  */
 export function NewsletterPopup() {
   const t = useTranslations('newsletter');
@@ -40,22 +41,13 @@ export function NewsletterPopup() {
 
   useEffect(() => {
     if (QUIET.test(pathname) || snoozedUntil() > Date.now()) return;
-    let timer = 0;
-    const stop = () => {
-      clearTimeout(timer);
-      removeEventListener('scroll', onScroll);
-    };
     // Showing it is what counts: it never comes back for 30 days, even if it is not closed.
-    const show = () => {
-      stop();
+    const timer = window.setTimeout(() => {
       if (snoozedUntil() > Date.now()) return;
       snooze(30);
       setOpen(true);
-    };
-    const onScroll = () => scrollY > innerHeight * 3 && show();
-    timer = window.setTimeout(show, 25_000);
-    addEventListener('scroll', onScroll, { passive: true });
-    return stop;
+    }, 4_000);
+    return () => clearTimeout(timer);
   }, [pathname]);
 
   const close = useCallback(() => setOpen(false), []);
