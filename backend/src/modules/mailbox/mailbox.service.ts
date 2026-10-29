@@ -397,7 +397,7 @@ export class MailboxService {
       port: a.imapPort,
       secure: a.imapSecure,
       auth: { user: a.email, pass: decrypt(a.passwordEnc, this.key) },
-      tls: { rejectUnauthorized: !a.allowSelfSigned },
+      tls: { rejectUnauthorized: !this.trustAnyCert(a, a.imapHost) },
       logger: false,
       connectionTimeout: TIMEOUT_MS,
       greetingTimeout: TIMEOUT_MS,
@@ -411,10 +411,15 @@ export class MailboxService {
       port: a.smtpPort,
       secure: a.smtpSecure,
       auth: { user: a.email, pass: decrypt(a.passwordEnc, this.key) },
-      tls: { rejectUnauthorized: !a.allowSelfSigned },
+      tls: { rejectUnauthorized: !this.trustAnyCert(a, a.smtpHost) },
       connectionTimeout: TIMEOUT_MS,
       greetingTimeout: TIMEOUT_MS,
     });
+  }
+
+  /** Self-signed certs are accepted when asked, and always on loopback: that connection never leaves the box. */
+  private trustAnyCert(a: MailAccount, host: string) {
+    return a.allowSelfSigned || ['127.0.0.1', 'localhost', '::1'].includes(host.trim().toLowerCase());
   }
 
   private summary(m: SummaryRow) {
