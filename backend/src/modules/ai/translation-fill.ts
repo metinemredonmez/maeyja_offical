@@ -19,8 +19,11 @@ export const TRANSLATABLE: { model: string; kind: string; fields: string[] }[] =
   { model: 'faq', kind: 'FAQ entry', fields: ['group', 'question', 'answer'] },
 ];
 
-/** Seeded "… metni buraya gelecek." stand-ins are not worth translating. */
-const PLACEHOLDER = /metni buraya gelecek/;
+/**
+ * Not translated yet: seeded "… metni buraya gelecek." stand-ins, and legal drafts whose [Şirket unvanı]-style
+ * blanks are still open — otherwise the blanks would be copied into ten languages before they are filled in.
+ */
+const PLACEHOLDER = /metni buraya gelecek|\[(Şirket unvanı|Açık adres|Vergi dairesi|Vergi numarası|MERSİS numarası|Telefon)\]/;
 
 type Translations = Record<string, Record<string, string> | undefined>;
 
