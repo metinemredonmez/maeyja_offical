@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MAEYJA — Tipografi seçenekleri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Tenor+Sans&family=Inter:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=Bodoni+Moda:opsz,wght@6..96,400&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1a1a1a; --muted:#7d786f; --ground:#f3efe9; --line:#e2ddd4; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--ground); color:var(--ink); font-family:Inter,system-ui,sans-serif; }
+  header.page { padding:40px 16px 8px; max-width:1100px; margin:auto; }
+  header.page h1 { font:500 13px Inter; letter-spacing:.24em; text-transform:uppercase; margin:0 0 6px; }
+  header.page p { margin:0; color:var(--muted); font-size:14px; line-height:1.6; }
+  .opt { max-width:1100px; margin:28px auto; background:#fff; border:1px solid var(--line); }
+  .tag { display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 20px; border-bottom:1px solid var(--line); font:500 12px Inter; letter-spacing:.08em; }
+  .tag b { letter-spacing:.2em; text-transform:uppercase; }
+  .tag span { color:var(--muted); }
+  .rec { color:#a3121b; }
+  .nav { display:flex; align-items:center; justify-content:space-between; padding:18px 28px; border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.22em; text-transform:uppercase; }
+  .nav .logo { font-size:20px; letter-spacing:.55em; padding-left:.55em; }
+  .hero { padding:64px 28px 48px; }
+  .hero .eyebrow { font-size:11px; letter-spacing:.3em; text-transform:uppercase; color:var(--muted); }
+  .hero h2 { margin:16px 0 14px; line-height:.95; }
+  .hero p { max-width:520px; font-size:15px; line-height:1.75; color:#4a4743; margin:0; }
+  .ru { color:var(--muted); font-size:13px; margin-top:10px !important; }
+  .row { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border-top:1px solid var(--line); }
+  .card { background:#fff; padding:22px 20px 26px; text-align:center; }
+  .card .ph { aspect-ratio:4/5; background:linear-gradient(160deg,#ece6dd,#ddd5c9); margin-bottom:16px; }
+  .card .name { font-size:12px; letter-spacing:.2em; text-transform:uppercase; }
+  .card .price { font-size:12px; color:var(--muted); margin-top:4px; letter-spacing:.06em; }
+  .btn { display:inline-block; margin-top:28px; padding:15px 34px; background:var(--ink); color:#fff; font-size:11px; letter-spacing:.24em; text-transform:uppercase; }
+  /* Seçenek A — Polène yönü: ince serif büyük harf başlık + aralıklı sans etiket */
+  .a .nav, .a .eyebrow, .a .card .name, .a .btn { font-family:'Tenor Sans',sans-serif; }
+  .a h2 { font-family:'Cormorant Garamond',serif; font-weight:300; font-size:clamp(44px,8vw,96px); text-transform:uppercase; letter-spacing:.02em; }
+  .a .h3 { font-family:'Cormorant Garamond',serif; font-style:italic; font-weight:300; font-size:28px; margin:0 28px; padding:30px 0 22px; }
+  /* Seçenek B — Wandler yönü: dev aralıklı logo-başlık + serif alt başlık */
+  .b .nav, .b .eyebrow, .b .card .name, .b .btn { font-family:Inter,sans-serif; font-weight:500; }
+  .b h2 { font-family:'Tenor Sans',sans-serif; font-weight:400; font-size:clamp(40px,9vw,112px); letter-spacing:.32em; text-transform:uppercase; }
+  .b .h3 { font-family:'Bodoni Moda',serif; font-size:26px; margin:0 28px; padding:30px 0 22px; text-transform:uppercase; letter-spacing:.04em; }
+  /* Seçenek C — Editoryal dergi: dar serif, karışık büyük-küçük */
+  .c .nav, .c .eyebrow, .c .card .name, .c .btn { font-family:Inter,sans-serif; }
+  .c h2 { font-family:'Instrument Serif',serif; font-weight:400; font-size:clamp(48px,9vw,110px); letter-spacing:-.01em; }
+  .c h2 i { font-style:italic; }
+  .c .h3 { font-family:'Instrument Serif',serif; font-size:30px; margin:0 28px; padding:30px 0 22px; }
+  @media (max-width:640px){ .row{grid-template-columns:1fr 1fr} .row .card:last-child{display:none} .nav .links{display:none} }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>MAEYJA · Tipografi seçenekleri</h1>
+  <p>Aynı içerik, üç farklı yazı dili. Hepsi Türkçe karakterleri destekliyor; Rusça satırı da her seçenekte gösterildi (11 dil için önemli).</p>
+</header>
+
+<section class="opt a">
+  <div class="tag"><b>A · Polène yönü <span class="rec">— önerim</span></b><span>Başlık: Cormorant Garamond (ince, büyük harf) · Etiket: Tenor Sans · Metin: Inter</span></div>
+  <div class="nav"><span class="links">Çantalar &nbsp; Atölye &nbsp; Journal</span><span class="logo">MAEYJA</span><span class="links">Hesap &nbsp; Sepet (0)</span></div>
+  <div class="hero">
+    <div class="eyebrow">Yeni · N°01</div>
+    <h2>El yapımı<br>zarafet</h2>
+    <p>Tek parça deriden şekillenen heykelsi formlar. Her parça İstanbul’daki atölyemizde elde kesilip dikilir.</p>
+    <p class="ru">Скульптурные формы из цельной кожи — ручная работа, Стамбул.</p>
+    <span class="btn">Keşfet</span>
+  </div>
+  <p class="h3">Form ve doku</p>
+  <div class="row">
+    <div class="card"><div class="ph"></div><div class="name">N°01 Origami</div><div class="price">₺14.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">N°02 Valise</div><div class="price">₺13.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">N°03 Duo</div><div class="price">₺12.500</div></div>
+  </div>
+</section>
+
+<section class="opt b">
+  <div class="tag"><b>B · Wandler yönü</b><span>Başlık: Tenor Sans (dev, çok aralıklı) · Alt başlık: Bodoni Moda · Metin: Inter — Bodoni'de Kiril yok</span></div>
+  <div class="nav"><span class="links">Çantalar &nbsp; Atölye &nbsp; Journal</span><span class="logo">MAEYJA</span><span class="links">Hesap &nbsp; Sepet (0)</span></div>
+  <div class="hero">
+    <div class="eyebrow">Yeni · N°01</div>
+    <h2>MAEYJA</h2>
+    <p>Tek parça deriden şekillenen heykelsi formlar. Her parça İstanbul’daki atölyemizde elde kesilip dikilir.</p>
+    <p class="ru">Скульптурные формы из цельной кожи — ручная работа, Стамбул.</p>
+    <span class="btn">Koleksiyonu keşfet</span>
+  </div>
+  <p class="h3">Form ve doku</p>
+  <div class="row">
+    <div class="card"><div class="ph"></div><div class="name">Origami</div><div class="price">₺14.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">Valise</div><div class="price">₺13.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">Duo</div><div class="price">₺12.500</div></div>
+  </div>
+</section>
+
+<section class="opt c">
+  <div class="tag"><b>C · Editoryal dergi</b><span>Başlık: Instrument Serif (dar, italik vurgulu) · Metin: Inter — Instrument Serif'te Kiril yok</span></div>
+  <div class="nav"><span class="links">Çantalar &nbsp; Atölye &nbsp; Journal</span><span class="logo">MAEYJA</span><span class="links">Hesap &nbsp; Sepet (0)</span></div>
+  <div class="hero">
+    <div class="eyebrow">Yeni · N°01</div>
+    <h2>El yapımı <i>zarafet</i></h2>
+    <p>Tek parça deriden şekillenen heykelsi formlar. Her parça İstanbul’daki atölyemizde elde kesilip dikilir.</p>
+    <p class="ru">Скульптурные формы из цельной кожи — ручная работа, Стамбул.</p>
+    <span class="btn">Keşfet</span>
+  </div>
+  <p class="h3">Form ve doku</p>
+  <div class="row">
+    <div class="card"><div class="ph"></div><div class="name">Origami</div><div class="price">₺14.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">Valise</div><div class="price">₺13.500</div></div>
+    <div class="card"><div class="ph"></div><div class="name">Duo</div><div class="price">₺12.500</div></div>
+  </div>
+</section>
+</body>
+</html>
