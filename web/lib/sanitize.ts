@@ -6,7 +6,7 @@ export function cleanHtml(html: string, locale?: string) {
   const prefix = locale && locale !== 'en' ? `/${locale}` : '';
   return sanitizeHtml(html, {
     allowedTags: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'a', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'blockquote', 'img', 'figure', 'figcaption', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-    allowedAttributes: { a: ['href', 'title', 'rel', 'target'], img: ['src', 'alt', 'width', 'height', 'loading'] },
+    allowedAttributes: { a: ['href', 'title', 'rel', 'target'], img: ['src', 'alt', 'width', 'height', 'loading'], h2: ['id'], h3: ['id'] },
     allowedSchemes: ['https', 'http', 'mailto', 'tel'],
     transformTags: {
       a: (tag, attribs) => ({

@@ -20,6 +20,16 @@ const SELLER = `<ul>
 </ul>`;
 
 export const PAGE_BODIES: Record<string, string> = {
+  expertise: `<h2 id="design">Tasarım</h2>
+<p>Her MAEYJA modeli Fransa'da, tasarımcı Canan Delettre'nin elinden çıkar. Mimari, tasarım, sanat ve müzikten beslenen formlar ilk bakışta yalın görünür; asıl hikâye detaylarda saklıdır. Aranan şey, işlevsel, pratik, duygusal, estetik ve şehirli olan arasındaki doğru denge: kusursuz ve zarif, ama resmiyetten uzak.</p>
+<h2 id="materials">Malzeme</h2>
+<p>Çantalarımız hakiki deriden üretilir. Deri, damarı ve dokusu incelenerek kesilir; her parçanın en güzel yüzü çantanın en çok görünen yerine gelir. Altın tonlu fermuarlar ve deri çekeceklerle tamamlanır.</p>
+<h2 id="craft">Dikiş ve işçilik</h2>
+<p>Her model mümkün olduğunca tek parça deriden katlanarak biçimlenir; birleşim yerleri azaldıkça form daha saf, çanta daha dayanıklı olur. Kesim, kenar inceltme, dikiş ve kenar boyası elde yapılır. Bir çantanın atölyeden çıkması yaklaşık iki günlük el işçiliği demektir; üretim sayılıdır.</p>
+<h2 id="artisans">Zanaatkârlar</h2>
+<p>Tasarım Fransa'da, üretim İstanbul'da. Her MAEYJA çantası İstanbul'daki atölyede, usta deri zanaatkârlarının elinde hayat bulur. İki şehir arasında kurulan bu köprü markanın kalbidir.</p>
+<p><a href="/about">Hikâyemiz</a></p>`,
+
   'shipping-returns': `<h2>Kargo</h2>
 <p>Türkiye içindeki tüm siparişlerde kargo ücretsizdir. Siparişiniz 1–3 iş günü içinde hazırlanıp kargoya verilir ve anlaşmalı kargo firmalarımızdan biriyle (Aras, Yurtiçi veya MNG Kargo) adresinize ulaştırılır.</p>
 <p>Kargoya verildiğinde takip numaranız e-posta ile gönderilir; siparişinizi hesabınızdan ya da <a href="/order-status">Sipariş takibi</a> sayfasından izleyebilirsiniz.</p>
@@ -38,7 +48,7 @@ export const PAGE_BODIES: Record<string, string> = {
 <h2>Hasarlı veya hatalı ürün</h2>
 <p>Paket teslimatta hasarlıysa kargo görevlisine tutanak tutturmanızı rica ederiz. Üründe bir hata fark ederseniz fotoğrafıyla birlikte hello@maeyja.com adresine yazın; onarım, değişim ya da iade için hemen dönüş yaparız.</p>`,
 
-  care: `<p>Her MAEYJA çantası tam tahıllı, doğal dokusunu koruyan deriden elde kesilip dikilir. Doğru bakımla yıllar içinde güzelleşir ve size ait bir patina kazanır.</p>
+  care: `<p>Her MAEYJA çantası hakiki deriden elde kesilip dikilir. Doğru bakımla yıllar içinde güzelleşir ve size ait bir patina kazanır.</p>
 <h2>Gündelik kullanım</h2>
 <ul>
 <li>Tozunu kuru ve yumuşak bir bezle düzenli olarak alın.</li>

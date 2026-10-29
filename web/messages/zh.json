@@ -1,6 +1,6 @@
 {
   "meta": { "siteName": "MAEYJA", "tagline": "Hand crafted elegance.", "description": "在伊斯坦布尔手工制作的皮革包袋。" },
-  "nav": { "bags": "包袋", "atelier": "工坊", "journal": "Journal", "search": "搜索", "account": "账户", "cart": "购物车", "language": "语言", "menu": "菜单", "close": "关闭", "home": "首页" },
+  "nav": { "bags": "包袋", "expertise": "工艺", "stores": "门店", "byModel": "款式", "design": "设计", "materials": "材质", "craft": "缝制", "artisans": "匠人", "atelier": "工坊", "journal": "Journal", "search": "搜索", "account": "账户", "cart": "购物车", "language": "语言", "menu": "菜单", "close": "关闭", "home": "首页" },
   "common": { "discover": "探索", "viewAll": "查看全部", "loading": "加载中…", "back": "返回", "save": "保存", "cancel": "取消", "delete": "删除", "edit": "编辑", "continue": "继续", "or": "或", "email": "邮箱", "password": "密码", "firstName": "名", "lastName": "姓", "phone": "电话", "soldOut": "已售罄", "lowStock": "仅剩 {count} 件", "new": "新品", "free": "免费", "comingSoon": "即将上市", "readMore": "阅读更多", "error": "出了点问题，请重试。", "notFound": "页面未找到", "notFoundText": "您查找的页面可能已被移动，或从未存在。", "retry": "重试" },
   "home": { "shopNow": "立即选购", "ourStory": "品牌故事", "press": "媒体报道", "stockists": "销售门店", "followInstagram": "关注 Instagram" },
   "shop": { "title": "包袋", "intro": "雕塑般的造型，克制的色彩。每一件都在我们的工坊中手工裁剪、缝制。", "count": "{count, plural, other {# 件商品}}", "filter": "筛选", "color": "颜色", "size": "尺寸", "price": "价格", "sort": "排序", "sortFeatured": "推荐", "sortNewest": "最新上架", "sortPriceAsc": "价格从低到高", "sortPriceDesc": "价格从高到低", "clear": "清除", "empty": "没有符合所选条件的商品。", "collections": "系列" },

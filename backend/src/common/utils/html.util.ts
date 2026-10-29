@@ -8,7 +8,7 @@ export function cleanCmsHtml(html: string | null | undefined): string | null | u
   if (html === null || html === undefined) return html;
   return sanitizeHtml(html, {
     allowedTags: ['p', 'br', 'strong', 'em', 'b', 'i', 'u', 's', 'a', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'blockquote', 'img', 'figure', 'figcaption', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-    allowedAttributes: { a: ['href', 'title'], img: ['src', 'alt', 'width', 'height'] },
+    allowedAttributes: { a: ['href', 'title'], img: ['src', 'alt', 'width', 'height'], h2: ['id'], h3: ['id'] },
     allowedSchemes: ['https', 'mailto', 'tel'],
     allowedSchemesAppliedToAttributes: ['href', 'src'],
     allowProtocolRelative: false,
