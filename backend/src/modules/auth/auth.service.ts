@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthTokenType, User, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { STAFF_ROLES } from '../../common/decorators/roles.decorator';
+import { storefrontPath } from '../../common/utils/i18n.util';
 import { generateToken, hashToken } from '../../common/utils/token.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -76,7 +77,7 @@ export class AuthService {
     }
 
     const locale = mailLocale(user.locale);
-    void this.mail.send(user.email, templates.welcome(locale, user.firstName, this.webUrl('/shop')));
+    void this.mail.send(user.email, templates.welcome(locale, user.firstName, this.webUrl(user.locale, '/products')));
     void this.sendVerification(user);
     return this.issueSession(user, meta);
   }
@@ -176,8 +177,9 @@ export class AuthService {
     if (user && user.isActive && !user.deletedAt) {
       const token = await this.createAuthToken(user.id, AuthTokenType.PASSWORD_RESET, RESET_TTL_MS);
       const isStaff = user.role !== UserRole.CUSTOMER;
-      const base = isStaff ? this.config.get('ADMIN_URL', { infer: true }) : this.config.get('WEB_URL', { infer: true });
-      void this.mail.send(user.email, templates.passwordReset(mailLocale(user.locale), `${base}/reset-password?token=${token}`));
+      // Staff reset in the admin; customers on the storefront's account page, in their own language.
+      const link = isStaff ? `${this.config.get('ADMIN_URL', { infer: true })}/reset-password?token=${token}` : this.webUrl(user.locale, `/account/reset-password?token=${token}`);
+      void this.mail.send(user.email, templates.passwordReset(mailLocale(user.locale), link));
     }
     return { ok: true };
   }
@@ -238,7 +240,7 @@ export class AuthService {
 
   private async sendVerification(user: User) {
     const token = await this.createAuthToken(user.id, AuthTokenType.EMAIL_VERIFY, VERIFY_TTL_MS);
-    await this.mail.send(user.email, templates.verifyEmail(mailLocale(user.locale), this.webUrl(`/verify-email?token=${token}`)));
+    await this.mail.send(user.email, templates.verifyEmail(mailLocale(user.locale), this.webUrl(user.locale, `/verify-email?token=${token}`)));
   }
 
   private async createAuthToken(userId: string, type: AuthTokenType, ttlMs: number) {
@@ -261,7 +263,7 @@ export class AuthService {
     return record;
   }
 
-  private webUrl(path: string) {
-    return `${this.config.get('WEB_URL', { infer: true })}${path}`;
+  private webUrl(locale: string | null | undefined, path: string) {
+    return `${this.config.get('WEB_URL', { infer: true })}${storefrontPath(locale, path)}`;
   }
 }

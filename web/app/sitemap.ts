@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [products, posts] = await Promise.all([list<{ slug: string; publishedAt: string | null }>('/catalog/products?limit=100'), list<{ slug: string; publishedAt: string | null }>('/content/journal?limit=100')]);
   const statics = ['/', '/products', '/journal', '/about', '/care', '/faq', '/contact', '/stockists', '/shipping-returns', '/order-status'];
   const entry = (path: string, lastModified?: string | null, priority = 0.6): MetadataRoute.Sitemap[number] => ({
-    url: absoluteUrl(path, 'tr'),
+    url: absoluteUrl(path, 'en'),
     lastModified: lastModified ? new Date(lastModified) : undefined,
     priority,
     alternates: { languages: Object.fromEntries(LOCALES.map((l) => [l, `${SITE}${localePath(path, l)}`])) },

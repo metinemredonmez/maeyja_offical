@@ -1,11 +1,11 @@
 import { defineRouting } from 'next-intl/routing';
 
-export const LOCALES = ['tr', 'en', 'ru', 'nl', 'de', 'fr', 'it', 'es', 'ko', 'ja', 'zh'] as const;
+export const LOCALES = ['en', 'tr', 'ru', 'nl', 'de', 'fr', 'it', 'es', 'ko', 'ja', 'zh'] as const;
 export type Locale = (typeof LOCALES)[number];
 
 export const LOCALE_LABELS: Record<Locale, string> = {
-  tr: 'Türkçe',
   en: 'English',
+  tr: 'Türkçe',
   ru: 'Русский',
   nl: 'Nederlands',
   de: 'Deutsch',
@@ -17,10 +17,10 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   zh: '中文',
 };
 
-/** `/` is Turkish; every other language gets a prefix (`/en`, `/ja`, …). */
+/** `/` is English for everyone (no browser-language redirect); every other language gets a prefix (`/tr`, `/ja`, …). */
 export const routing = defineRouting({
   locales: LOCALES,
-  defaultLocale: 'tr',
+  defaultLocale: 'en',
   localePrefix: 'as-needed',
-  localeDetection: true,
+  localeDetection: false,
 });

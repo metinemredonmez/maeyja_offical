@@ -32,8 +32,8 @@ const INSTAGRAM = 'https://www.instagram.com/maeyja_official/';
 const siteUrl = () => (process.env.WEB_URL || 'https://maeyja.com').replace(/\/$/, '');
 
 const NAV: Record<MailLocale, [string, string][]> = {
-  tr: [['Çantalar', '/products'], ['Atölye', '/about'], ['Journal', '/journal']],
-  en: [['Bags', '/en/products'], ['Atelier', '/en/about'], ['Journal', '/en/journal']],
+  tr: [['Çantalar', '/tr/products'], ['Atölye', '/tr/about'], ['Journal', '/tr/journal']],
+  en: [['Bags', '/products'], ['Atelier', '/about'], ['Journal', '/journal']],
 };
 
 const rule = `<div style="height:1px;line-height:1px;font-size:0;background:${LINE}">&nbsp;</div>`;
@@ -72,7 +72,7 @@ export function emailShell(o: ShellOptions): string {
 ${o.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all">${esc(o.preheader)}&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>` : ''}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${GROUND}"><tr><td class="mj-outer" align="center" style="padding:40px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#FFFFFF">
-<tr><td align="center" style="padding:46px 24px 38px"><a href="${esc(site)}" style="font-family:${SANS};font-size:15px;letter-spacing:.55em;padding-left:.55em;color:${INK};text-decoration:none">MAEYJA</a></td></tr>
+<tr><td align="center" style="padding:46px 24px 38px"><a href="${esc(o.locale === 'tr' ? `${site}/tr` : site)}" style="font-family:${SANS};font-size:15px;letter-spacing:.55em;padding-left:.55em;color:${INK};text-decoration:none">MAEYJA</a></td></tr>
 ${
   o.heroImageUrl
     ? `<tr><td style="padding:0;font-size:0;line-height:0"><img src="${esc(o.heroImageUrl)}" width="600" alt="${esc(o.heroAlt ?? '')}" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none"></td></tr>`

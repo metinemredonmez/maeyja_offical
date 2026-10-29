@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Order, OrderItem, OrderStatus, PaymentProvider, Prisma } from '@prisma/client';
+import { storefrontPath } from '../../common/utils/i18n.util';
 import { toNumber } from '../../common/utils/money.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -93,8 +94,7 @@ export class OrderLifecycleService {
 
   orderUrl(order: Pick<Order, 'orderNumber' | 'locale' | 'userId'>) {
     const web = this.config.get('WEB_URL', { infer: true });
-    const prefix = order.locale === 'tr' ? '' : `/${order.locale}`;
-    return order.userId ? `${web}${prefix}/account/orders/${order.orderNumber}` : `${web}${prefix}/order-status?order=${order.orderNumber}`;
+    return `${web}${storefrontPath(order.locale, order.userId ? `/account/orders/${order.orderNumber}` : `/order-status?order=${order.orderNumber}`)}`;
   }
 
   async mailData(order: OrderWithItems): Promise<OrderMailData> {

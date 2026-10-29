@@ -8,7 +8,7 @@ const intl = createIntlMiddleware(routing);
 /** Paths (locale prefix stripped) that need a signed-in customer. */
 const PROTECTED = [/^\/account(?!\/(login|register|forgot-password|reset-password))/];
 
-const stripLocale = (pathname: string) => pathname.replace(/^\/(en|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/, '') || '/';
+const stripLocale = (pathname: string) => pathname.replace(/^\/(tr|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/, '') || '/';
 
 function csp(nonce: string) {
   const dev = process.env.NODE_ENV !== 'production';

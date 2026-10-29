@@ -2,6 +2,14 @@
 export const LOCALES = ['tr', 'en', 'ru', 'nl', 'de', 'fr', 'it', 'es', 'ko', 'ja', 'zh'] as const;
 export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = 'tr';
+/** Content is written in Turkish (DEFAULT_LOCALE), but the storefront's unprefixed URLs are English. */
+export const STOREFRONT_DEFAULT_LOCALE: Locale = 'en';
+
+/** Storefront path for a visitor's language: `/products` (English) or `/tr/products`, `/de/products`… */
+export function storefrontPath(locale: string | null | undefined, path: string): string {
+  const prefix = locale && locale !== STOREFRONT_DEFAULT_LOCALE && (LOCALES as readonly string[]).includes(locale) ? `/${locale}` : '';
+  return `${prefix}${path}`;
+}
 
 /** Picks the first supported language from `?lang=` or an Accept-Language header (`fr-CA,fr;q=0.9,en;q=0.8`). */
 export function resolveLocale(input: unknown): Locale {

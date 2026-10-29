@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Order, OrderItem, PaymentProvider, PaymentStatus, Prisma } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
-import { Locale } from '../../common/utils/i18n.util';
+import { Locale, storefrontPath } from '../../common/utils/i18n.util';
 import { toKurus, toNumber } from '../../common/utils/money.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -242,7 +242,7 @@ export class CheckoutService {
     }
     const order = payment.order;
     const resultUrl = (status: string) =>
-      `${web}${order.locale === 'tr' ? '' : `/${order.locale}`}/checkout/result?order=${encodeURIComponent(order.orderNumber)}&status=${status}`;
+      `${web}${storefrontPath(order.locale, `/checkout/result?order=${encodeURIComponent(order.orderNumber)}&status=${status}`)}`;
 
     if (payment.status === PaymentStatus.SUCCEEDED) return resultUrl('success'); // replayed callback
 

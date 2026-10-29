@@ -5,7 +5,7 @@ import { CampaignAudience, CampaignRecipientStatus, CampaignStatus, EmailCampaig
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
 import { keyFromEnv } from '../../common/utils/crypto.util';
 import { cleanCmsHtml } from '../../common/utils/html.util';
-import { LOCALES } from '../../common/utils/i18n.util';
+import { storefrontPath } from '../../common/utils/i18n.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
@@ -218,10 +218,9 @@ export class CampaignsService {
     const web = this.config.get('WEB_URL', { infer: true }).replace(/\/$/, '');
     const api = `${this.config.get('API_URL', { infer: true }).replace(/\/$/, '')}/${this.config.get('API_PREFIX', { infer: true })}`;
     const query = `r=${encodeURIComponent(recipient.id)}&t=${unsubscribeSignature(recipient.id, this.key)}`;
-    const prefix = recipient.locale !== 'tr' && (LOCALES as readonly string[]).includes(recipient.locale) ? `/${recipient.locale}` : '';
     const content = renderCampaign(campaign, {
       locale: recipient.locale,
-      unsubscribeUrl: `${web}${prefix}/unsubscribe?${query}`,
+      unsubscribeUrl: `${web}${storefrontPath(recipient.locale, `/unsubscribe?${query}`)}`,
       webUrl: web,
       sender: { name: store.name, address: store.address, email: store.email },
     });

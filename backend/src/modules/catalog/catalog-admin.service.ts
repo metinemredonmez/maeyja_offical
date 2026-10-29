@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, ProductStatus } from '@prisma/client';
+import { storefrontPath } from '../../common/utils/i18n.util';
 import { paginate, skipTake } from '../../common/dto/pagination.dto';
 import { slugify } from '../../common/utils/slug.util';
 import { Env } from '../../config/env.validation';
@@ -250,8 +251,7 @@ export class CatalogAdminService {
     const web = this.config.get('WEB_URL', { infer: true });
     const label = [variant.product.name, variant.color?.name, variant.size].filter(Boolean).join(' — ');
     for (const alert of alerts) {
-      const prefix = alert.locale === 'tr' ? '' : `/${alert.locale}`;
-      await this.mail.send(alert.email, templates.stockAlert(mailLocale(alert.locale), label, `${web}${prefix}/products/${variant.product.slug}`));
+      await this.mail.send(alert.email, templates.stockAlert(mailLocale(alert.locale), label, `${web}${storefrontPath(alert.locale, `/products/${variant.product.slug}`)}`));
       await this.prisma.stockAlert.update({ where: { id: alert.id }, data: { notifiedAt: new Date() } });
     }
     if (alerts.length) this.logger.log(`restock: notified ${alerts.length} for ${variant.sku}`);
