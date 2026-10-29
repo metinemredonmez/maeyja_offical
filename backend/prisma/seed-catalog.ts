@@ -140,8 +140,7 @@ async function main() {
     }
     const left = await importImage('origami', '06-red.webp', 'Origami');
     const right = await importImage('valise', '06-ivory.webp', 'Valise');
-    const banner = await importImage('_home', '12-campaign-rome-steps.webp', 'Drape');
-    const bannerVideo = await importVideo('_home', 'band-rome-steps.mp4', 'Drape');
+    const banner = await importImage('_home', '12-campaign-drape-close.webp', 'Drape');
     const diptych = split(HOME_V2.DIPTYCH);
     const strip = split(HOME_V2.STRIP);
     const bannerCopy = split(HOME_V2.BANNER);
@@ -150,7 +149,7 @@ async function main() {
       data: [
         { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', ...diptych.base, translations: diptych.translations },
         { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'strip', sortOrder: 3, payload: {}, ...strip.base, translations: strip.translations },
-        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, videoUrl: bannerVideo, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
+        { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
       ],
     });
     console.log('✓ ana sayfa: yan yana fotoğraflar, model şeridi ve banner eklendi');
@@ -165,12 +164,16 @@ async function main() {
     await prisma.homeSection.update({ where: { id: heroNow.id }, data: { imageUrl: wide.url, mobileImageUrl: tall.url, ...(film && !heroNow.videoUrl ? { videoUrl: film } : {}) } });
     console.log('✓ hero: mankenli kampanya görseli' + (film ? ' + video' : ''));
   }
-  // The first Faz 1 run put a Drape table photo in the banner; swap it for the campaign film.
-  const oldBanner = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.EDITORIAL, layout: 'full', imageUrl: { contains: '/catalog/drape/06-green' } } });
+  // The banner's earlier stand-ins (Drape table photo, then a Rome film whose bag wasn't true to the Drape) give way
+  // to a close shot where the bag matches the product. Only seeded media is replaced.
+  const oldBanner = await prisma.homeSection.findFirst({
+    where: { type: HomeSectionType.EDITORIAL, layout: 'full', OR: [{ imageUrl: { contains: '/catalog/drape/06-green' } }, { imageUrl: { contains: '/catalog/_home/12-campaign-rome-steps' } }] },
+  });
   if (oldBanner) {
-    const banner = await importImage('_home', '12-campaign-rome-steps.webp', 'Drape');
-    const film = await importVideo('_home', 'band-rome-steps.mp4', 'Drape');
-    await prisma.homeSection.update({ where: { id: oldBanner.id }, data: { imageUrl: banner.url, ...(film && !oldBanner.videoUrl ? { videoUrl: film } : {}) } });
+    const banner = await importImage('_home', '12-campaign-drape-close.webp', 'Drape');
+    const seededFilm = !oldBanner.videoUrl || oldBanner.videoUrl.includes('/catalog/_home/band-rome-steps');
+    await prisma.homeSection.update({ where: { id: oldBanner.id }, data: { imageUrl: banner.url, ...(seededFilm ? { videoUrl: null } : {}) } });
+    console.log('✓ banner: Drape yakın çekim');
   }
   // First hero film showed the bag's back (invented by the AI) when she turned away; v2 never turns.
   const oldFilm = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { endsWith: '/catalog/_home/hero-rome.mp4' } } });
