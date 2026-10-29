@@ -42,8 +42,13 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 **C. Sanal dene — "Üzerimde gör" (ai-beauty'deki deneme altyapısından)**
 - Ürün sayfasında **"Üzerimde gör"** düğmesi: ziyaretçi kendi fotoğrafını yükler (ya da çeker), seçili çanta omzunda/elinde
   görünür; önce/sonra kaydırıcı, indir/paylaş.
-- ai-beauty'deki gibi fal.ai üzerinden (`FAL_KEY`). Oradaki giysi deneme modelleri (FASHN, IDM-VTON) çanta için uygun
-  olmayabilir; çok görselli düzenleme modelleri gerçek çanta fotoğraflarımızla denenip en doğal sonucu veren seçilir.
+- **Altyapı `virtual-textile` projesinden taşınır** (aynı NestJS yapısı): sağlayıcı katmanı (fal.ai: FASHN v1.6 / IDM-VTON /
+  CAT-VTON · Google Gemini görüntü modeli), hata eşleme, kalite kontrolü, filigran, kullanım ölçümü, kuyrukta asenkron iş.
+  ai-beauty'deki rıza/izin akışı örnek alınır. Giysi modelleri çanta için uygun olmayabilir; **çanta için önce Gemini'nin
+  çok görselli düzenlemesi**, fal.ai yedek — gerçek çanta fotoğraflarımızla denenip en doğal sonuç seçilir.
+- virtual-textile'deki **AI stil danışmanı** fikri sohbet asistanına eklenir: "Bu elbiseyle hangi çanta?" gibi sorulara
+  katalogdan öneri.
+- Video deneme (virtual-textile'de var) pahalı; şimdilik kapalı, sonraki aşama.
 - **KVKK:** fotoğraf kişisel veri ve yurt dışına (fal.ai) gider → ayrı, önceden işaretlenmemiş açık rıza; fotoğraf
   saklanmaz (iş bitince silinir); 18 yaş beyanı; KVKK metnine eklenir. Kötüye kullanıma karşı hız ve günlük sınır.
 - **Ana sayfada ara banner:** "Yeni · Çantanı üzerinde gör" — kısa video/örnek görselle tam genişlik tanıtım bandı;
@@ -62,5 +67,5 @@ yerelde kurulup ekran görüntüsüyle onaya sunulur.
 - Ayarlar → "Asistan" sekmesi.
 
 ## Senden gerekenler
-- Anthropic API anahtarı ve fal.ai anahtarı (Faz 3 için).
+- Anthropic API anahtarı + Google AI (Gemini) ve/veya fal.ai anahtarı (Faz 3 için).
 - Fotoğraflar: stüdyo (aynı açık bej fon) + kampanya (manken, İstanbul mimarisi); 5–10 sn sessiz döngü videolar (opsiyonel, Mlouye tarzı). Gelene kadar mevcut en iyi kareler ve vitrin görseli kullanılır.
