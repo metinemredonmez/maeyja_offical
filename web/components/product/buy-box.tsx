@@ -1,19 +1,27 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { FormEvent, useMemo, useState } from 'react';
+import Image from 'next/image';
+import { FormEvent, ReactNode, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api.client';
-import { money } from '@/lib/format';
+import { modelNo, money } from '@/lib/format';
 import type { Product, PublicSettings } from '@/lib/types';
 import { useCartMutations } from '@/components/cart/use-cart';
 import { useCartUi } from '@/components/cart/cart-ui';
 import { Gallery } from './gallery';
 import { Swatch } from './swatch';
-import { Accordion } from './accordion';
+import { ProductTabs } from './product-tabs';
+import { WishlistButton } from './wishlist-button';
 
-/** Owns the colour/size selection so the gallery and the sticky box stay in sync. */
-export function BuyBox({ product, shipping }: { product: Product; shipping: PublicSettings['shipping'] | null }) {
+/**
+ * Polène-style product view. Left half: the photos of the selected colour stacked. Right half (sticky): name,
+ * model number and colour, price, the bag large on the cream ground, colours picked by their own photo,
+ * "Add to bag" + wishlist, and tabs. Owns the colour/size selection so both halves stay in sync.
+ * Cut-out photos sit on an explicit cream fill: the sticky panel is its own stacking context, so "multiply"
+ * would otherwise blend against nothing and keep the white studio background.
+ */
+export function BuyBox({ product, shipping, wishlisted, crumb }: { product: Product; shipping: PublicSettings['shipping'] | null; wishlisted: boolean; crumb: ReactNode }) {
   const t = useTranslations('product');
   const tc = useTranslations('common');
   const locale = useLocale();
@@ -34,6 +42,14 @@ export function BuyBox({ product, shipping }: { product: Product; shipping: Publ
   const needsSize = sizes.length > 0 && !size;
   const soldOut = Boolean(variant && !variant.inStock);
 
+  // Photos tagged with a colour show only for that colour; untagged ones always show.
+  const forColor = product.images.filter((i) => !i.colorSlug || i.colorSlug === color);
+  const photos = forColor.length ? forColor : product.images;
+  const lead = photos[0];
+  const stacked = photos.length > 1 ? photos.slice(1) : photos;
+  const thumbFor = (slug: string) => product.images.find((i) => i.colorSlug === slug);
+  const colorName = colors.find((c) => c.slug === color)?.name;
+
   const addToCart = () => {
     if (!variant) return;
     add.mutate(
@@ -49,48 +65,56 @@ export function BuyBox({ product, shipping }: { product: Product; shipping: Publ
   };
 
   const sizeAvailable = (s: string) => product.variants.some((v) => v.size === s && (v.color?.slug ?? null) === color && v.inStock);
+  const days = shipping?.estimatedDays ?? '1-3';
+  const tabs = [
+    { id: 'description', title: t('description'), body: product.description ?? '' },
+    { id: 'details', title: t('details'), body: [product.dimensions, product.madeIn ? `${t('madeIn')}: ${product.madeIn}` : null].filter(Boolean).join('\n\n') },
+    { id: 'materials', title: t('materialCare'), body: [product.material, product.care].filter(Boolean).join('\n\n') },
+    { id: 'shipping', title: t('shippingReturns'), body: [t('perks.shipping', { days }), t('perks.returns'), t('perks.installments'), t('perks.gift')].join('\n') },
+  ].filter((i) => i.body);
 
   return (
-    <div className="grid gap-10 md:grid-cols-12 md:gap-6">
-      <div className="md:col-span-7">
-        <Gallery images={product.images} colorSlug={color} name={product.name} />
+    <div className="md:grid md:grid-cols-2">
+      <div className="relative">
+        <div className="absolute top-4 left-4 z-10 md:left-6">{crumb}</div>
+        <Gallery stacked={stacked} all={photos} name={product.name} />
       </div>
 
-      <div className="md:col-span-4 md:col-start-9">
-        <div className="flex flex-col gap-6 md:sticky md:top-28">
-          <div className="flex flex-col gap-2">
-            {product.collections[0] ? <p className="label text-muted">{product.collections[0].name}{variant?.color ? ` · ${variant.color.name}` : ''}</p> : null}
-            <h1 className="font-serif text-4xl font-normal leading-tight md:text-[44px]">{product.name}</h1>
-            {product.subtitle ? <p className="text-sm text-muted">{product.subtitle}</p> : null}
+      <div className="md:sticky md:top-[69px] md:self-start">
+        <div className="mx-auto flex max-w-[520px] flex-col items-center gap-7 px-5 py-10 text-center md:min-h-[calc(100svh-69px)] md:justify-center md:px-8">
+          <div className="flex flex-col items-center gap-2">
+            <h1 className="font-serif text-[30px] leading-tight font-light md:text-[34px]">{product.name}</h1>
+            <p className="label text-muted">{[modelNo(product.number), colorName].filter(Boolean).join(' · ')}</p>
+            <p className="label mt-1">
+              {money(price, locale)}
+              {compareAt && compareAt > price ? <span className="ml-3 text-muted line-through">{money(compareAt, locale)}</span> : null}
+            </p>
           </div>
 
-          <p className="text-lg">
-            {money(price, locale)}
-            {compareAt && compareAt > price ? <span className="ml-3 text-sm text-muted line-through">{money(compareAt, locale)}</span> : null}
-          </p>
+          {lead ? (
+            <div className="relative hidden aspect-square w-full max-w-[360px] bg-ground md:block">
+              <Image src={lead.url} alt={lead.alt ?? product.name} fill priority sizes="360px" className="object-contain mix-blend-multiply" />
+            </div>
+          ) : null}
 
-          {colors.length ? (
-            <div className="flex flex-col gap-3">
-              <p className="label text-muted">
-                {t('color')} — {colors.find((c) => c.slug === color)?.name}
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {colors.map((c) => (
-                  <button key={c.slug} type="button" aria-label={c.name} aria-pressed={c.slug === color} onClick={() => setColor(c.slug)} className={`rounded-full p-0.5 ${!c.inStock ? 'opacity-40' : ''}`}>
-                    <Swatch hex={c.hex} hex2={c.hex2} size={30} selected={c.slug === color} />
+          {colors.length > 1 ? (
+            <div className="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label={t('color')}>
+              {colors.map((c) => {
+                const thumb = thumbFor(c.slug);
+                const on = c.slug === color;
+                return (
+                  <button key={c.slug} type="button" role="radio" aria-checked={on} aria-label={c.name} title={c.name} onClick={() => setColor(c.slug)} className={`relative flex h-16 w-16 items-center justify-center border bg-ground transition-colors ${on ? 'border-ink' : 'border-transparent hover:border-line'} ${!c.inStock ? 'opacity-40' : ''}`}>
+                    {thumb ? <Image src={thumb.url} alt="" fill sizes="64px" className="object-contain p-1.5 mix-blend-multiply" /> : <Swatch hex={c.hex} hex2={c.hex2} size={22} selected={on} />}
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
           ) : null}
 
           {sizes.length ? (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <p className="label text-muted">{t('size')}</p>
-                {product.sizeGuide ? <span className="label text-muted">{t('sizeGuide')}</span> : null}
-              </div>
-              <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col items-center gap-3">
+              <p className="label text-muted">{t('size')}</p>
+              <div className="flex flex-wrap justify-center gap-2">
                 {sizes.map((s) => (
                   <button key={s} type="button" aria-pressed={s === size} onClick={() => setSize(s)} className={`min-w-12 border px-3 py-2.5 text-sm ${s === size ? 'border-ink bg-ink text-ground' : 'border-line hover:border-ink'} ${!sizeAvailable(s) ? 'text-muted line-through' : ''}`}>
                     {s}
@@ -100,32 +124,21 @@ export function BuyBox({ product, shipping }: { product: Product; shipping: Publ
             </div>
           ) : null}
 
-          {soldOut ? (
-            <StockAlert variantId={variant!.id} />
-          ) : (
-            <button type="button" onClick={addToCart} disabled={needsSize || !variant || add.isPending} className="btn-primary w-full justify-between px-6">
-              <span>{needsSize ? t('selectSize') : t('addToCart')}</span>
-              <span className="text-[13px] tracking-[0.04em]">{money(price, locale)}</span>
-            </button>
-          )}
-          {variant?.lowStock ? <p className="text-xs text-brand">{tc('lowStock', { count: 3 })}</p> : null}
+          <div className="flex w-full flex-col gap-3">
+            {soldOut ? (
+              <StockAlert variantId={variant!.id} />
+            ) : (
+              <div className="flex w-full gap-2">
+                <button type="button" onClick={addToCart} disabled={needsSize || !variant || add.isPending} className="btn-primary flex-1">
+                  {needsSize ? t('selectSize') : t('addToCart')}
+                </button>
+                <WishlistButton productId={product.id} initial={wishlisted} />
+              </div>
+            )}
+            {variant?.lowStock ? <p className="text-xs text-brand">{tc('lowStock', { count: 3 })}</p> : null}
+          </div>
 
-          <ul className="flex flex-col gap-2 border-t border-line pt-4 text-xs text-muted">
-            <li>{t('perks.shipping', { days: shipping?.estimatedDays ?? '1-3' })}</li>
-            <li>{t('perks.returns')}</li>
-            <li>{t('perks.installments')}</li>
-            <li>{t('perks.gift')}</li>
-          </ul>
-
-          <Accordion
-            items={[
-              { title: t('details'), body: product.description, open: true },
-              { title: t('materialCare'), body: [product.material, product.care].filter(Boolean).join('\n\n') },
-              { title: t('dimensions'), body: product.dimensions },
-              { title: t('shippingReturns'), body: `${t('perks.shipping', { days: shipping?.estimatedDays ?? '1-3' })}\n${t('perks.returns')}` },
-              { title: t('atelier'), body: [product.story, product.madeIn ? `${t('madeIn')}: ${product.madeIn}` : null].filter(Boolean).join('\n\n') },
-            ].filter((i) => i.body)}
-          />
+          <ProductTabs items={tabs} />
         </div>
       </div>
     </div>

@@ -46,6 +46,7 @@ export interface Variant {
 export interface Product {
   id: string;
   slug: string;
+  number?: number | null;
   name: string;
   subtitle: string | null;
   description: string | null;
