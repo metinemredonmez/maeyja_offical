@@ -68,7 +68,7 @@ function ColorDialog({ open, onOpenChange, color }: { open: boolean; onOpenChang
               </p>
             </div>
           </div>
-          <TranslationsTabs
+          <TranslationsTabs kind="leather colour name"
             form={form}
             fields={[{ name: 'name', label: 'Ad', required: true, maxLength: 40 }]}
             extraBase={

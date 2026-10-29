@@ -66,7 +66,7 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormError error={save.error} />
-          <TranslationsTabs
+          <TranslationsTabs kind="product category"
             form={form}
             fields={[
               { name: 'name', label: 'Ad', required: true, maxLength: 80 },

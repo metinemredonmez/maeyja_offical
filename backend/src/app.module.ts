@@ -18,6 +18,7 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module';
 import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { ContentModule } from './modules/content/content.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AiModule } from './modules/ai/ai.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { MediaModule } from './modules/media/media.module';
@@ -68,6 +69,7 @@ import { UsersModule } from './modules/users/users.module';
     CampaignsModule,
     MailboxModule,
     DashboardModule,
+    AiModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

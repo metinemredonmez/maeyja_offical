@@ -65,7 +65,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormError error={save.error} />
-          <TranslationsTabs
+          <TranslationsTabs kind="collection"
             form={form}
             fields={[
               { name: 'name', label: 'Ad', required: true, maxLength: 80 },

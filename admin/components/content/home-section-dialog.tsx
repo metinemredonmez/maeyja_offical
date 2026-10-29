@@ -114,7 +114,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormError error={save.error} />
-          <TranslationsTabs
+          <TranslationsTabs kind="homepage section"
             form={form}
             fields={[
               { name: 'title', label: 'Başlık', maxLength: 160 },

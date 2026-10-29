@@ -134,7 +134,7 @@ export function ProductForm({ product, onSubmit, submitting, error }: Props) {
       <div className="min-w-0 space-y-5">
         <FormError error={error} />
         <Section title="Ürün bilgileri" description="TR sekmesi temel metinlerdir; diğer diller boş bırakılırsa Türkçe gösterilir.">
-          <TranslationsTabs
+          <TranslationsTabs kind="product page"
             form={form}
             fields={[
               { name: 'name', label: 'Ürün adı', required: true, maxLength: 120 },

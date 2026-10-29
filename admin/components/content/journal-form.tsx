@@ -61,7 +61,7 @@ export function JournalForm({ post, onSubmit, submitting, error }: { post?: Jour
       <div className="space-y-5">
         <FormError error={error} />
         <Section title="Yazı">
-          <TranslationsTabs
+          <TranslationsTabs kind="journal article"
             form={form}
             fields={[
               { name: 'title', label: 'Başlık', required: true, maxLength: 160 },

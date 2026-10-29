@@ -37,7 +37,7 @@ export function PageForm({ page, onSubmit, submitting, error }: { page?: Page; o
       <div className="space-y-5">
         <FormError error={error} />
         <Section title="İçerik" description="HTML olarak saklanır; önizleme temizlenmiş çıktıyı gösterir.">
-          <TranslationsTabs
+          <TranslationsTabs kind="store page"
             form={form}
             fields={[
               { name: 'title', label: 'Başlık', required: true, maxLength: 160 },

@@ -46,7 +46,7 @@ function FaqDialog({ item, groups, onClose }: { item: Faq | null; groups: string
         </DialogHeader>
         <form onSubmit={onSubmit} className="grid gap-4" noValidate>
           <FormError error={save.error} />
-          <TranslationsTabs
+          <TranslationsTabs kind="FAQ entry"
             form={form}
             fields={[
               { name: 'question', label: 'Soru', required: true, maxLength: 300 },

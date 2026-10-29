@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 import { Controller, type FieldErrors, type UseFormReturn } from 'react-hook-form';
+import { Languages } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Field } from '@/components/shared/form';
 import { RichText } from '@/components/shared/rich-text';
+import { api, errorMessage } from '@/lib/api.client';
 import { DEFAULT_LOCALE, LOCALE_LABELS, LOCALES, type Locale } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -27,14 +31,17 @@ type Props = {
   className?: string;
   /** Rendered inside the TR tab only, after the translatable fields (e.g. slug). */
   extraBase?: React.ReactNode;
+  /** Tells the translator what it is translating ("ürün sayfası", "SSS"…). */
+  kind?: string;
 };
 
 /**
  * One tab per locale. The TR tab edits base fields; other tabs edit
  * `translations[lang][field]`. Empty translated fields fall back to Turkish.
  */
-export function TranslationsTabs({ form, fields, className, extraBase }: Props) {
+export function TranslationsTabs({ form, fields, className, extraBase, kind }: Props) {
   const [lang, setLang] = useState<Locale>(DEFAULT_LOCALE);
+  const [translating, setTranslating] = useState(false);
   const translations = form.watch('translations') as Record<string, Record<string, string>> | undefined;
   const errors = form.formState.errors as FieldErrors<Record<string, unknown>>;
 
@@ -45,6 +52,33 @@ export function TranslationsTabs({ form, fields, className, extraBase }: Props) 
   };
 
   const path = (l: Locale, name: string) => (l === DEFAULT_LOCALE ? name : `translations.${l}.${name}`);
+
+  /** Fills the empty language fields from the Turkish text (Claude). Nothing is saved until the form is. */
+  const autoTranslate = async () => {
+    const source = Object.fromEntries(fields.map((f) => [f.name, String(form.getValues(f.name) ?? '')]).filter(([, v]) => v.trim()));
+    if (!Object.keys(source).length) {
+      toast.error('Önce Türkçe metni yazın');
+      return;
+    }
+    setTranslating(true);
+    try {
+      const { translations } = await api.post<{ translations: Record<string, Record<string, string>> }>('/admin/ai/translate', { fields: source, kind });
+      let count = 0;
+      for (const [l, values] of Object.entries(translations)) {
+        for (const [name, value] of Object.entries(values)) {
+          const target = `translations.${l}.${name}`;
+          if (String(form.getValues(target) ?? '').trim()) continue;
+          form.setValue(target, value, { shouldDirty: true });
+          count++;
+        }
+      }
+      toast.success(count ? `${count} alan çevrildi — kaydetmeden önce göz atın` : 'Boş çeviri alanı yoktu (yeniden çevirmek için alanı temizleyin)');
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   const renderField = (l: Locale, f: TranslatableField) => {
     const name = path(l, f.name);
@@ -75,6 +109,13 @@ export function TranslationsTabs({ form, fields, className, extraBase }: Props) 
 
   return (
     <Tabs value={lang} onValueChange={(v) => setLang(v as Locale)} className={cn('gap-4', className)}>
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+        <span>Türkçe metni yazın; diğer 10 dil otomatik çevrilir (boş alanlar). Kaydetmeden önce kontrol edebilirsiniz.</span>
+        <Button type="button" size="sm" variant="outline" onClick={autoTranslate} disabled={translating}>
+          <Languages className="size-3.5" />
+          {translating ? 'Çevriliyor…' : 'Otomatik çevir'}
+        </Button>
+      </div>
       <TabsList variant="line" className="!h-auto w-full flex-wrap justify-start gap-x-0.5 gap-y-1 border-b pb-1">
         {LOCALES.map((l) => {
           const n = filled(l);
