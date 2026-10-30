@@ -6,13 +6,17 @@ import { Public } from '../../common/decorators/public.decorator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 import { Locale } from '../../common/utils/i18n.util';
 import { ContentService } from './content.service';
+import { InstagramService } from './instagram.service';
 import { ContactDto, SubscribeDto } from './dto/content.dto';
 
 @ApiTags('Content')
 @Public()
 @Controller()
 export class ContentController {
-  constructor(private readonly content: ContentService) {}
+  constructor(
+    private readonly content: ContentService,
+    private readonly instagram: InstagramService,
+  ) {}
 
   @Get('content/home') home(@Lang() lang: Locale) { return this.content.home(lang); }
   @Get('content/pages/:slug') page(@Param('slug') slug: string, @Lang() lang: Locale) { return this.content.page(slug, lang); }
@@ -21,6 +25,7 @@ export class ContentController {
   @Get('content/press') press(@Lang() lang: Locale) { return this.content.press(lang); }
   @Get('content/stockists') stockists(@Lang() lang: Locale) { return this.content.stockists(lang); }
   @Get('content/faq') faq(@Lang() lang: Locale) { return this.content.faq(lang); }
+  @Get('content/instagram') instagramPosts() { return this.instagram.posts(); }
 
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(200)

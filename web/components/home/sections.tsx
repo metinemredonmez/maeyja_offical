@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { Link } from '@/i18n/navigation';
 import { cleanHtml } from '@/lib/sanitize';
 import { modelNo, money } from '@/lib/format';
-import type { HomeSection, ProductCard as Card } from '@/lib/types';
+import type { HomeSection, InstagramPost, ProductCard as Card } from '@/lib/types';
 import { ProductCard } from '@/components/product/product-card';
 import { NewsletterForm } from '@/components/newsletter-form';
 import { Swatch } from '@/components/product/swatch';
@@ -324,12 +324,14 @@ const COLLAGE = [
 ];
 
 /**
- * Polène's "Follow us on Instagram": campaign pictures scattered around a short line and a link to the account.
+ * Polène's "Follow us on Instagram": pictures scattered around a short line and a link to the account. They are
+ * the shop's latest posts once the API has synced them (each opens its post); campaign pictures fill the rest.
  * Phones get the line first and a simple grid underneath.
  */
-export function InstagramCollage({ url }: { url: string | null }) {
+export function InstagramCollage({ url, posts }: { url: string | null; posts: InstagramPost[] }) {
   const t = useTranslations('home');
   if (!url) return null;
+  const tiles = COLLAGE.map((c, i) => ({ ...c, src: posts[i]?.image ?? `/instagram/${c.n}.webp`, href: posts[i]?.permalink ?? url }));
   const line = (
     <div className="flex flex-col items-center gap-3 text-center">
       <p className="font-serif text-[26px] font-light md:text-[30px]">{t('followInstagram')}</p>
@@ -343,17 +345,17 @@ export function InstagramCollage({ url }: { url: string | null }) {
       <div className="md:hidden">
         {line}
         <div className="mt-10 grid grid-cols-2 gap-3">
-          {COLLAGE.slice(0, 4).map(({ n }) => (
-            <span key={n} className="relative block aspect-[4/5] overflow-hidden bg-stone">
-              <Image src={`/instagram/${n}.webp`} alt="" fill sizes="50vw" className="object-cover" />
-            </span>
+          {tiles.slice(0, 4).map(({ n, src, href }) => (
+            <a key={n} href={href} target="_blank" rel="noopener" tabIndex={-1} aria-hidden="true" className="relative block aspect-[4/5] overflow-hidden bg-stone">
+              <Image src={src} alt="" fill sizes="50vw" className="object-cover" />
+            </a>
           ))}
         </div>
       </div>
       <div className="relative hidden aspect-[16/10] md:block">
-        {COLLAGE.map(({ n, box }) => (
-          <a key={n} href={url} target="_blank" rel="noopener" tabIndex={-1} aria-hidden="true" className={`reveal absolute block aspect-[4/5] overflow-hidden bg-stone ${box}`}>
-            <Image src={`/instagram/${n}.webp`} alt="" fill sizes="20vw" className="object-cover transition duration-700 hover:scale-[1.04]" />
+        {tiles.map(({ n, box, src, href }) => (
+          <a key={n} href={href} target="_blank" rel="noopener" tabIndex={-1} aria-hidden="true" className={`reveal absolute block aspect-[4/5] overflow-hidden bg-stone ${box}`}>
+            <Image src={src} alt="" fill sizes="20vw" className="object-cover transition duration-700 hover:scale-[1.04]" />
           </a>
         ))}
         <div className="absolute inset-x-0 top-[40%]">{line}</div>

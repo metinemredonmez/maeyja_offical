@@ -227,6 +227,13 @@ export interface PressItem {
   imageUrl: string | null;
 }
 
+/** A post from the shop's Instagram account, copied into our uploads by the API. */
+export interface InstagramPost {
+  id: string;
+  image: string;
+  permalink: string;
+}
+
 export interface Stockist {
   id: string;
   name: string;

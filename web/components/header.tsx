@@ -124,7 +124,7 @@ export function Header({
                 {stockists[0] ? (
                   <StoreTile heading={stockists[0].city} href="/stockists" src="/menu/store-city.webp" title={stockists[0].name} line={stockists[0].address} />
                 ) : null}
-                <StoreTile heading={ts('online')} href="/products" src="/menu/store-online.webp" title="maeyja.com" line={ts('worldwide')} />
+                <StoreTile heading={ts('online')} href="/products" src="/menu/store-shelves.webp" title="maeyja.com" line={ts('worldwide')} />
                 <StoreTile heading={tf('contact')} href="/contact" src="/menu/store-contact.webp" title={contactEmail ?? tf('contact')} line={null} />
               </div>
             </MegaItem>

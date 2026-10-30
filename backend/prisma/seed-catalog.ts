@@ -223,7 +223,7 @@ async function main() {
     const press = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.PRESS } });
     const at = press?.sortOrder ?? (await prisma.homeSection.count());
     await prisma.homeSection.updateMany({ where: { sortOrder: { gte: at } }, data: { sortOrder: { increment: 1 } } });
-    const wall = await importImage('_home', '16-boutique-wall.webp', 'MAEYJA');
+    const wall = await importImage('_home', '18-boutique-wall.webp', 'MAEYJA');
     const counter = await importImage('_home', '17-boutique-lune.webp', 'Lune');
     const lune = await prisma.product.findUnique({ where: { slug: 'lune' }, select: { id: true } });
     const copy = split(HOME_V2.BOUTIQUE);
@@ -231,6 +231,13 @@ async function main() {
       data: { type: HomeSectionType.EDITORIAL, layout: 'boutique', sortOrder: at, imageUrl: wall.url, secondImageUrl: counter.url, ctaUrl: '/products', payload: lune ? { productIds: [lune.id] } : {}, ...copy.base, translations: copy.translations },
     });
     console.log('✓ ana sayfa: vitrin bölümü');
+  }
+  // The first shelf wall stood the Drape's and the Duo's straps on the shelf; the second has them arching as they do.
+  const firstWall = await prisma.homeSection.findFirst({ where: { layout: 'boutique', imageUrl: { contains: '/catalog/_home/16-boutique-wall' } } });
+  if (firstWall) {
+    const wall = await importImage('_home', '18-boutique-wall.webp', 'MAEYJA');
+    await prisma.homeSection.update({ where: { id: firstWall.id }, data: { imageUrl: wall.url } });
+    console.log('✓ ana sayfa: vitrin fotoğrafı yenilendi');
   }
   // Each bag's second picture is a campaign or still-life photo: on the product page it opens the left column
   // (Polène) and on the listing it is the hover picture. Added once per bag, only while its first photo is the seeded one.
