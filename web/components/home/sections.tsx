@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import Image, { getImageProps } from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -61,23 +61,35 @@ function Body({ html, className }: { html: string | null; className?: string }) 
 
 /** Photo or silent looping video filling its (relative) parent. */
 function Media({ s, sizes, priority = false, mobile = true }: { s: HomeSection; sizes: string; priority?: boolean; mobile?: boolean }) {
+  const still = mobile && s.imageUrl && s.mobileImageUrl ? <ArtDirected wide={s.imageUrl} narrow={s.mobileImageUrl} sizes={sizes} priority={priority} /> : null;
   if (s.videoUrl) {
-    // Phones get the portrait still (and no video download) when one is set; wider screens get the film.
-    if (!mobile || !s.mobileImageUrl) return <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 h-full w-full object-cover" />;
-    return (
-      <>
-        <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 hidden h-full w-full object-cover md:block" />
-        <Image src={s.mobileImageUrl} alt="" fill priority={priority} sizes="100vw" className="object-cover md:hidden" />
-      </>
-    );
+    // With a portrait still for phones, the film plays over the still on wider screens only: phones never download it.
+    if (still) {
+      return (
+        <>
+          {still}
+          <AutoVideo src={s.videoUrl} wideOnly className="absolute inset-0 h-full w-full object-cover" />
+        </>
+      );
+    }
+    return <AutoVideo src={s.videoUrl} poster={s.imageUrl} className="absolute inset-0 h-full w-full object-cover" />;
   }
   if (!s.imageUrl) return null;
-  if (!mobile || !s.mobileImageUrl) return <Image src={s.imageUrl} alt="" fill priority={priority} sizes={sizes} className="object-cover" />;
+  return still ?? <Image src={s.imageUrl} alt="" fill priority={priority} sizes={sizes} className="object-cover" />;
+}
+
+/** One <picture> for the wide and the portrait photo, so each screen downloads only its own. */
+function ArtDirected({ wide, narrow, sizes, priority }: { wide: string; narrow: string; sizes: string; priority: boolean }) {
+  const common = { alt: '', fill: true, sizes, priority };
+  const { srcSet: wideSet } = getImageProps({ ...common, src: wide }).props;
+  const { srcSet: narrowSet, ...img } = getImageProps({ ...common, src: narrow }).props;
   return (
-    <>
-      <Image src={s.imageUrl} alt="" fill priority={priority} sizes={sizes} className="hidden object-cover md:block" />
-      <Image src={s.mobileImageUrl} alt="" fill priority={priority} sizes={sizes} className="object-cover md:hidden" />
-    </>
+    <picture>
+      <source media="(min-width: 768px)" srcSet={wideSet} sizes={sizes} />
+      <source srcSet={narrowSet} sizes={sizes} />
+      {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text -- props (alt included) come from getImageProps */}
+      <img {...img} className="object-cover" />
+    </picture>
   );
 }
 
