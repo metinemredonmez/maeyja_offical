@@ -493,6 +493,17 @@ export interface Settings {
   bankTransfer: { enabled: boolean; bankName: string; accountName: string; iban: string; note: Record<string, string> };
   assistant: { enabled: boolean; welcome: Record<string, string>; instructions: string; handoffWhatsapp: string };
   tryon: { enabled: boolean };
+  tracking: {
+    metaPixelId: string;
+    metaCapiToken: string;
+    metaTestCode: string;
+    ga4Id: string;
+    ga4ApiSecret: string;
+    googleAdsId: string;
+    googleAdsPurchaseLabel: string;
+    googleSiteVerification: string;
+    allowAiCrawlers: boolean;
+  };
 }
 export type SettingKey = keyof Settings;
 

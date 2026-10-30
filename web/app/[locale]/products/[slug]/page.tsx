@@ -46,7 +46,8 @@ export default async function ProductPage({ params }: { params: Params }) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: p.name,
-    description: p.description ?? undefined,
+    description: p.description ? p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : undefined,
+    sku: p.variants[0]?.sku,
     image: p.images.map((i) => i.url),
     brand: { '@type': 'Brand', name: 'MAEYJA' },
     material: p.material ?? undefined,
@@ -57,6 +58,15 @@ export default async function ProductPage({ params }: { params: Params }) {
       priceCurrency: 'TRY',
       availability: v.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
       url: absoluteUrl(`/products/${slug}`, locale),
+      itemCondition: 'https://schema.org/NewCondition',
+      // Google's merchant listings: 14-day returns by post.
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'TR',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 14,
+        returnMethod: 'https://schema.org/ReturnByMail',
+      },
     })),
   };
 

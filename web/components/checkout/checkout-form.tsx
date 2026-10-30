@@ -2,13 +2,14 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Link, useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api.client';
 import { money } from '@/lib/format';
+import { attribution, savePendingPurchase, track, type TrackItem } from '@/lib/tracking';
 import type { Address, CheckoutResult, PublicSettings, User } from '@/lib/types';
 import { useCart, useCartMutations } from '@/components/cart/use-cart';
 
@@ -81,6 +82,14 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
   const invoiceType = watch('invoiceType');
   const paymentMethod = watch('paymentMethod');
 
+  // Ad pixels: the start of checkout, once the bag has loaded.
+  const lines: TrackItem[] = (cart?.lines ?? []).map((l) => ({ id: l.sku, name: l.productName, variant: l.colorName, price: l.unitPrice, quantity: l.quantity }));
+  const hasCart = Boolean(cart?.lines.length);
+  useEffect(() => {
+    if (hasCart) track('begin_checkout', { value: cart!.total, items: lines });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the bag is there
+  }, [hasCart]);
+
   const onSubmit = async (v: Form) => {
     const body = {
       email: v.email,
@@ -94,9 +103,12 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
       acceptTerms: true,
       saveAddress: v.saveAddress,
       subscribeNewsletter: v.subscribeNewsletter,
+      // Lets the server send the same Purchase to Meta/Google — only with cookie consent.
+      attribution: attribution(),
     };
     try {
       const result = await api.post<CheckoutResult>('/checkout', body, locale);
+      if (cart) savePendingPurchase(result.order.orderNumber, cart.total, lines);
       invalidate(); // the API emptied the cart
       if (result.payment?.paymentPageUrl) {
         window.location.assign(result.payment.paymentPageUrl); // iyzico hosted page (3-D Secure)

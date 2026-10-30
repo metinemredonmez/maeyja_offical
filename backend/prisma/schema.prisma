@@ -447,6 +447,9 @@ model Order {
   trackingUrl     String?
   locale          String          @default("tr")
   ip              String?
+  /// Ad attribution from the browser at checkout (only with cookie consent): fbp/fbc, GA client id, user agent;
+  /// purchaseSentAt marks the server-side Purchase as sent to Meta/Google.
+  attribution     Json?
   paidAt          DateTime?
   shippedAt       DateTime?
   deliveredAt     DateTime?

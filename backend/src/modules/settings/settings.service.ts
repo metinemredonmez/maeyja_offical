@@ -30,13 +30,14 @@ export class SettingsService {
 
   /** What the storefront and mobile app may see. */
   async getPublic() {
-    const [store, shipping, bankTransfer, checkout, assistant, tryon] = await Promise.all([
+    const [store, shipping, bankTransfer, checkout, assistant, tryon, tracking] = await Promise.all([
       this.get('store'),
       this.get('shipping'),
       this.get('bankTransfer'),
       this.get('checkout'),
       this.get('assistant'),
       this.get('tryon'),
+      this.get('tracking'),
     ]);
     return {
       store,
@@ -48,6 +49,15 @@ export class SettingsService {
       checkout,
       assistant: { enabled: assistant.enabled, welcome: assistant.welcome },
       tryon: { enabled: tryon.enabled },
+      // Only the public IDs; the server-side token and API secret never leave the API.
+      tracking: {
+        metaPixelId: tracking.metaPixelId,
+        ga4Id: tracking.ga4Id,
+        googleAdsId: tracking.googleAdsId,
+        googleAdsPurchaseLabel: tracking.googleAdsPurchaseLabel,
+        googleSiteVerification: tracking.googleSiteVerification,
+        allowAiCrawlers: tracking.allowAiCrawlers,
+      },
       bankTransfer: bankTransfer.enabled
         ? bankTransfer
         : { enabled: false },

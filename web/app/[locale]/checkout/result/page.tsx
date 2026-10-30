@@ -2,6 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { currentUser } from '@/lib/api.server';
 import { RetryPayment } from '@/components/checkout/retry-payment';
+import { PurchaseEvent } from '@/components/tracking';
 
 export const metadata = { robots: { index: false } };
 
@@ -18,6 +19,7 @@ export default async function CheckoutResultPage({ params, searchParams }: { par
       <p className="label text-muted">{order}</p>
       <h1 className="font-serif text-4xl font-light md:text-5xl">{t(`result${key}`)}</h1>
       <p className="text-[15px] text-ink-soft">{t(`result${key}Text`, { orderNumber: order })}</p>
+      {status === 'success' && order ? <PurchaseEvent orderNumber={order} /> : null}
       {status === 'failed' && order ? <RetryPayment orderNumber={order} guest={!user} /> : null}
       {order ? (
         <Link href={user ? `/account/orders/${order}` : `/order-status?order=${order}`} className="link-underline mt-4">

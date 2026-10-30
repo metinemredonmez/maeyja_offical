@@ -6,6 +6,7 @@ import { toNumber } from '../../common/utils/money.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
+import { PurchaseTrackingService } from './purchase-tracking.service';
 import { mailLocale, OrderMailData, templates } from '../notifications/mail.templates';
 import { PushService } from '../notifications/push.service';
 import { SettingsService } from '../settings/settings.service';
@@ -25,7 +26,7 @@ export const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 
 export const PAID_STATUSES: OrderStatus[] = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
-type OrderWithItems = Order & { items: OrderItem[] };
+export type OrderWithItems = Order & { items: OrderItem[] };
 
 @Injectable()
 export class OrderLifecycleService {
@@ -37,6 +38,7 @@ export class OrderLifecycleService {
     private readonly push: PushService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly tracking: PurchaseTrackingService,
   ) {}
 
   assertTransition(from: OrderStatus, to: OrderStatus) {
@@ -148,6 +150,8 @@ export class OrderLifecycleService {
         }
       }
       if (event === 'cancelled') await this.mail.send(order.email, templates.orderCancelled(locale, data));
+      // Paid orders also go to the ad platforms from the server (only with the visitor's cookie consent).
+      if (event === 'paid' || (event === 'received' && order.status === 'PAID')) await this.tracking.purchase(order);
     } catch (e) {
       this.logger.error(`notify(${orderId}, ${event}) failed: ${(e as Error).message}`);
     }

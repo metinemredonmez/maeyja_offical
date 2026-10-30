@@ -42,6 +42,22 @@ export const SETTING_DEFAULTS = {
   tryon: {
     enabled: false,
   },
+  /**
+   * Ad pixels and search/AI visibility. IDs are public (they reach the browser); the Conversions API token and
+   * the GA4 API secret stay on the server and are only used for purchases sent from the server.
+   */
+  tracking: {
+    metaPixelId: '',
+    metaCapiToken: '',
+    metaTestCode: '',
+    ga4Id: '',
+    ga4ApiSecret: '',
+    googleAdsId: '',
+    googleAdsPurchaseLabel: '',
+    googleSiteVerification: '',
+    /** robots.txt lets AI assistants (ChatGPT, Claude, Perplexity, Gemini…) read the shop. */
+    allowAiCrawlers: true,
+  },
   bankTransfer: {
     enabled: false,
     bankName: '',

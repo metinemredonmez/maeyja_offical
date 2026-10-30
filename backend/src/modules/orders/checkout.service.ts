@@ -118,6 +118,7 @@ export class CheckoutService {
           customerNote: dto.customerNote,
           locale: lang,
           ip,
+          ...(dto.attribution ? { attribution: { ...dto.attribution } } : {}),
           items: {
             create: quote.lines.map((l) => ({
               productId: l.productId,

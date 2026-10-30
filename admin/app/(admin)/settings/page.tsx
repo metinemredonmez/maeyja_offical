@@ -13,7 +13,7 @@ import { QueryState } from '@/components/shared/query-state';
 import { useSaveSetting, useSettings } from '@/lib/queries/system';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
-const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme' };
+const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', tracking: 'İzleme ve görünürlük' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -226,6 +226,58 @@ function TryOnTab({ value }: { value: Settings['tryon'] }) {
   );
 }
 
+function TrackingTab({ value }: { value: Settings['tracking'] }) {
+  const d = useDraft('tracking', value);
+  const set = (patch: Partial<Settings['tracking']>) => d.setDraft({ ...d.draft, ...patch });
+  const text = (key: keyof Settings['tracking'], label: string, hint: string, placeholder = '', secret = false) => (
+    <Field label={label} htmlFor={`tr-${key}`} hint={hint}>
+      <Input id={`tr-${key}`} type={secret ? 'password' : 'text'} autoComplete="off" placeholder={placeholder} value={String(d.draft[key] ?? '')} onChange={(e) => set({ [key]: e.target.value.trim() })} />
+    </Field>
+  );
+  return (
+    <>
+      <Section
+        title="Reklam pikselleri"
+        description="Ziyaretler, ürün görüntüleme, sepete ekleme, ödemeye geçiş ve satın alma Meta ve Google'a gider. Sitede çerez onayı çıkar; pikseller yalnızca ziyaretçi kabul ederse yüklenir. Satın alma ayrıca sunucudan da gönderilir (iki taraflı), sipariş numarasıyla eşleştirildiği için iki kez sayılmaz."
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          {text('metaPixelId', 'Meta Pixel ID', 'Meta Events Manager → Veri kaynakları → Pikseliniz → Ayarlar', '1234567890')}
+          {text('metaCapiToken', 'Meta Conversions API erişim tokenı', 'Aynı sayfada “Dönüşüm API’si → Erişim tokenı oluştur”. Sunucuda kalır, sitede görünmez.', '', true)}
+          {text('metaTestCode', 'Meta test olayı kodu (opsiyonel)', 'Events Manager → Olayları test et. Denemeden sonra boşaltın.', 'TEST12345')}
+          {text('ga4Id', 'Google Analytics 4 ölçüm kimliği', 'GA4 → Yönetici → Veri akışları → Web akışı', 'G-XXXXXXXXXX')}
+          {text('ga4ApiSecret', 'GA4 Measurement Protocol API gizli anahtarı', 'Aynı veri akışında “Measurement Protocol API gizli anahtarları → Oluştur”. Sunucuda kalır.', '', true)}
+          {text('googleAdsId', 'Google Ads dönüşüm kimliği (opsiyonel)', 'Google Ads → Hedefler → Dönüşümler → Etiket ayarları', 'AW-123456789')}
+          {text('googleAdsPurchaseLabel', 'Google Ads satın alma etiketi (opsiyonel)', 'Satın alma dönüşümünün “send_to” değerindeki eğik çizgiden sonraki kısım', 'AbCdEfGhIj')}
+        </div>
+      </Section>
+      <Section
+        title="Google ve AI ajanlarında görünürlük"
+        description="ChatGPT, Claude, Perplexity, Gemini gibi yapay zekâ asistanları ve Google, mağazayı ve çantaları doğru okuyabilsin diye."
+      >
+        <div className="grid gap-4">
+          {text('googleSiteVerification', 'Google Search Console doğrulama kodu', 'Search Console → Mülk ekle → URL ön eki → HTML etiketi: content="…" içindeki kod', 'abc123…')}
+          <SwitchField
+            label="AI ajanları siteyi okuyabilsin"
+            description="Kapalıysa ChatGPT, Claude, Perplexity, Gemini gibi asistanların tarayıcıları robots.txt ile engellenir ve llms.txt kapanır."
+            checked={d.draft.allowAiCrawlers}
+            onCheckedChange={(v) => set({ allowAiCrawlers: v })}
+          />
+          <div className="rounded-lg border bg-muted/40 p-4 text-sm leading-relaxed">
+            <p className="font-medium">Hazır adresler</p>
+            <p>
+              Ürün akışı (Google Merchant Center ve Meta katalog): <code>https://maeyja.com/feeds/products.xml</code> · İngilizce: <code>?lang=en</code>
+            </p>
+            <p>
+              AI ajanları için özet: <code>https://maeyja.com/llms.txt</code> · Site haritası: <code>https://maeyja.com/sitemap.xml</code>
+            </p>
+          </div>
+        </div>
+        <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
+      </Section>
+    </>
+  );
+}
+
 export default function SettingsPage() {
   const query = useSettings();
   return (
@@ -261,6 +313,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="tryon">
               <TryOnTab key={JSON.stringify(s.tryon)} value={s.tryon} />
+            </TabsContent>
+            <TabsContent value="tracking">
+              <TrackingTab key={JSON.stringify(s.tracking)} value={s.tracking} />
             </TabsContent>
           </Tabs>
         )}

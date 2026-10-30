@@ -16,6 +16,7 @@ import { Footer } from '@/components/footer';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { NewsletterPopup } from '@/components/newsletter/newsletter-popup';
 import { AssistantPanel } from '@/components/assistant/assistant-panel';
+import { Tracking } from '@/components/tracking';
 import '../globals.css';
 
 const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap' });
@@ -34,8 +35,12 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
+  const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null);
+  const google = settings?.tracking?.googleSiteVerification?.trim();
   return {
     metadataBase: new URL(SITE),
+    // Google Search Console: the code from the admin (Ayarlar → İzleme ve görünürlük).
+    ...(google ? { verification: { google } } : {}),
     title: { default: `${t('siteName')} — ${t('tagline')}`, template: `%s — ${t('siteName')}` },
     description: t('description'),
     openGraph: { siteName: t('siteName'), type: 'website', locale },
@@ -68,6 +73,14 @@ export default async function LocaleLayout({ children, params }: { children: Rea
             <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} />
             <CartDrawer />
             <NewsletterPopup />
+            <Tracking
+              ids={{
+                metaPixelId: settings?.tracking?.metaPixelId ?? '',
+                ga4Id: settings?.tracking?.ga4Id ?? '',
+                googleAdsId: settings?.tracking?.googleAdsId ?? '',
+                googleAdsPurchaseLabel: settings?.tracking?.googleAdsPurchaseLabel ?? '',
+              }}
+            />
             {settings?.assistant?.enabled ? <AssistantPanel welcome={settings.assistant.welcome?.[locale] || settings.assistant.welcome?.en || ''} /> : null}
             <Toaster position="bottom-center" toastOptions={{ className: 'font-sans text-sm' }} />
           </Providers>

@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl';
+import { CookieSettingsButton } from './tracking';
 import { Link } from '@/i18n/navigation';
 import { LOCALE_LABELS, LOCALES } from '@/i18n/routing';
 import { NewsletterForm } from './newsletter-form';
@@ -8,6 +9,7 @@ export function Footer({ instagram }: { instagram: string }) {
   const tn = useTranslations('newsletter');
   const nav = useTranslations('nav');
   const home = useTranslations('home');
+  const tc = useTranslations('consent');
   const col = 'flex flex-col gap-3 text-sm';
   const head = 'label mb-1 text-muted';
   return (
@@ -42,6 +44,7 @@ export function Footer({ instagram }: { instagram: string }) {
           <Link href="/preliminary-information">{t('preliminary')}</Link>
           <Link href="/kvkk">{t('kvkk')}</Link>
           <Link href="/privacy">{t('privacy')}</Link>
+          <CookieSettingsButton label={tc('settings')} />
           <Link href="/terms">{t('terms')}</Link>
         </nav>
       </div>

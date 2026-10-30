@@ -47,6 +47,14 @@ export class InvoiceDto {
   @ValidateIf((o) => o.type === 'CORPORATE') @Matches(/^\d{10,11}$/, { message: 'Vergi no 10 haneli olmalı' }) taxNumber?: string;
 }
 
+/** Ad attribution read in the browser at checkout; only sent when the visitor accepted cookies. */
+export class AttributionDto {
+  @IsOptional() @IsString() @MaxLength(200) fbp?: string;
+  @IsOptional() @IsString() @MaxLength(300) fbc?: string;
+  @IsOptional() @IsString() @MaxLength(100) gaClientId?: string;
+  @IsOptional() @IsString() @MaxLength(400) userAgent?: string;
+}
+
 export class CheckoutDto {
   @Transform(lower) @IsEmail() @MaxLength(160) email: string;
 
@@ -78,6 +86,8 @@ export class CheckoutDto {
   acceptTerms: boolean;
 
   @IsOptional() @IsBoolean() saveAddress?: boolean;
+
+  @IsOptional() @ValidateNested() @Type(() => AttributionDto) attribution?: AttributionDto;
 
   @IsOptional() @IsBoolean() subscribeNewsletter?: boolean;
 }

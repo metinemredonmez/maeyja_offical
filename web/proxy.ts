@@ -20,8 +20,9 @@ function csp(nonce: string) {
     `img-src 'self' data: blob: https:`,
     `media-src 'self' blob: https:${dev ? ' http:' : ''}`,
     `font-src 'self' data:`,
-    `connect-src 'self'${dev ? ' ws:' : ''}`,
-    `frame-src https://*.iyzipay.com https://www.iyzico.com`,
+    // Ad pixels (loaded only after cookie consent): Meta and Google send their beacons here.
+    `connect-src 'self' https://www.facebook.com https://connect.facebook.net https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://www.googleadservices.com${dev ? ' ws:' : ''}`,
+    `frame-src https://*.iyzipay.com https://www.iyzico.com https://td.doubleclick.net https://www.googletagmanager.com`,
     `form-action 'self' https://*.iyzipay.com`,
     `frame-ancestors 'none'`,
     `base-uri 'self'`,

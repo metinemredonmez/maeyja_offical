@@ -2,10 +2,11 @@
 
 import { useLocale, useTranslations } from 'next-intl';
 import Image from 'next/image';
-import { FormEvent, ReactNode, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api.client';
 import { modelNo, money } from '@/lib/format';
+import { track } from '@/lib/tracking';
 import type { Product, PublicSettings } from '@/lib/types';
 import { useCartMutations } from '@/components/cart/use-cart';
 import { useCartUi } from '@/components/cart/cart-ui';
@@ -51,6 +52,12 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
   const thumbFor = (slug: string) => product.images.find((i) => i.colorSlug === slug);
   const colorName = colors.find((c) => c.slug === color)?.name;
 
+  // Ad pixels: the product view once per product, and each add to bag.
+  useEffect(() => {
+    track('view_item', { value: price, items: [{ id: product.variants[0]?.sku ?? product.slug, name: product.name, price, quantity: 1 }] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per product
+  }, [product.slug]);
+
   const addToCart = () => {
     if (!variant) return;
     add.mutate(
@@ -59,6 +66,7 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
         onSuccess: () => {
           toast.success(t('added'));
           openCart();
+          track('add_to_cart', { value: price, items: [{ id: variant.sku, name: product.name, variant: colorName, price, quantity: 1 }] });
         },
         onError: (e) => toast.error(e instanceof ApiError ? e.message : tc('error')),
       },
