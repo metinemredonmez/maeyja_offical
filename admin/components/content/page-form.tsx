@@ -13,7 +13,7 @@ import type { PageInput } from '@/lib/queries/content';
 import { pageSchema, type PageFormValues } from '@/lib/schemas/content';
 import type { ContentStatus, Page } from '@/lib/types';
 
-const KNOWN_SLUGS = ['about', 'shipping-returns', 'privacy', 'kvkk', 'distance-sales', 'terms'];
+const KNOWN_SLUGS = ['about', 'expertise', 'shipping-returns', 'care', 'privacy', 'kvkk', 'terms', 'distance-sales-agreement', 'preliminary-information'];
 
 export function PageForm({ page, onSubmit, submitting, error }: { page?: Page; onSubmit: (body: Partial<PageInput>) => Promise<unknown>; submitting?: boolean; error?: unknown }) {
   const form = useForm<PageFormValues>({
@@ -52,7 +52,7 @@ export function PageForm({ page, onSubmit, submitting, error }: { page?: Page; o
       <aside className="space-y-5">
         <Section title="Yayın">
           <div className="grid gap-4">
-            <Field label="Slug" error={form.formState.errors.slug} htmlFor="slug" required hint={`Adres: /pages/… · Bilinen: ${KNOWN_SLUGS.join(', ')}`}>
+            <Field label="Slug" error={form.formState.errors.slug} htmlFor="slug" required hint={`Sitedeki adres: maeyja.com/… · Bilinen: ${KNOWN_SLUGS.join(', ')}`}>
               <Input id="slug" className="font-mono text-xs" list="known-slugs" {...form.register('slug')} />
               <datalist id="known-slugs">
                 {KNOWN_SLUGS.map((s) => (

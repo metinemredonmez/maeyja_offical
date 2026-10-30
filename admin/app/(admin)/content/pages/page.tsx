@@ -22,7 +22,7 @@ export default function PagesPage() {
       cell: (p) => (
         <div>
           <p className="font-medium">{p.title}</p>
-          <p className="font-mono text-[11px] text-muted-foreground">/pages/{p.slug}</p>
+          <p className="font-mono text-[11px] text-muted-foreground">/{p.slug}</p>
         </div>
       ),
     },
