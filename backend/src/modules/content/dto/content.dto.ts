@@ -7,7 +7,7 @@ import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Section layouts the storefront knows; which ones apply depends on the section type. */
-export const HOME_LAYOUTS = ['split', 'diptych', 'full', 'sideways', 'grid', 'strip'] as const;
+export const HOME_LAYOUTS = ['split', 'diptych', 'full', 'sideways', 'boutique', 'grid', 'strip'] as const;
 const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
 export class HomeSectionDto {
