@@ -138,8 +138,10 @@ async function main() {
       const layout = type === 'FEATURED_PRODUCTS' ? 'grid' : type === 'CRAFT_STORY' ? 'split' : undefined;
       await prisma.homeSection.updateMany({ where: { type: type as HomeSectionType }, data: { sortOrder, ...(layout ? { layout } : {}) } });
     }
-    const left = await importImage('origami', '06-red.webp', 'Origami');
-    const right = await importImage('valise', '06-ivory.webp', 'Valise');
+    const left = await importImage('_home', '14-still-origami.webp', 'Origami');
+    const right = await importImage('_home', '15-still-valise.webp', 'Valise');
+    const pair = await prisma.product.findMany({ where: { slug: { in: ['origami', 'valise'] } }, select: { id: true, slug: true } });
+    const pairIds = ['origami', 'valise'].flatMap((slug) => pair.filter((p) => p.slug === slug).map((p) => p.id));
     const banner = await importImage('_home', '12-campaign-drape-close.webp', 'Drape');
     const diptych = split(HOME_V2.DIPTYCH);
     const strip = split(HOME_V2.STRIP);
@@ -147,7 +149,7 @@ async function main() {
     const drape = await prisma.product.findUnique({ where: { slug: 'drape' } });
     await prisma.homeSection.createMany({
       data: [
-        { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', ...diptych.base, translations: diptych.translations },
+        { type: HomeSectionType.EDITORIAL, layout: 'diptych', sortOrder: 2, imageUrl: left.url, secondImageUrl: right.url, ctaUrl: '/products', payload: { productIds: pairIds }, ...diptych.base, translations: diptych.translations },
         { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'strip', sortOrder: 3, payload: {}, ...strip.base, translations: strip.translations },
         { type: HomeSectionType.EDITORIAL, layout: 'full', sortOrder: 5, imageUrl: banner.url, ctaUrl: '/products/drape', payload: drape ? { productIds: [drape.id] } : {}, ...bannerCopy.base, translations: bannerCopy.translations },
       ],
@@ -260,13 +262,38 @@ async function main() {
     await prisma.homeSection.update({ where: { id: band.id }, data: { payload: { ...bandPayload, images: [ivory.url, black.url] } } });
     console.log('✓ yan yatık bant: üç manken, kaydırınca sırayla');
   }
+  // Product photos re-shot in one studio: a white cut-out first, then the same terracotta set from several angles.
+  // The first seeded set came from café tables, at mixed sizes, some with hang tags. Swapped once per bag, only
+  // while it still has that first set; photos added in the admin stay, after the new ones.
+  for (const entry of await readdir(ASSETS, { withFileTypes: true })) {
+    const slug = entry.name;
+    if (!entry.isDirectory() || slug.startsWith('_')) continue;
+    const product = await prisma.product.findUnique({ where: { slug }, include: { images: { orderBy: { sortOrder: 'asc' } } } });
+    if (!product?.images.some((i) => new RegExp(`/catalog/${slug}/0\\d-`).test(i.url))) continue;
+    const files = (await readdir(join(ASSETS, slug))).filter((f) => f.endsWith('.webp')).sort();
+    const seeded = product.images.filter((i) => i.url.includes('/catalog/'));
+    const kept = product.images.filter((i) => !i.url.includes('/catalog/'));
+    const fresh: Prisma.ProductImageCreateManyInput[] = [];
+    for (const [n, file] of files.entries()) {
+      const color = colors[file.replace(/^\d+-|\.webp$/g, '')];
+      const alt = `${product.name} — ${color?.name ?? ''}`.trim();
+      const img = await importImage(slug, file, alt);
+      fresh.push({ productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: n, colorId: color?.id ?? null });
+    }
+    await prisma.$transaction([
+      prisma.productImage.deleteMany({ where: { id: { in: seeded.map((i) => i.id) } } }),
+      prisma.productImage.createMany({ data: fresh }),
+      ...kept.map((k, n) => prisma.productImage.update({ where: { id: k.id }, data: { sortOrder: fresh.length + n } })),
+    ]);
+    console.log(`✓ ${product.name}: yeni stüdyo fotoğrafları (${fresh.length})`);
+  }
   // Each bag's second picture is a campaign or still-life photo: on the product page it opens the left column
   // (Polène) and on the listing it is the hover picture. Added once per bag, only while its first photo is the seeded one.
   const lifestyle = await readdir(join(ASSETS, '_lifestyle')).catch(() => [] as string[]);
   for (const file of lifestyle.filter((f) => f.endsWith('.webp'))) {
     const [slug, colorSlug] = file.replace(/\.webp$/, '').split('-');
     const product = await prisma.product.findUnique({ where: { slug }, include: { images: { orderBy: { sortOrder: 'asc' } } } });
-    if (!product?.images[0]?.url.includes(`/catalog/${slug}/01-`) || product.images.some((i) => i.url.includes('/catalog/_lifestyle/'))) continue;
+    if (!product?.images[0]?.url.includes(`/catalog/${slug}/`) || product.images.some((i) => i.url.includes('/catalog/_lifestyle/'))) continue;
     const color = colors[colorSlug];
     const alt = `${product.name} — ${color?.name ?? ''}`.trim();
     const img = await importImage('_lifestyle', file, alt);

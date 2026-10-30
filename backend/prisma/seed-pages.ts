@@ -199,7 +199,7 @@ export const JOURNAL_POSTS: { slug: string; title: string; excerpt: string; body
     slug: 'tek-parca-deriden',
     title: 'Tek parça deriden',
     excerpt: 'Her MAEYJA çantası İstanbul’daki atölyede, usta ellerde kesilip dikiliyor. Bir çantanın yolculuğuna yakından bakış.',
-    cover: ['origami', '07-red.webp'],
+    cover: ['origami', '13-red.webp'],
     body: `<p>MAEYJA çantaları Fransa'da tasarlanıyor, İstanbul'daki atölyemizde hayat buluyor. Her model mümkün olduğunca tek parça deriden çıkıyor; birleşim yerleri azaldıkça form daha saf, çanta daha dayanıklı oluyor.</p>
 <h2>Kesim</h2>
 <p>Deri, damarı ve dokusu tek tek incelendikten sonra elde kesiliyor. Her parçanın en güzel yüzü, çantanın en çok görünen yerine geliyor.</p>
@@ -213,7 +213,7 @@ export const JOURNAL_POSTS: { slug: string; title: string; excerpt: string; body
     slug: 'deriye-ozen',
     title: 'Deriye özen',
     excerpt: 'İyi bakılan deri yıllar içinde güzelleşir. Çantanızı uzun yıllar taşımanız için birkaç basit alışkanlık.',
-    cover: ['drape', '05-green.webp'],
+    cover: ['drape', '13-green.webp'],
     body: `<p>Kaliteli deri yaşayan bir malzemedir: kullandıkça yumuşar, rengi derinleşir, size ait bir patina kazanır. Ona biraz özen göstermek yeterli.</p>
 <h2>Nefes alsın</h2>
 <p>Kullanmadığınızda çantanızın içini kâğıtla doldurun ve toz torbasında, güneş almayan kuru bir yerde saklayın. Plastik poşetler deriyi nefessiz bırakır.</p>
