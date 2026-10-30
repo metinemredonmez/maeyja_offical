@@ -61,6 +61,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
       ctaLabel: section?.ctaLabel ?? '',
       ctaUrl: section?.ctaUrl ?? '',
       productIds: section?.payload?.productIds ?? [],
+      images: [0, 1, 2].map((i) => section?.payload?.images?.[i] ?? ''),
       collectionSlug: section?.payload?.collectionSlug ?? '',
       limit: section?.payload?.limit != null ? String(section.payload.limit) : '',
       isActive: section?.isActive ?? true,
@@ -76,6 +77,8 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
     const nul = <T,>(x: T | undefined) => x ?? (section ? null : undefined);
     const payload: Record<string, unknown> = {};
     if ((type === 'HERO' || type === 'EDITORIAL') && v.productIds.length) payload.productIds = v.productIds.slice(0, cards);
+    const images = v.images.map((u) => u.trim()).filter(Boolean);
+    if (type === 'EDITORIAL' && v.layout === 'sideways' && images.length) payload.images = images;
     if (type === 'FEATURED_PRODUCTS') {
       if (v.productIds.length) payload.productIds = v.productIds;
       if (v.limit) payload.limit = v.limit;
@@ -146,9 +149,18 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                     <Field label="Mobil görsel (opsiyonel)" error={form.formState.errors.mobileImageUrl}>
                       <Controller control={form.control} name="mobileImageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
                     </Field>
-                    {type === 'EDITORIAL' && (
+                    {type === 'EDITORIAL' && layout !== 'sideways' && (
                       <Field label="İkinci görsel (yan yana düzende sağdaki)" error={form.formState.errors.secondImageUrl}>
                         <Controller control={form.control} name="secondImageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
+                      </Field>
+                    )}
+                    {type === 'EDITORIAL' && layout === 'sideways' && (
+                      <Field label="Kaydırınca sırayla gelen görseller (opsiyonel)" hint="Bölüm ekrandan geçerken ana görselin üstüne sırayla yumuşakça gelir; en fazla 3. Aynı çekimden, aynı kadrajda fotoğraflar en iyi sonucu verir.">
+                        <div className="grid gap-3">
+                          {[0, 1, 2].map((i) => (
+                            <Controller key={i} control={form.control} name={`images.${i}`} render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
+                          ))}
+                        </div>
                       </Field>
                     )}
                   </>

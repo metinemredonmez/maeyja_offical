@@ -21,7 +21,7 @@ export default async function ContactPage({ params }: { params: Params }) {
   const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null);
   return (
     <div className="md:grid md:min-h-[calc(100svh-69px)] md:grid-cols-2">
-      <div className="relative aspect-[4/3] overflow-hidden bg-stone md:aspect-auto">
+      <div className="relative aspect-[4/3] overflow-clip bg-stone md:aspect-auto">
         <div className="parallax absolute inset-0">
           <Image src="/contact.webp" alt="" fill priority sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
         </div>

@@ -14,6 +14,8 @@ export const homeSectionSchema = z.object({
   ctaLabel: optionalText(60),
   ctaUrl: optionalText(300),
   productIds: z.array(z.string()),
+  // Sideways layout: further photos that fade in one after another while scrolling.
+  images: z.array(z.string()),
   collectionSlug: z.string().optional(),
   limit: optionalInt.refine((v) => v === undefined || (v >= 1 && v <= 24), '1-24 arası'),
   isActive: z.boolean(),

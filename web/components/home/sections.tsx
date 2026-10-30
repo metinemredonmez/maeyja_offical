@@ -226,7 +226,7 @@ function Diptych({ s }: { s: HomeSection }) {
 function Still({ url, product, shift, sizes, className }: { url: string | null; product?: Card; shift: string; sizes: string; className: string }) {
   const locale = useLocale();
   const picture = (
-    <span className="relative block aspect-[4/5] overflow-hidden bg-stone">
+    <span className="relative block aspect-[4/5] overflow-clip bg-stone">
       <span className="parallax absolute inset-0 block" style={drift(shift)}>
         {url ? <Image src={url} alt={product?.name ?? ''} fill sizes={sizes} className="object-cover transition duration-[1.6s] ease-out group-hover:scale-[1.04]" /> : null}
       </span>
@@ -255,7 +255,7 @@ function FullBleed({ s }: { s: HomeSection }) {
   const media = Boolean(s.videoUrl || s.imageUrl);
   const product = s.products?.[0];
   return (
-    <section className={`relative mt-24 flex min-h-[85svh] items-end overflow-hidden bg-stone md:mt-36 ${media ? 'text-white' : ''}`}>
+    <section className={`relative mt-24 flex min-h-[85svh] items-end overflow-clip bg-stone md:mt-36 ${media ? 'text-white' : ''}`}>
       <div className="parallax absolute inset-0" style={drift('9%')}>
         <Media s={s} sizes="100vw" />
       </div>
@@ -300,7 +300,7 @@ function Boutique({ s }: { s: HomeSection }) {
       </div>
       <div className="grid gap-y-14 md:grid-cols-12 md:gap-x-6">
         <div className="reveal md:col-span-8">
-          <span className="relative block aspect-[16/10] overflow-hidden bg-stone">
+          <span className="relative block aspect-[16/10] overflow-clip bg-stone">
             <span className="parallax absolute inset-0 block" style={drift('4%')}>
               {s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="(min-width: 768px) 66vw, 100vw" className="object-cover" /> : null}
             </span>
@@ -369,11 +369,26 @@ export function InstagramCollage({ url, posts }: { url: string | null; posts: In
  * the scroll. Phones show it upright. Copy (optional) sits centred underneath.
  */
 function Sideways({ s }: { s: HomeSection }) {
+  // Further photos from the admin fade in one after another while the band crosses the screen (Polène's moving
+  // pictures); the first fade begins as the band nears the middle, the last before it leaves.
+  const extra = ((s.payload as { images?: string[] } | null)?.images ?? []).filter(Boolean);
+  const frames = [s.imageUrl, ...extra].filter((u): u is string => Boolean(u));
+  const span = 32 / Math.max(1, frames.length - 2);
   return (
     <section className="pt-24 md:pt-36">
-      <div className="reveal relative h-[78svh] overflow-hidden bg-stone md:h-[92svh]" style={{ containerType: 'size' }}>
+      <div className="group reveal relative h-[78svh] overflow-clip bg-stone md:h-[92svh]" style={{ containerType: 'size' }}>
         <div className="parallax absolute inset-0" style={drift('8%')}>
-          <div className="sideways-frame">{s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="100vw" className="object-cover" /> : null}</div>
+          {frames.map((src, i) => (
+            <div
+              key={src}
+              className={`absolute inset-0 ${i ? 'sideways-next' : ''}`}
+              style={i ? ({ '--fade-from': `${30 + (i - 1) * span}%`, '--fade-to': `${40 + (i - 1) * span}%` } as CSSProperties) : undefined}
+            >
+              <div className="sideways-frame">
+                <Image src={src} alt="" fill sizes="100vw" className="object-cover transition-transform duration-[1.6s] ease-out group-hover:scale-[1.03]" />
+              </div>
+            </div>
+          ))}
         </div>
         {/* Wide screens: the copy sits on the calm wall in the lower left of the turned photo. */}
         {s.title || s.subtitle ? (
@@ -400,7 +415,7 @@ function Sideways({ s }: { s: HomeSection }) {
 function Split({ s, tinted = false }: { s: HomeSection; tinted?: boolean }) {
   return (
     <section className={`mt-24 grid md:mt-36 md:grid-cols-2 ${tinted ? 'bg-stone' : 'mx-4 gap-6 md:mx-12'}`}>
-      <div className="relative min-h-[420px] overflow-hidden bg-stone md:min-h-[680px]">
+      <div className="relative min-h-[420px] overflow-clip bg-stone md:min-h-[680px]">
         <div className="parallax absolute inset-0" style={drift('7%')}>
           <Media s={s} sizes="(min-width: 768px) 50vw, 100vw" mobile={false} />
         </div>

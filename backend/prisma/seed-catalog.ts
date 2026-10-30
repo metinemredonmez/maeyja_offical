@@ -187,7 +187,7 @@ async function main() {
     const strip = await prisma.homeSection.findFirst({ where: { layout: 'strip' } });
     const at = (strip?.sortOrder ?? 3) + 1;
     await prisma.homeSection.updateMany({ where: { sortOrder: { gte: at } }, data: { sortOrder: { increment: 1 } } });
-    const studio = await importImage('_home', '19-campaign-studio.webp', 'Origami — stüdyo');
+    const studio = await importImage('_home', '20-campaign-studio.webp', 'Origami — stüdyo');
     await prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'sideways', sortOrder: at, imageUrl: studio.url, ctaUrl: '/products', ...sidewaysCopy.base, translations: sidewaysCopy.translations } });
     console.log('✓ ana sayfa: yan yatık manken bandı');
   }
@@ -239,15 +239,26 @@ async function main() {
     await prisma.homeSection.update({ where: { id: firstWall.id }, data: { imageUrl: wall.url } });
     console.log('✓ ana sayfa: vitrin fotoğrafı yenilendi');
   }
-  // The first studio portrait gave the Origami a long strap it doesn't have; the new one keeps only its short handles.
-  const oldStudio = '/catalog/_home/13-campaign-studio';
-  const studioSections = await prisma.homeSection.findMany({ where: { imageUrl: { contains: oldStudio } } });
-  const studioPosts = await prisma.journalPost.findMany({ where: { coverImageUrl: { contains: oldStudio } } });
-  if (studioSections.length || studioPosts.length) {
-    const studio = await importImage('_home', '19-campaign-studio.webp', 'Origami — stüdyo');
-    await prisma.homeSection.updateMany({ where: { imageUrl: { contains: oldStudio } }, data: { imageUrl: studio.url } });
-    await prisma.journalPost.updateMany({ where: { coverImageUrl: { contains: oldStudio } }, data: { coverImageUrl: studio.url } });
-    console.log('✓ stüdyo fotoğrafı: kısa kulplu Origami');
+  // The first studio portraits gave the Origami a long strap, then wore it on the shoulder; now she carries it by
+  // its short handles on her forearm. Earlier seeded versions (13, 19) are swapped wherever they are still used.
+  const oldStudio = ['/catalog/_home/13-campaign-studio', '/catalog/_home/19-campaign-studio'];
+  const sectionsWhere = { OR: oldStudio.map((f) => ({ imageUrl: { contains: f } })) };
+  const postsWhere = { OR: oldStudio.map((f) => ({ coverImageUrl: { contains: f } })) };
+  if ((await prisma.homeSection.count({ where: sectionsWhere })) || (await prisma.journalPost.count({ where: postsWhere }))) {
+    const studio = await importImage('_home', '20-campaign-studio.webp', 'Origami — stüdyo');
+    await prisma.homeSection.updateMany({ where: sectionsWhere, data: { imageUrl: studio.url } });
+    await prisma.journalPost.updateMany({ where: postsWhere, data: { coverImageUrl: studio.url } });
+    console.log('✓ stüdyo fotoğrafı: Origami kolda, kısa kulplarıyla');
+  }
+  // The sideways band gets two more models from the same studio shoot, fading in one after another on scroll —
+  // only while it still shows the seeded portrait and has no photos of its own.
+  const band = await prisma.homeSection.findFirst({ where: { layout: 'sideways', imageUrl: { contains: '/catalog/_home/20-campaign-studio' } } });
+  const bandPayload = (band?.payload ?? {}) as { images?: string[] };
+  if (band && !bandPayload.images?.length) {
+    const ivory = await importImage('_home', '21-studio-ivory.webp', 'Origami — stüdyo');
+    const black = await importImage('_home', '22-studio-black.webp', 'Origami — stüdyo');
+    await prisma.homeSection.update({ where: { id: band.id }, data: { payload: { ...bandPayload, images: [ivory.url, black.url] } } });
+    console.log('✓ yan yatık bant: üç manken, kaydırınca sırayla');
   }
   // Each bag's second picture is a campaign or still-life photo: on the product page it opens the left column
   // (Polène) and on the listing it is the hover picture. Added once per bag, only while its first photo is the seeded one.

@@ -76,7 +76,7 @@ export default async function ProductPage({ params }: { params: Params }) {
 
       {/* The atelier note over a full-width photo of the bag. */}
       {p.story ? (
-        <section className="relative mt-24 flex min-h-[70svh] items-end overflow-hidden bg-stone text-white md:mt-36">
+        <section className="relative mt-24 flex min-h-[70svh] items-end overflow-clip bg-stone text-white md:mt-36">
           {atelierPhoto ? (
             <div className="parallax absolute inset-0">
               <Image src={atelierPhoto.url} alt="" fill sizes="100vw" className="object-cover" />

@@ -187,7 +187,7 @@ export const JOURNAL_POSTS: { slug: string; title: string; excerpt: string; body
     slug: 'origami-kupten-piramide',
     title: 'Origami: küpten piramide',
     excerpt: 'İmza modelimiz tek bir fermuarla iki ayrı forma bürünüyor. Hikâyesi bir kâğıt katlama oyunuyla başladı.',
-    cover: ['_home', '19-campaign-studio.webp'],
+    cover: ['_home', '20-campaign-studio.webp'],
     body: `<p>Origami, MAEYJA'nın N°01'i. Adını kâğıt katlama sanatından alıyor; çünkü o da tek bir parçanın katlanarak biçim kazanmasından doğdu.</p>
 <p>Köşe boyunca uzanan uzun fermuar kapalıyken çanta yumuşak bir küp gibi durur. Fermuarı açtığınızda deri kendi üzerine katlanır ve form bir piramide dönüşür. Aynı çanta, gün içinde iki farklı siluet.</p>
 <h2>Az parça, çok düşünce</h2>

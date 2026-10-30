@@ -259,7 +259,31 @@
     transform: translate(-50%, -50%) rotate(-90deg);
   }
 }
-/* --drift sets the speed: diptych photos use different values so they move apart. */
+/* Sideways band with several photos: each later one fades in over the previous between --fade-from and --fade-to
+   of the band's passage across the screen. Without scroll timelines (or with reduced motion) only the first shows. */
+.sideways-next {
+  opacity: 0;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .sideways-next {
+      animation: mj-fade-in linear both;
+      animation-timeline: view();
+      animation-range: cover var(--fade-from) cover var(--fade-to);
+    }
+  }
+}
+@keyframes mj-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* --drift sets the speed: diptych photos use different values so they move apart. The frame around a .parallax
+   layer must clip with overflow: clip, not hidden — overflow: hidden makes it its own scroll container, and the
+   layer's view() timeline would follow that (never-scrolling) box instead of the page, so nothing would move. */
 @keyframes mj-parallax {
   from {
     transform: translateY(calc(var(--drift, 8%) * -1)) scale(1.16);

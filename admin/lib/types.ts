@@ -375,7 +375,7 @@ export interface HomeSection {
   layout: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
-  payload: { productIds?: string[]; collectionSlug?: string; limit?: number } | null;
+  payload: { productIds?: string[]; collectionSlug?: string; limit?: number; images?: string[] } | null;
   sortOrder: number;
   isActive: boolean;
   translations: Translations | null;
