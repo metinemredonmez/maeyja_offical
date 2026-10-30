@@ -259,17 +259,35 @@
     transform: translate(-50%, -50%) rotate(-90deg);
   }
 }
-/* Sideways band with several photos: each later one fades in over the previous between --fade-from and --fade-to
-   of the band's passage across the screen. Without scroll timelines (or with reduced motion) only the first shows. */
-.sideways-next {
+/* Sideways band with several photos: the track is taller than the screen, the band sticks while you scroll
+   through it and each later photo fades in over the previous one between --fade-from and --fade-to of that
+   passage (a named view timeline on the track). Without scroll timelines, or with reduced motion, it is an
+   ordinary band showing the first photo. */
+.band-next {
   opacity: 0;
 }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .sideways-next {
+    .band-track {
+      view-timeline-name: --mj-band;
+      height: calc(78svh + (var(--frames) - 1) * 70svh);
+    }
+    .band-sticky {
+      position: sticky;
+      top: 22svh;
+    }
+    .band-next {
       animation: mj-fade-in linear both;
-      animation-timeline: view();
-      animation-range: cover var(--fade-from) cover var(--fade-to);
+      animation-timeline: --mj-band;
+      animation-range: contain var(--fade-from) contain var(--fade-to);
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) and (min-width: 768px) {
+    .band-track {
+      height: calc(92svh + (var(--frames) - 1) * 70svh);
+    }
+    .band-sticky {
+      top: 8svh;
     }
   }
 }

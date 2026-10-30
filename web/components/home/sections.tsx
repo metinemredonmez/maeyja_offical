@@ -381,36 +381,46 @@ export function InstagramCollage({ url, posts }: { url: string | null; posts: In
  * the scroll. Phones show it upright. Copy (optional) sits centred underneath.
  */
 function Sideways({ s }: { s: HomeSection }) {
-  // Further photos from the admin fade in one after another while the band crosses the screen (Polène's moving
-  // pictures); the first fade begins as the band nears the middle, the last before it leaves.
+  // With further photos from the admin the band pins on screen and they fade in one after another as you keep
+  // scrolling (Polène); a single photo simply drifts with the page.
   const extra = ((s.payload as { images?: string[] } | null)?.images ?? []).filter(Boolean);
   const frames = [s.imageUrl, ...extra].filter((u): u is string => Boolean(u));
-  const span = 32 / Math.max(1, frames.length - 2);
+  const sequence = frames.length > 1;
+  const step = 100 / frames.length;
+  const band = (
+    <div className="group reveal relative h-[78svh] overflow-clip bg-stone md:h-[92svh]" style={{ containerType: 'size' }}>
+      <div className={sequence ? 'absolute inset-0' : 'parallax absolute inset-0'} style={sequence ? undefined : drift('8%')}>
+        {frames.map((src, i) => (
+          <div
+            key={src}
+            className={`absolute inset-0 ${i ? 'band-next' : ''}`}
+            style={i ? ({ '--fade-from': `${i * step - 8}%`, '--fade-to': `${i * step + 4}%` } as CSSProperties) : undefined}
+          >
+            <div className="sideways-frame">
+              <Image src={src} alt="" fill sizes="100vw" className="object-cover transition-transform duration-[1.6s] ease-out group-hover:scale-[1.03]" />
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* Wide screens: the copy sits on the calm wall in the lower left of the turned photo. */}
+      {s.title || s.subtitle ? (
+        <div className="relative hidden h-full flex-col justify-end gap-5 p-12 pb-14 md:flex">
+          {s.subtitle ? <p className="label text-ink-soft">{s.subtitle}</p> : null}
+          {s.title ? <h2 className="display max-w-xl text-[64px]">{s.title}</h2> : null}
+          <Cta s={s} />
+        </div>
+      ) : null}
+    </div>
+  );
   return (
     <section className="pt-24 md:pt-36">
-      <div className="group reveal relative h-[78svh] overflow-clip bg-stone md:h-[92svh]" style={{ containerType: 'size' }}>
-        <div className="parallax absolute inset-0" style={drift('8%')}>
-          {frames.map((src, i) => (
-            <div
-              key={src}
-              className={`absolute inset-0 ${i ? 'sideways-next' : ''}`}
-              style={i ? ({ '--fade-from': `${30 + (i - 1) * span}%`, '--fade-to': `${40 + (i - 1) * span}%` } as CSSProperties) : undefined}
-            >
-              <div className="sideways-frame">
-                <Image src={src} alt="" fill sizes="100vw" className="object-cover transition-transform duration-[1.6s] ease-out group-hover:scale-[1.03]" />
-              </div>
-            </div>
-          ))}
+      {sequence ? (
+        <div className="band-track" style={{ '--frames': frames.length } as CSSProperties}>
+          <div className="band-sticky">{band}</div>
         </div>
-        {/* Wide screens: the copy sits on the calm wall in the lower left of the turned photo. */}
-        {s.title || s.subtitle ? (
-          <div className="relative hidden h-full flex-col justify-end gap-5 p-12 pb-14 md:flex">
-            {s.subtitle ? <p className="label text-ink-soft">{s.subtitle}</p> : null}
-            {s.title ? <h2 className="display max-w-xl text-[64px]">{s.title}</h2> : null}
-            <Cta s={s} />
-          </div>
-        ) : null}
-      </div>
+      ) : (
+        band
+      )}
       {s.title || s.body || s.ctaLabel ? (
         <div className="reveal mx-auto mt-12 flex max-w-xl flex-col items-center gap-5 px-4 text-center md:hidden">
           {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
