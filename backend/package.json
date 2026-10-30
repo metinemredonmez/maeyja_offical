@@ -21,6 +21,7 @@
     "db:studio": "prisma studio",
     "db:seed:catalog": "ts-node prisma/seed-catalog.ts",
     "db:seed:demo": "ts-node prisma/seed-demo.ts",
+    "user:test": "ts-node prisma/test-user.ts",
     "translate:missing": "ts-node prisma/translate-missing.ts"
   },
   "prisma": {
