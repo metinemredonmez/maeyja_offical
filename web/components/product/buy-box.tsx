@@ -145,11 +145,7 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
               </div>
             )}
             {variant?.lowStock ? <p className="text-xs text-brand">{tc('lowStock', { count: 3 })}</p> : null}
-            {tryon ? (
-              <div className="flex justify-center pt-1">
-                <TryOn slug={product.slug} color={color} productName={product.name} />
-              </div>
-            ) : null}
+            {tryon ? <TryOn slug={product.slug} color={color} productName={product.name} /> : null}
           </div>
 
           <ProductTabs items={tabs} />

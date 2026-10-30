@@ -26,7 +26,7 @@ export default async function StockistsPage({ params }: { params: Params }) {
             <p>{s.url ? <a href={s.url} rel="noopener" target="_blank" className="hover:text-brand">{s.name}</a> : s.name}</p>
             {s.address ? <p className="text-sm text-muted">{s.address}</p> : null}
             {s.phone ? <a href={`tel:${s.phone}`} className="text-sm text-muted hover:text-ink">{s.phone}</a> : null}
-            {s.mapUrl ? <a href={s.mapUrl} rel="noopener" target="_blank" className="link-underline self-start">Map</a> : null}
+            {s.mapUrl ? <a href={s.mapUrl} rel="noopener" target="_blank" className="link-underline self-start">{t('map')}</a> : null}
           </li>
         ))}
         <li className="flex flex-col gap-2 border-t border-line pt-5 text-[15px] leading-relaxed">

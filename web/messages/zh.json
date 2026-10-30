@@ -1,6 +1,6 @@
 {
   "meta": { "siteName": "MAEYJA", "tagline": "Hand crafted elegance.", "description": "在伊斯坦布尔手工制作的皮革包袋。" },
-  "nav": { "bags": "包袋", "expertise": "工艺", "stores": "门店", "byModel": "款式", "design": "设计", "materials": "材质", "craft": "缝制", "artisans": "匠人", "atelier": "工坊", "journal": "Journal", "search": "搜索", "account": "账户", "cart": "购物车", "language": "语言", "menu": "菜单", "close": "关闭", "home": "首页" },
+  "nav": { "bags": "包袋", "expertise": "工艺", "stores": "门店", "byModel": "款式", "design": "设计", "materials": "材质", "craft": "缝制", "artisans": "匠人", "atelier": "工坊", "journal": "品牌志", "search": "搜索", "account": "账户", "cart": "购物车", "language": "语言", "menu": "菜单", "close": "关闭", "home": "首页" },
   "common": { "discover": "探索", "viewAll": "查看全部", "loading": "加载中…", "back": "返回", "save": "保存", "cancel": "取消", "delete": "删除", "edit": "编辑", "continue": "继续", "or": "或", "email": "邮箱", "password": "密码", "firstName": "名", "lastName": "姓", "phone": "电话", "soldOut": "已售罄", "lowStock": "仅剩 {count} 件", "new": "新品", "free": "免费", "comingSoon": "即将上市", "readMore": "阅读更多", "error": "出了点问题，请重试。", "notFound": "页面未找到", "notFoundText": "您查找的页面可能已被移动，或从未存在。", "retry": "重试" },
   "home": { "shopNow": "立即选购", "ourStory": "品牌故事", "press": "媒体报道", "stockists": "销售门店", "followInstagram": "关注 Instagram", "instagramAccount": "我们的账号" },
   "shop": { "title": "包袋", "intro": "雕塑般的造型，克制的色彩。每一件都在我们的工坊中手工裁剪、缝制。", "count": "{count, plural, other {# 件商品}}", "filter": "筛选", "color": "颜色", "size": "尺寸", "price": "价格", "sort": "排序", "sortFeatured": "推荐", "sortNewest": "最新上架", "sortPriceAsc": "价格从低到高", "sortPriceDesc": "价格从高到低", "clear": "清除", "empty": "没有符合所选条件的商品。", "collections": "系列" },
@@ -13,8 +13,8 @@
   "newsletter": { "title": "新系列上市，第一时间知晓", "text": "每月最多一封邮件，可随时退订。", "placeholder": "您的邮箱", "button": "订阅", "done": "谢谢——您已加入订阅名单。", "error": "订阅失败，请检查邮箱地址后重试。", "waitlistTitle": "服饰系列", "waitlistText": "首批单品限量发售。加入名单，抢先获知发布消息。", "join": "加入" },
   "contact": { "title": "联系我们", "text": "有任何问题，欢迎来信；我们通常会在一个工作日内回复。", "name": "姓名", "subject": "主题", "message": "留言内容", "send": "发送", "sent": "留言已收到，谢谢。" },
   "faq": { "title": "常见问题" },
-  "stockists": { "title": "销售门店", "online": "线上", "worldwide": "全球配送" },
-  "journal": { "title": "Journal", "empty": "暂无文章。" },
+  "stockists": { "title": "销售门店", "online": "线上", "worldwide": "全球配送", "map": "地图" },
+  "journal": { "title": "品牌志", "empty": "暂无文章。" },
   "footer": { "shop": "选购", "help": "帮助", "legal": "法律信息", "clothing": "服饰 — 即将上市", "care": "皮革保养指南", "shippingReturns": "配送与退货", "orderStatus": "订单查询", "faq": "常见问题", "contact": "联系我们", "distance": "远程销售协议", "preliminary": "售前信息告知书", "kvkk": "个人数据告知声明", "privacy": "隐私与 Cookie", "terms": "使用条款", "about": "关于我们", "securePayment": "iyzico 安全支付", "rights": "© {year} MAEYJA · 伊斯坦布尔" },
   "unsubscribe": { "title": "退订", "text": "如果您不想再收到 MAEYJA 的邮件，请点击下方按钮。", "button": "退订", "done": "您已成功退订，今后将不再收到营销邮件。", "fail": "该链接无效或已过期。您可以在账户中关闭营销邮件，或联系我们。", "back": "返回商店" },
   "assistant": { "open": "助手", "title": "MAEYJA 助手", "placeholder": "询问款式、颜色或配送…", "send": "发送", "error": "暂时无法回答。请重试，或发送邮件至 hello@maeyja.com。", "limit": "消息发送过于频繁，请几分钟后再试。", "note": "AI 助手，回答可能不完全准确。请勿分享个人或支付信息。", "reset": "新对话", "whatsapp": "通过 WhatsApp 联系我们的团队" },

@@ -102,7 +102,11 @@ export function TryOn({ slug, color, productName }: { slug: string; color: strin
 
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className="link-underline">
+      <button type="button" onClick={() => setOpen(true)} className="btn-outline w-full">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3">
+          <path d="M3 8h3.5L8 5.5h8L17.5 8H21v11H3z" />
+          <circle cx="12" cy="13" r="3.5" />
+        </svg>
         {t('button')}
       </button>
       {open ? (
