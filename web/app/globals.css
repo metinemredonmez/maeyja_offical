@@ -13,8 +13,8 @@
   --color-brand: #a3121b;
   --color-white: #ffffff;
 
-  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
-  --font-sans: var(--font-inter), Inter, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Georgia, var(--font-cjk, serif), serif;
+  --font-sans: var(--font-inter), Inter, var(--font-cjk, system-ui), system-ui, sans-serif;
   --font-label: var(--font-tenor), 'Tenor Sans', var(--font-inter), var(--font-cjk, system-ui), sans-serif;
 
   --tracking-label: 0.14em;
@@ -270,6 +270,16 @@
 }
 
 /* Header over the home hero: transparent with white type until the hero scrolls away or a menu opens. */
+/* System fonts for Japanese, Korean and Chinese (see the locale layout). */
+html:lang(ja) {
+  --font-cjk: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', YuGothic, Meiryo, 'Noto Sans JP', sans-serif;
+}
+html:lang(ko) {
+  --font-cjk: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+}
+html:lang(zh) {
+  --font-cjk: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+}
 .site-header {
   transition:
     background-color 300ms,
@@ -292,6 +302,10 @@
 .site-header[data-home]:has([aria-expanded='true']) .wordmark {
   transform: none;
   transition: opacity 700ms, transform 250ms ease-out;
+}
+/* The focus ring would be scaled up with the giant wordmark into a thick black frame over the hero. */
+.site-header[data-home]:not([data-solid]) .wordmark:focus-visible {
+  outline: none;
 }
 /* Until the giant size is measured, keep it out of sight instead of flashing the small logo. */
 .site-header[data-home]:not([data-ready]) .wordmark {
