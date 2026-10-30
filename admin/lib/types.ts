@@ -491,7 +491,7 @@ export interface Settings {
   tax: { defaultRate: number };
   checkout: { guestCheckout: boolean; maxQtyPerItem: number };
   bankTransfer: { enabled: boolean; bankName: string; accountName: string; iban: string; note: Record<string, string> };
-  assistant: { enabled: boolean; welcome: Record<string, string>; instructions: string };
+  assistant: { enabled: boolean; welcome: Record<string, string>; instructions: string; handoffWhatsapp: string };
   tryon: { enabled: boolean };
 }
 export type SettingKey = keyof Settings;

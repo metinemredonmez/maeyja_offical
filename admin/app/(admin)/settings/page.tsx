@@ -200,6 +200,13 @@ function AssistantTab({ value }: { value: Settings['assistant'] }) {
         >
           <Textarea id="as-instructions" rows={6} maxLength={4000} value={d.draft.instructions ?? ''} onChange={(e) => set({ instructions: e.target.value })} />
         </Field>
+        <Field
+          label="Acil durumda WhatsApp numarası"
+          htmlFor="as-whatsapp"
+          hint="Siparişte sorun, hasarlı ürün, şikâyet ya da ziyaretçi bir kişiyle görüşmek isterse asistan bu numaraya WhatsApp butonu çıkarır; ziyaretçinin derdi mesaja hazır yazılır. Ülke koduyla: +33 6 12 34 56 78. Boşsa e-postaya yönlendirir."
+        >
+          <Input id="as-whatsapp" inputMode="tel" placeholder="+33 6 …" className="max-w-xs" value={d.draft.handoffWhatsapp ?? ''} onChange={(e) => set({ handoffWhatsapp: e.target.value })} />
+        </Field>
       </div>
       <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
     </Section>

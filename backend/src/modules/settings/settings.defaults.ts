@@ -35,6 +35,8 @@ export const SETTING_DEFAULTS = {
     } as Record<string, string>,
     /** Extra rules and facts from the owner, appended to the assistant's instructions. */
     instructions: '',
+    /** WhatsApp number of the person who takes over urgent cases (e.g. +33 6 …); empty: the assistant points to e-mail. */
+    handoffWhatsapp: '',
   },
   /** "Üzerimde gör" virtual try-on on product pages (Gemini). Off until switched on in the admin. */
   tryon: {
