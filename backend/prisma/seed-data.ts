@@ -368,7 +368,12 @@ export const PRODUCTS: SeedProduct[] = [
 ];
 
 // ───────── Homepage, Faz 1 additions (diptych, model strip, banner) ─────────
-export const HOME_V2: Record<'DIPTYCH' | 'STRIP' | 'BANNER' | 'SIDEWAYS', Record<string, L>> = {
+export const HOME_V2: Record<'DIPTYCH' | 'STRIP' | 'BANNER' | 'SIDEWAYS' | 'BOUTIQUE', Record<string, L>> = {
+  BOUTIQUE: {
+    title: { tr: 'Vitrinde', en: 'On display', ru: 'На витрине', nl: 'In de etalage', de: 'Im Schaufenster', fr: 'En vitrine', it: 'In vetrina', es: 'En el escaparate', ko: '쇼윈도', ja: 'ショーウィンドウ', zh: '橱窗陈列' },
+    body: { tr: 'Sekiz model, yan yana.', en: 'Eight models, side by side.', ru: 'Восемь моделей бок о бок.', nl: 'Acht modellen, zij aan zij.', de: 'Acht Modelle, Seite an Seite.', fr: 'Huit modèles, côte à côte.', it: 'Otto modelli, uno accanto all’altro.', es: 'Ocho modelos, uno junto a otro.', ko: '여덟 가지 모델을 한자리에.', ja: '8つのモデルを、ひとつの棚に。', zh: '八款包袋，并排陈列。' },
+    ctaLabel: { tr: 'Koleksiyonu keşfet', en: 'Discover the collection', ru: 'Смотреть коллекцию', nl: 'Ontdek de collectie', de: 'Kollektion entdecken', fr: 'Découvrir la collection', it: 'Scopri la collezione', es: 'Descubrir la colección', ko: '컬렉션 보기', ja: 'コレクションを見る', zh: '探索系列' },
+  },
   SIDEWAYS: {
     subtitle: { tr: 'Origami, kırmızı', en: 'Origami in red', ru: 'Origami, красный', nl: 'Origami in rood', de: 'Origami in Rot', fr: 'Origami rouge', it: 'Origami rosso', es: 'Origami en rojo', ko: '레드 Origami', ja: 'Origami、レッド', zh: 'Origami 红色' },
     title: { tr: 'Yeni koleksiyon', en: 'New collection', ru: 'Новая коллекция', nl: 'Nieuwe collectie', de: 'Neue Kollektion', fr: 'Nouvelle collection', it: 'Nuova collezione', es: 'Nueva colección', ko: '새 컬렉션', ja: '新コレクション', zh: '新系列' },

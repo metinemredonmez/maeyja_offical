@@ -288,6 +288,11 @@
   transform: translateY(calc(var(--y0, 0px) * (1 - var(--p, 1)))) scale(calc(1 + (var(--s, 1) - 1) * (1 - var(--p, 1))));
   transition: opacity 700ms;
 }
+/* A menu opened over the hero turns the bar cream; the giant wordmark tucks into its slot instead of hanging below it. */
+.site-header[data-home]:has([aria-expanded='true']) .wordmark {
+  transform: none;
+  transition: opacity 700ms, transform 250ms ease-out;
+}
 /* Until the giant size is measured, keep it out of sight instead of flashing the small logo. */
 .site-header[data-home]:not([data-ready]) .wordmark {
   opacity: 0;

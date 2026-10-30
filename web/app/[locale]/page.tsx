@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { apiGet } from '@/lib/api.server';
-import type { HomeSection } from '@/lib/types';
-import { HomeSections } from '@/components/home/sections';
+import type { HomeSection, PublicSettings } from '@/lib/types';
+import { HomeSections, InstagramCollage } from '@/components/home/sections';
 import { alternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -12,6 +12,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const sections = await apiGet<HomeSection[]>('/content/home', { locale, revalidate: 60 }).catch(() => []);
-  return <HomeSections sections={sections} />;
+  const [sections, settings] = await Promise.all([
+    apiGet<HomeSection[]>('/content/home', { locale, revalidate: 60 }).catch(() => []),
+    apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null),
+  ]);
+  return (
+    <>
+      <HomeSections sections={sections} />
+      <InstagramCollage url={settings?.store.instagram || null} />
+    </>
+  );
 }

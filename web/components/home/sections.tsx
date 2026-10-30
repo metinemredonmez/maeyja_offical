@@ -28,6 +28,7 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
           case 'EDITORIAL':
             if (s.layout === 'diptych') return <Diptych key={s.id} s={s} />;
             if (s.layout === 'sideways') return <Sideways key={s.id} s={s} />;
+            if (s.layout === 'boutique') return <Boutique key={s.id} s={s} />;
             return s.layout === 'full' ? <FullBleed key={s.id} s={s} /> : <Split key={s.id} s={s} />;
           case 'PRESS':
             return <Press key={s.id} s={s} />;
@@ -107,20 +108,28 @@ function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?:
   );
 }
 
+/** The hero's product card, Polène-style: frosted glass over the film, the name on top and the bag below it. */
 function FloatingCard({ p }: { p: Card }) {
+  return <GlassCard p={p} className="relative hidden w-[260px] shrink-0 md:flex" />;
+}
+
+/** The frost is its own layer under the content: a blurred element isolates its children, which would stop the
+ * photo's white ground from multiplying away into the glass. */
+function GlassCard({ p, className }: { p: Card; className: string }) {
   const locale = useLocale();
   const img = p.images[0];
   return (
-    <Link href={`/products/${p.slug}`} className="group hidden w-[300px] shrink-0 items-center gap-4 bg-ground p-3 text-ink shadow-[0_12px_40px_rgba(0,0,0,0.12)] md:flex">
-      <span className="relative aspect-[4/5] w-[72px] shrink-0 overflow-hidden bg-stone">
-        {img ? <Image src={img.url} alt={img.alt ?? p.name} fill sizes="72px" className="object-cover" /> : null}
-      </span>
-      <span className="flex flex-col gap-1.5">
-        <span className="label group-hover:text-brand">
-          {modelNo(p.number) ? `${modelNo(p.number)} ` : ''}
-          {p.name}
+    <Link href={`/products/${p.slug}`} className={`group flex-col text-ink ${className}`}>
+      <span className="absolute inset-0 bg-white/50 backdrop-blur-xl" aria-hidden="true" />
+      <span className="relative flex flex-col gap-1.5 px-5 pt-5">
+        <span className="font-serif text-[24px] font-light leading-none group-hover:text-brand">{p.name}</span>
+        <span className="label text-ink-soft">
+          {modelNo(p.number) ? `${modelNo(p.number)} · ` : ''}
+          {money(p.price, locale)}
         </span>
-        <span className="text-sm text-ink-soft">{money(p.price, locale)}</span>
+      </span>
+      <span className="relative block aspect-square w-full">
+        {img ? <Image src={img.url} alt={img.alt ?? p.name} fill sizes="300px" className="object-contain p-6 mix-blend-multiply transition duration-700 group-hover:scale-[1.04]" /> : null}
       </span>
     </Link>
   );
@@ -268,23 +277,88 @@ function FullBleed({ s }: { s: HomeSection }) {
   );
 }
 
-/** Polène's tall product card over a film: name and price on top, the bag below on the cream ground. */
+/** Polène's tall product card over a film, in the lower left. */
 function ProductPanel({ p }: { p: Card }) {
-  const locale = useLocale();
-  const img = p.images[0];
+  return <GlassCard p={p} className="absolute bottom-10 left-12 z-10 hidden w-[300px] md:flex" />;
+}
+
+/**
+ * "On display": a wide picture of the bags on the shelves and a closer one of a single bag, side by side like the
+ * store pictures on Polène. A product picked in the admin captions the closer picture.
+ */
+function Boutique({ s }: { s: HomeSection }) {
+  const second = s.secondImageUrl ?? s.mobileImageUrl;
   return (
-    <Link href={`/products/${p.slug}`} className="group absolute bottom-10 left-12 z-10 hidden w-[300px] flex-col bg-ground text-ink md:flex">
-      <span className="flex flex-col gap-1.5 px-5 pt-5">
-        <span className="font-serif text-[26px] font-light leading-none group-hover:text-brand">{p.name}</span>
-        <span className="label text-muted">
-          {modelNo(p.number) ? `${modelNo(p.number)} · ` : ''}
-          {money(p.price, locale)}
-        </span>
-      </span>
-      <span className="relative block aspect-square w-full">
-        {img ? <Image src={img.url} alt={img.alt ?? p.name} fill sizes="300px" className="object-contain p-6 mix-blend-multiply transition duration-700 group-hover:scale-[1.04]" /> : null}
-      </span>
-    </Link>
+    <section className="px-4 pt-24 md:px-12 md:pt-40">
+      <div className="reveal mb-10 flex flex-col gap-4 md:mb-14 md:flex-row md:items-end md:justify-between">
+        <div className="flex max-w-xl flex-col gap-4">
+          {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
+          {s.title ? <h2 className="display text-[36px] leading-[1.05] md:text-[52px]">{s.title}</h2> : null}
+          <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
+        </div>
+        <Cta s={s} />
+      </div>
+      <div className="grid gap-y-14 md:grid-cols-12 md:gap-x-6">
+        <div className="reveal md:col-span-8">
+          <span className="relative block aspect-[16/10] overflow-hidden bg-stone">
+            <span className="parallax absolute inset-0 block" style={drift('4%')}>
+              {s.imageUrl ? <Image src={s.imageUrl} alt="" fill sizes="(min-width: 768px) 66vw, 100vw" className="object-cover" /> : null}
+            </span>
+          </span>
+        </div>
+        <Still url={second} product={s.products?.[0]} shift="10%" sizes="(min-width: 768px) 33vw, 80vw" className="ml-auto w-[82%] md:col-span-4 md:ml-0 md:w-full" />
+      </div>
+    </section>
+  );
+}
+
+/** Where each picture of the Instagram collage sits on wide screens (pictures in public/instagram/{n}.webp). */
+const COLLAGE = [
+  { n: 1, box: 'left-0 top-0 w-[19%]' },
+  { n: 2, box: 'left-[9%] top-[38%] w-[13%]' },
+  { n: 3, box: 'left-[42%] top-0 w-[11%]' },
+  { n: 4, box: 'left-[38%] top-[66%] w-[10%]' },
+  { n: 5, box: 'left-[50%] top-[58%] w-[16%]' },
+  { n: 6, box: 'right-[14%] top-[30%] w-[15%]' },
+  { n: 7, box: 'right-0 top-[4%] w-[17%]' },
+];
+
+/**
+ * Polène's "Follow us on Instagram": campaign pictures scattered around a short line and a link to the account.
+ * Phones get the line first and a simple grid underneath.
+ */
+export function InstagramCollage({ url }: { url: string | null }) {
+  const t = useTranslations('home');
+  if (!url) return null;
+  const line = (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <p className="font-serif text-[26px] font-light md:text-[30px]">{t('followInstagram')}</p>
+      <a href={url} target="_blank" rel="noopener" className="link-underline">
+        {t('instagramAccount')}
+      </a>
+    </div>
+  );
+  return (
+    <section className="px-4 pt-24 md:px-12 md:pt-40">
+      <div className="md:hidden">
+        {line}
+        <div className="mt-10 grid grid-cols-2 gap-3">
+          {COLLAGE.slice(0, 4).map(({ n }) => (
+            <span key={n} className="relative block aspect-[4/5] overflow-hidden bg-stone">
+              <Image src={`/instagram/${n}.webp`} alt="" fill sizes="50vw" className="object-cover" />
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="relative hidden aspect-[16/10] md:block">
+        {COLLAGE.map(({ n, box }) => (
+          <a key={n} href={url} target="_blank" rel="noopener" tabIndex={-1} aria-hidden="true" className={`reveal absolute block aspect-[4/5] overflow-hidden bg-stone ${box}`}>
+            <Image src={`/instagram/${n}.webp`} alt="" fill sizes="20vw" className="object-cover transition duration-700 hover:scale-[1.04]" />
+          </a>
+        ))}
+        <div className="absolute inset-x-0 top-[40%]">{line}</div>
+      </div>
+    </section>
   );
 }
 

@@ -25,6 +25,7 @@ const LAYOUTS: Partial<Record<HomeSectionType, { value: string; label: string }[
     { value: 'diptych', label: 'Yan yana iki fotoğraf' },
     { value: 'full', label: 'Tam genişlik banner / video' },
     { value: 'sideways', label: 'Yan yatık manken (tam genişlik)' },
+    { value: 'boutique', label: 'Vitrin: geniş + dikey fotoğraf' },
   ],
   CRAFT_STORY: [
     { value: 'full', label: 'Tam genişlik görsel' },

@@ -218,6 +218,20 @@ async function main() {
     console.log('✓ ana sayfa: manken ve Drape bandı yukarı');
   }
 
+  // "On display": the shelf wall with all eight bags and the Lune on a walnut counter, once, just before the press quotes.
+  if (!(await prisma.homeSection.count({ where: { layout: 'boutique' } }))) {
+    const press = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.PRESS } });
+    const at = press?.sortOrder ?? (await prisma.homeSection.count());
+    await prisma.homeSection.updateMany({ where: { sortOrder: { gte: at } }, data: { sortOrder: { increment: 1 } } });
+    const wall = await importImage('_home', '16-boutique-wall.webp', 'MAEYJA');
+    const counter = await importImage('_home', '17-boutique-lune.webp', 'Lune');
+    const lune = await prisma.product.findUnique({ where: { slug: 'lune' }, select: { id: true } });
+    const copy = split(HOME_V2.BOUTIQUE);
+    await prisma.homeSection.create({
+      data: { type: HomeSectionType.EDITORIAL, layout: 'boutique', sortOrder: at, imageUrl: wall.url, secondImageUrl: counter.url, ctaUrl: '/products', payload: lune ? { productIds: [lune.id] } : {}, ...copy.base, translations: copy.translations },
+    });
+    console.log('✓ ana sayfa: vitrin bölümü');
+  }
   // Each bag's second picture is a campaign or still-life photo: on the product page it opens the left column
   // (Polène) and on the listing it is the hover picture. Added once per bag, only while its first photo is the seeded one.
   const lifestyle = await readdir(join(ASSETS, '_lifestyle')).catch(() => [] as string[]);
