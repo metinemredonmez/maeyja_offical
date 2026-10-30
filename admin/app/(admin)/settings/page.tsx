@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Section } from '@/components/shared/primitives';
 import { QueryState } from '@/components/shared/query-state';
 import { useSaveSetting, useSettings } from '@/lib/queries/system';
+import { cn } from '@/lib/utils';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
 const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', tracking: 'İzleme ve görünürlük' };
@@ -23,7 +24,7 @@ function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
   return { draft, setDraft, dirty, save: () => save.mutate({ key, value: draft }), saving: save.isPending };
 }
 
-function SaveBar({ dirty, saving, onSave, onReset }: { dirty: boolean; saving: boolean; onSave: () => void; onReset: () => void }) {
+function SaveBar({ dirty, saving, onSave, onReset, blocked = false }: { dirty: boolean; saving: boolean; onSave: () => void; onReset: () => void; blocked?: boolean }) {
   return (
     <div className="flex items-center justify-end gap-2 border-t pt-4">
       {dirty && (
@@ -31,7 +32,7 @@ function SaveBar({ dirty, saving, onSave, onReset }: { dirty: boolean; saving: b
           Vazgeç
         </Button>
       )}
-      <SubmitButton type="button" loading={saving} disabled={!dirty} onClick={onSave}>
+      <SubmitButton type="button" loading={saving} disabled={!dirty || blocked} onClick={onSave}>
         Kaydet
       </SubmitButton>
     </div>
@@ -220,20 +221,74 @@ function TryOnTab({ value }: { value: Settings['tryon'] }) {
       title="Üzerimde gör (sanal deneme)"
       description="Ürün sayfasında ziyaretçi kendi fotoğrafını yükler, yapay zekâ (Google Gemini) seçili çantayı onun üzerinde gösterir. Ziyaretçi önce açık rıza ve 18 yaş beyanı verir; fotoğraf saklanmaz, sonuç 10 dakika sonra silinir. Görsel başına ücretlidir: ziyaretçi başına saatte 3 / günde 8, mağaza geneli günde 100 deneme sınırı vardır."
     >
-      <SwitchField label="Sanal deneme açık" description="Sunucuda GEMINI_API_KEY tanımlı olmalı." checked={d.draft.enabled} onCheckedChange={(v) => d.setDraft({ ...d.draft, enabled: v })} />
+      <SwitchField label="Sanal deneme açık" description="Gemini anahtarı sunucuda tanımlı; başka bir şey gerekmez. Açıp kaydedince ürün sayfalarında “Üzerimde gör” butonu en geç 5 dakikada çıkar." checked={d.draft.enabled} onCheckedChange={(v) => d.setDraft({ ...d.draft, enabled: v })} />
       <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
     </Section>
+  );
+}
+
+type TrackingKey = Exclude<keyof Settings['tracking'], 'allowAiCrawlers'>;
+
+/** What each ID looks like; a wrong paste (an e-mail, a whole HTML tag, the admin password) is caught before saving. */
+const TRACKING_FORMATS: Record<TrackingKey, [RegExp, string]> = {
+  metaPixelId: [/^\d{10,20}$/, 'Pixel ID yalnızca rakamdır (genelde 15-16 hane).'],
+  metaCapiToken: [/^EAA[\w-]{30,}$/, 'Token “EAA” ile başlayan uzun bir harf-rakam dizisidir.'],
+  metaTestCode: [/^TEST\w+$/, '“TEST” ile başlar, ör. TEST12345.'],
+  ga4Id: [/^G-[A-Z0-9]{4,}$/, '“G-” ile başlar, ör. G-AB12CD34EF.'],
+  ga4ApiSecret: [/^[\w-]{16,}$/, 'Gizli anahtar 20 karakter kadar harf-rakam dizisidir.'],
+  googleAdsId: [/^AW-\d{6,}$/, '“AW-” ile başlar, ör. AW-123456789.'],
+  googleAdsPurchaseLabel: [/^[\w-]{6,}$/, 'Yalnızca etiket: eğik çizgiden sonraki harf-rakam dizisi.'],
+  googleSiteVerification: [/^[\w-]{20,}$/, 'Yalnızca content="…" içindeki kod (tırnaksız).'],
+};
+
+function Ext({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="font-medium text-foreground underline underline-offset-2 hover:text-[#A3121B]">
+      {children}
+    </a>
   );
 }
 
 function TrackingTab({ value }: { value: Settings['tracking'] }) {
   const d = useDraft('tracking', value);
   const set = (patch: Partial<Settings['tracking']>) => d.setDraft({ ...d.draft, ...patch });
-  const text = (key: keyof Settings['tracking'], label: string, hint: string, placeholder = '', secret = false) => (
-    <Field label={label} htmlFor={`tr-${key}`} hint={hint}>
-      <Input id={`tr-${key}`} type={secret ? 'password' : 'text'} autoComplete="off" placeholder={placeholder} value={String(d.draft[key] ?? '')} onChange={(e) => set({ [key]: e.target.value.trim() })} />
+  const invalid = (key: TrackingKey) => {
+    const v = String(d.draft[key] ?? '');
+    return v !== '' && !TRACKING_FORMATS[key][0].test(v);
+  };
+  const anyInvalid = (Object.keys(TRACKING_FORMATS) as TrackingKey[]).some(invalid);
+  // Whole snippets are pasted as often as bare IDs: keep only the part each field needs.
+  const clean = (key: TrackingKey, raw: string): Partial<Settings['tracking']> => {
+    const v = raw.trim();
+    if (key === 'googleSiteVerification') return { [key]: v.match(/content=["']([^"']+)["']/)?.[1] ?? v };
+    if (key === 'googleAdsId' || key === 'googleAdsPurchaseLabel') {
+      const sendTo = v.match(/(AW-\d+)\/([\w-]+)/);
+      if (sendTo) return { googleAdsId: sendTo[1], googleAdsPurchaseLabel: sendTo[2] };
+    }
+    if (key === 'ga4Id') return { [key]: v.toUpperCase() };
+    return { [key]: v };
+  };
+  // Secrets are masked with CSS, not type="password": a password field makes the browser fill in the admin's saved
+  // e-mail and password here (and offer to save the token as a password).
+  const text = (key: TrackingKey, label: string, hint: React.ReactNode, placeholder = '', secret = false) => (
+    <Field label={label} htmlFor={`tr-${key}`} hint={hint} error={invalid(key) ? TRACKING_FORMATS[key][1] : undefined}>
+      <Input
+        id={`tr-${key}`}
+        name={`mj-${key}`}
+        autoComplete="off"
+        spellCheck={false}
+        data-1p-ignore
+        data-lpignore="true"
+        data-form-type="other"
+        className={cn('font-mono text-xs', secret && '[-webkit-text-security:disc]')}
+        placeholder={placeholder}
+        value={String(d.draft[key] ?? '')}
+        onChange={(e) => set(clean(key, e.target.value))}
+      />
     </Field>
   );
+  const events = <Ext href="https://business.facebook.com/events_manager2">Meta Events Manager</Ext>;
+  const ga = <Ext href="https://analytics.google.com/analytics/web/#/a/admin">Google Analytics → Yönetici</Ext>;
   return (
     <>
       <Section
@@ -241,13 +296,13 @@ function TrackingTab({ value }: { value: Settings['tracking'] }) {
         description="Ziyaretler, ürün görüntüleme, sepete ekleme, ödemeye geçiş ve satın alma Meta ve Google'a gider. Sitede çerez onayı çıkar; pikseller yalnızca ziyaretçi kabul ederse yüklenir. Satın alma ayrıca sunucudan da gönderilir (iki taraflı), sipariş numarasıyla eşleştirildiği için iki kez sayılmaz."
       >
         <div className="grid gap-4 sm:grid-cols-2">
-          {text('metaPixelId', 'Meta Pixel ID', 'Meta Events Manager → Veri kaynakları → Pikseliniz → Ayarlar', '1234567890')}
-          {text('metaCapiToken', 'Meta Conversions API erişim tokenı', 'Aynı sayfada “Dönüşüm API’si → Erişim tokenı oluştur”. Sunucuda kalır, sitede görünmez.', '', true)}
-          {text('metaTestCode', 'Meta test olayı kodu (opsiyonel)', 'Events Manager → Olayları test et. Denemeden sonra boşaltın.', 'TEST12345')}
-          {text('ga4Id', 'Google Analytics 4 ölçüm kimliği', 'GA4 → Yönetici → Veri akışları → Web akışı', 'G-XXXXXXXXXX')}
-          {text('ga4ApiSecret', 'GA4 Measurement Protocol API gizli anahtarı', 'Aynı veri akışında “Measurement Protocol API gizli anahtarları → Oluştur”. Sunucuda kalır.', '', true)}
-          {text('googleAdsId', 'Google Ads dönüşüm kimliği (opsiyonel)', 'Google Ads → Hedefler → Dönüşümler → Etiket ayarları', 'AW-123456789')}
-          {text('googleAdsPurchaseLabel', 'Google Ads satın alma etiketi (opsiyonel)', 'Satın alma dönüşümünün “send_to” değerindeki eğik çizgiden sonraki kısım', 'AbCdEfGhIj')}
+          {text('metaPixelId', 'Meta Pixel ID', <>{events} → solda Veri kaynakları → pikseli seçin → Ayarlar sekmesi → “Veri kümesi kimliği / Pixel ID” (yalnızca rakam).</>, '1234567890123456')}
+          {text('metaCapiToken', 'Meta Conversions API erişim tokenı', <>{events} → aynı pikselin Ayarlar sekmesi → “Dönüşüm API’si” → “Erişim tokenı oluştur”. Sunucuda kalır, sitede görünmez.</>, 'EAA…', true)}
+          {text('metaTestCode', 'Meta test olayı kodu (opsiyonel)', <>{events} → pikseli seçin → “Olayları test et” sekmesi → Sunucu olayları altındaki TEST… kodu. Denemeden sonra boşaltın.</>, 'TEST12345')}
+          {text('ga4Id', 'Google Analytics 4 ölçüm kimliği', <>{ga} → Veri toplama → Veri akışları → web akışını seçin → “Ölçüm kimliği” (G-…).</>, 'G-XXXXXXXXXX')}
+          {text('ga4ApiSecret', 'GA4 Measurement Protocol API gizli anahtarı', <>{ga} → aynı web akışı → “Measurement Protocol API gizli anahtarları” → Oluştur → “Gizli anahtar değeri”. Sunucuda kalır.</>, '', true)}
+          {text('googleAdsId', 'Google Ads dönüşüm kimliği (opsiyonel)', <><Ext href="https://ads.google.com/aw/conversions">Google Ads → Hedefler → Dönüşümler</Ext> → satın alma dönüşümü → Etiket ayarları → “Etiketi kendiniz yükleyin”. send_to: &apos;AW-…/…&apos; satırını bütün olarak buraya yapıştırabilirsiniz, ikiye bölünür.</>, 'AW-123456789')}
+          {text('googleAdsPurchaseLabel', 'Google Ads satın alma etiketi (opsiyonel)', 'Aynı send_to değerinde eğik çizgiden sonraki kısım (yukarıya bütün olarak yapıştırırsanız kendiliğinden dolar).', 'AbCdEfGhIj')}
         </div>
       </Section>
       <Section
@@ -255,24 +310,35 @@ function TrackingTab({ value }: { value: Settings['tracking'] }) {
         description="ChatGPT, Claude, Perplexity, Gemini gibi yapay zekâ asistanları ve Google, mağazayı ve çantaları doğru okuyabilsin diye."
       >
         <div className="grid gap-4">
-          {text('googleSiteVerification', 'Google Search Console doğrulama kodu', 'Search Console → Mülk ekle → URL ön eki → HTML etiketi: content="…" içindeki kod', 'abc123…')}
+          {text(
+            'googleSiteVerification',
+            'Google Search Console doğrulama kodu',
+            <>
+              <Ext href="https://search.google.com/search-console/welcome">Search Console</Ext> → “URL ön eki” kutusuna https://maeyja.com → Doğrulama yöntemleri → HTML etiketi → gösterilen etiketi bütün olarak buraya yapıştırın (kod kendiliğinden ayrılır), kaydedin, 5 dk sonra Search Console’da “Doğrula”.
+            </>,
+            'abc123…',
+          )}
           <SwitchField
             label="AI ajanları siteyi okuyabilsin"
             description="Kapalıysa ChatGPT, Claude, Perplexity, Gemini gibi asistanların tarayıcıları robots.txt ile engellenir ve llms.txt kapanır."
             checked={d.draft.allowAiCrawlers}
             onCheckedChange={(v) => set({ allowAiCrawlers: v })}
           />
-          <div className="rounded-lg border bg-muted/40 p-4 text-sm leading-relaxed">
-            <p className="font-medium">Hazır adresler</p>
+          <div className="space-y-1.5 rounded-lg border bg-muted/40 p-4 text-sm leading-relaxed">
+            <p className="font-medium">Hazır adresler — nereye ne yapıştırılır</p>
             <p>
-              Ürün akışı (Google Merchant Center ve Meta katalog): <code>https://maeyja.com/feeds/products.xml</code> · İngilizce: <code>?lang=en</code>
+              <Ext href="https://merchants.google.com/">Google Merchant Center</Ext> → Ürünler → Veri kaynakları → Ürün kaynağı ekle → “Dosya ekle” → URL ile planlanmış getirme:{' '}
+              <code>https://maeyja.com/feeds/products.xml</code> (İngilizce mağaza için sonuna <code>?lang=en</code>).
             </p>
             <p>
-              AI ajanları için özet: <code>https://maeyja.com/llms.txt</code> · Site haritası: <code>https://maeyja.com/sitemap.xml</code>
+              <Ext href="https://business.facebook.com/commerce">Meta Commerce Manager</Ext> → Katalog → Veri kaynakları → Veri kaynağı ekle → Veri akışı → planlanmış akış, aynı adres.
+            </p>
+            <p>
+              Search Console → Site haritaları: <code>https://maeyja.com/sitemap.xml</code> · AI ajanları için özet: <code>https://maeyja.com/llms.txt</code>
             </p>
           </div>
         </div>
-        <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
+        <SaveBar dirty={d.dirty} blocked={anyInvalid} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
       </Section>
     </>
   );

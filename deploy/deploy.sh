@@ -30,10 +30,22 @@ wait_http() {               # $1 = url
   return 1
 }
 
+# package-lock.json değişmediyse node_modules'a dokunma: hem hızlı, hem çalışan uygulamanın modülleri silinmez.
+npm_ci_if_changed() {
+  local sum
+  sum="$(sha256sum package-lock.json | cut -d' ' -f1)"
+  if [ -d node_modules ] && [ "$(cat node_modules/.mj-lock 2>/dev/null)" = "$sum" ]; then
+    echo "  bağımlılıklar değişmemiş, npm ci atlandı"
+    return
+  fi
+  npm ci --no-audit --no-fund
+  echo "$sum" > node_modules/.mj-lock
+}
+
 deploy_backend() {
   echo "▶ backend"
   cd "$ROOT/backend"
-  npm ci --no-audit --no-fund   # devDeps dahil: nest build / prisma / ts-node (seed) için gerekli
+  npm_ci_if_changed           # devDeps dahil: nest build / prisma / ts-node (seed) için gerekli
   npx prisma generate
   npx prisma migrate deploy
   npm run build
@@ -45,16 +57,29 @@ deploy_backend() {
   echo "✓ backend"
 }
 
+# Yeni sürüm, çalışan sürümün yanındaki boş klasöre (.next-a / .next-b) derlenir; site build boyunca açık kalır ve
+# yalnızca sondaki yeniden başlatmada 1-2 sn kesilir. Açılmazsa eski klasöre geri döner (eskisi ancak başarıdan sonra silinir).
 deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = port
   if [ ! -f "$ROOT/$1/package.json" ]; then echo "– $1 henüz yok, atlandı"; return; fi
   echo "▶ $1"
   cd "$ROOT/$1"
-  npm ci --no-audit --no-fund
-  rm -rf .next                # yarım kalan build'den 500 almamak için temiz build
-  npm run build
+  npm_ci_if_changed
+  local old new
+  old="$(cat .next-slot 2>/dev/null || echo .next)"
+  if [ "$old" = .next-a ]; then new=.next-b; else new=.next-a; fi
+  rm -rf "$new"
+  NEXT_DIST_DIR="$new" npm run build
+  echo "$new" > .next-slot
   cd "$ROOT"
   pm2_restart "$2"
-  wait_http "http://127.0.0.1:$3/" || { echo "✗ $1 45 sn içinde açılmadı (:$3)"; pm2 logs "$2" --lines 50 --nostream; exit 1; }
+  if ! wait_http "http://127.0.0.1:$3/"; then
+    echo "✗ $1 45 sn içinde açılmadı (:$3) — önceki sürüme dönülüyor"
+    pm2 logs "$2" --lines 50 --nostream
+    echo "$old" > "$ROOT/$1/.next-slot"
+    pm2_restart "$2"
+    exit 1
+  fi
+  rm -rf "${ROOT:?}/$1/$old"
   echo "✓ $1"
 }
 

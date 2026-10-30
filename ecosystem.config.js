@@ -28,6 +28,15 @@ try {
  */
 const NEXT_ENV = { NODE_ENV: 'production', NODE_OPTIONS: '--dns-result-order=ipv4first' };
 
+/** deploy.sh builds into .next-a / .next-b beside the running build and records the live one in <app>/.next-slot. */
+const distDir = (app) => {
+  try {
+    return fs.readFileSync(path.join(__dirname, app, '.next-slot'), 'utf8').trim() || '.next';
+  } catch {
+    return '.next';
+  }
+};
+
 module.exports = {
   apps: [
     {
@@ -48,7 +57,7 @@ module.exports = {
       cwd: './web',
       script: 'node_modules/.bin/next',
       args: `start -H localhost -p ${ports.WEB_PORT}`,
-      env: NEXT_ENV,
+      env: { ...NEXT_ENV, NEXT_DIST_DIR: distDir('web') },
       max_memory_restart: '500M',
       out_file: '/var/log/pm2/maeyja-web.out.log',
       error_file: '/var/log/pm2/maeyja-web.err.log',
@@ -60,7 +69,7 @@ module.exports = {
       cwd: './admin',
       script: 'node_modules/.bin/next',
       args: `start -H localhost -p ${ports.ADMIN_PORT}`,
-      env: NEXT_ENV,
+      env: { ...NEXT_ENV, NEXT_DIST_DIR: distDir('admin') },
       max_memory_restart: '500M',
       out_file: '/var/log/pm2/maeyja-admin.out.log',
       error_file: '/var/log/pm2/maeyja-admin.err.log',

@@ -23,4 +23,6 @@ export const routing = defineRouting({
   defaultLocale: 'en',
   localePrefix: 'as-needed',
   localeDetection: false,
+  // hreflang already comes from each page's metadata; the duplicate Link header pushed responses past nginx's 4 KB header buffer (502).
+  alternateLinks: false,
 });

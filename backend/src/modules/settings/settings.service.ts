@@ -51,11 +51,12 @@ export class SettingsService {
       tryon: { enabled: tryon.enabled },
       // Only the public IDs; the server-side token and API secret never leave the API.
       tracking: {
-        metaPixelId: tracking.metaPixelId,
-        ga4Id: tracking.ga4Id,
-        googleAdsId: tracking.googleAdsId,
-        googleAdsPurchaseLabel: tracking.googleAdsPurchaseLabel,
-        googleSiteVerification: tracking.googleSiteVerification,
+        // A wrong paste (an e-mail, an HTML tag) never reaches the storefront's scripts or <head>.
+        metaPixelId: /^\d{10,20}$/.test(tracking.metaPixelId) ? tracking.metaPixelId : '',
+        ga4Id: /^G-[A-Z0-9]{4,}$/.test(tracking.ga4Id) ? tracking.ga4Id : '',
+        googleAdsId: /^AW-\d{6,}$/.test(tracking.googleAdsId) ? tracking.googleAdsId : '',
+        googleAdsPurchaseLabel: /^[\w-]{6,}$/.test(tracking.googleAdsPurchaseLabel) ? tracking.googleAdsPurchaseLabel : '',
+        googleSiteVerification: /^[\w-]{20,}$/.test(tracking.googleSiteVerification) ? tracking.googleSiteVerification : '',
         allowAiCrawlers: tracking.allowAiCrawlers,
       },
       bankTransfer: bankTransfer.enabled

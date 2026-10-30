@@ -37,9 +37,8 @@ export default async function JournalPostPage({ params }: { params: Params }) {
         {post.excerpt ? <p className="font-serif text-2xl font-light italic text-ink-soft">{post.excerpt}</p> : null}
       </header>
       {post.coverImageUrl ? (
-        <div className="relative mb-12 aspect-[16/9] w-full">
-          <Image src={post.coverImageUrl} alt="" fill priority sizes="100vw" className="object-cover" />
-        </div>
+        // The whole photo, whatever its shape: a landscape spans the width, a portrait stands centred instead of being cropped.
+        <Image src={post.coverImageUrl} alt="" width={1600} height={2000} priority sizes="(min-width: 768px) 80vw, 100vw" className="mx-auto mb-12 h-auto max-h-[85svh] w-auto max-w-full" />
       ) : null}
       <div className="prose-cms mx-auto max-w-3xl" dangerouslySetInnerHTML={{ __html: cleanHtml(post.body, locale) }} />
     </article>

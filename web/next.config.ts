@@ -19,6 +19,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // deploy.sh builds next to the running version (.next-a / .next-b) and switches over; dev keeps .next.
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   poweredByHeader: false,
   images: {

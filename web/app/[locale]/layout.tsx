@@ -19,7 +19,8 @@ import { AssistantPanel } from '@/components/assistant/assistant-panel';
 import { Tracking } from '@/components/tracking';
 import '../globals.css';
 
-const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap' });
+// Not preloaded: 12 files (3 subsets × 2 weights × 2 styles) would each add a Link header and slow the first paint.
+const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap', preload: false });
 const inter = Inter({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--font-inter', display: 'swap' });
 // Menu, labels and buttons: small spaced capitals (Polène's sans counterpart).
 const tenor = Tenor_Sans({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: '400', variable: '--font-tenor', display: 'swap' });
