@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Inter, Tenor_Sans } from 'next/font/google';
+import { Inter, Source_Serif_4 } from 'next/font/google';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
@@ -8,7 +8,7 @@ import { ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { LOCALES, routing } from '@/i18n/routing';
 import { apiGet, currentUser } from '@/lib/api.server';
-import type { ProductList, PublicSettings, Stockist } from '@/lib/types';
+import type { ProductList, PublicSettings } from '@/lib/types';
 import { cn } from '@/lib/format';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/header';
@@ -19,11 +19,10 @@ import { AssistantPanel } from '@/components/assistant/assistant-panel';
 import { Tracking } from '@/components/tracking';
 import '../globals.css';
 
-// Not preloaded: 12 files (3 subsets × 2 weights × 2 styles) would each add a Link header and slow the first paint.
-const cormorant = Cormorant_Garamond({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: ['300', '400'], style: ['normal', 'italic'], variable: '--font-cormorant', display: 'swap', preload: false });
-const inter = Inter({ subsets: ['latin', 'latin-ext', 'cyrillic'], variable: '--font-inter', display: 'swap' });
-// Menu, labels and buttons: small spaced capitals (Polène's sans counterpart).
-const tenor = Tenor_Sans({ subsets: ['latin', 'latin-ext', 'cyrillic'], weight: '400', variable: '--font-tenor', display: 'swap' });
+// BOYY sets everything in one book serif (model names in its italic).
+const serif = Source_Serif_4({ subsets: ['latin', 'latin-ext', 'cyrillic'], style: ['normal', 'italic'], variable: '--font-text', display: 'swap' });
+// Only the wordmark: six Latin capitals, so one small file.
+const logo = Inter({ subsets: ['latin'], weight: '400', variable: '--font-logo-sans', display: 'swap' });
 // Japanese, Korean and Chinese use the visitor's own system fonts (--font-cjk in globals.css, picked by the html
 // lang): web fonts for those scripts come with hundreds of KB of render-blocking @font-face rules on every page.
 
@@ -55,21 +54,20 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   setRequestLocale(locale);
 
   const nonce = (await headers()).get('x-nonce') ?? undefined;
-  const [settings, user, products, stockists] = await Promise.all([
+  const [settings, user, products] = await Promise.all([
     apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null),
     currentUser(),
-    // The Bags and Stores menus.
+    // The Bags menu.
     apiGet<ProductList>('/catalog/products?limit=24', { locale, revalidate: 300 }).catch(() => null),
-    apiGet<Stockist[]>('/content/stockists', { revalidate: 300 }).catch(() => []),
   ]);
-  const models = (products?.items ?? []).map(({ slug, name, number }) => ({ slug, name, number }));
+  const models = (products?.items ?? []).map(({ slug, name }) => ({ slug, name }));
 
   return (
-    <html lang={locale} className={cn(cormorant.variable, inter.variable, tenor.variable)}>
+    <html lang={locale} className={cn(serif.variable, logo.variable)}>
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider>
           <Providers nonce={nonce}>
-            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} models={models} stockists={stockists} contactEmail={settings?.store.email || null} />
+            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} models={models} />
             <main className="flex-1">{children}</main>
             <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} />
             <CartDrawer />

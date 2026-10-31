@@ -1,7 +1,7 @@
 import { setRequestLocale } from 'next-intl/server';
 import { apiGet } from '@/lib/api.server';
-import type { HomeSection, InstagramPost, PublicSettings } from '@/lib/types';
-import { HomeSections, InstagramCollage } from '@/components/home/sections';
+import type { HomeSection } from '@/lib/types';
+import { HomeSections } from '@/components/home/sections';
 import { alternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -12,15 +12,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const [sections, settings, posts] = await Promise.all([
-    apiGet<HomeSection[]>('/content/home', { locale, revalidate: 60 }).catch(() => []),
-    apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null),
-    apiGet<InstagramPost[]>('/content/instagram', { revalidate: 600 }).catch(() => []),
-  ]);
+  const sections = await apiGet<HomeSection[]>('/content/home', { locale, revalidate: 60 }).catch(() => []);
   return (
     <>
+      {/* Canan's page 1: the big wordmark at the top; the bar's small one takes over once this scrolls away. */}
+      <h1 data-masthead className="flex justify-center px-4 pt-2 pb-10 md:pt-4 md:pb-16">
+        <span className="wordmark pl-[0.42em] text-[clamp(38px,4.6vw,76px)] leading-none tracking-logo">MAEYJA</span>
+      </h1>
       <HomeSections sections={sections} />
-      <InstagramCollage url={settings?.store.instagram || null} posts={posts} />
     </>
   );
 }

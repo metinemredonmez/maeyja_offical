@@ -1,32 +1,33 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import Image from 'next/image';
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api.client';
-import { modelNo, money } from '@/lib/format';
+import { money } from '@/lib/format';
+import { Link, useRouter } from '@/i18n/navigation';
 import { track } from '@/lib/tracking';
 import type { Product, PublicSettings } from '@/lib/types';
 import { useCartMutations } from '@/components/cart/use-cart';
 import { useCartUi } from '@/components/cart/cart-ui';
 import { Gallery } from './gallery';
 import { Swatch } from './swatch';
-import { ProductTabs } from './product-tabs';
 import { WishlistButton } from './wishlist-button';
 import { TryOn } from './try-on';
 
+/** Another colourway of the same model: its own page (BOYY), reached from the swatches. */
+export type Sibling = { slug: string; name: string; hex: string; hex2: string | null; current: boolean };
+
 /**
- * Polène-style product view. Left half: the photos of the selected colour stacked. Right half (sticky): name,
- * model number and colour, price, the bag large on the cream ground, colours picked by their own photo,
- * "Add to bag" + wishlist, and tabs. Owns the colour/size selection so both halves stay in sync.
- * Cut-out photos sit on an explicit cream fill: the sticky panel is its own stacking context, so "multiply"
- * would otherwise blend against nothing and keep the white studio background.
+ * BOYY product view. Left: every photo of the bag stacked on flat grey. Right (sticky): "<i>Petal Box</i>, Chili",
+ * the price, the description, colourway swatches, the Details / Shipping / Care boxes and the two buttons.
+ * Owns the colour/size selection for products that carry several variants themselves.
  */
-export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: { product: Product; shipping: PublicSettings['shipping'] | null; wishlisted: boolean; crumb: ReactNode; tryon?: boolean }) {
+export function BuyBox({ product, shipping, wishlisted, siblings, tryon = false }: { product: Product; shipping: PublicSettings['shipping'] | null; wishlisted: boolean; siblings: Sibling[]; tryon?: boolean }) {
   const t = useTranslations('product');
   const tc = useTranslations('common');
   const locale = useLocale();
+  const router = useRouter();
   const { add } = useCartMutations();
   const { openCart } = useCartUi();
 
@@ -47,9 +48,6 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
   // Photos tagged with a colour show only for that colour; untagged ones always show.
   const forColor = product.images.filter((i) => !i.colorSlug || i.colorSlug === color);
   const photos = forColor.length ? forColor : product.images;
-  const lead = photos[0];
-  const stacked = photos.length > 1 ? photos.slice(1) : photos;
-  const thumbFor = (slug: string) => product.images.find((i) => i.colorSlug === slug);
   const colorName = colors.find((c) => c.slug === color)?.name;
 
   // Ad pixels: the product view once per product, and each add to bag.
@@ -58,15 +56,16 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per product
   }, [product.slug]);
 
-  const addToCart = () => {
+  const addToCart = (then: 'drawer' | 'checkout') => {
     if (!variant) return;
     add.mutate(
       { variantId: variant.id, quantity: 1 },
       {
         onSuccess: () => {
+          track('add_to_cart', { value: price, items: [{ id: variant.sku, name: product.name, variant: colorName, price, quantity: 1 }] });
+          if (then === 'checkout') return router.push('/checkout');
           toast.success(t('added'));
           openCart();
-          track('add_to_cart', { value: price, items: [{ id: variant.sku, name: product.name, variant: colorName, price, quantity: 1 }] });
         },
         onError: (e) => toast.error(e instanceof ApiError ? e.message : tc('error')),
       },
@@ -75,57 +74,65 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
 
   const sizeAvailable = (s: string) => product.variants.some((v) => v.size === s && (v.color?.slug ?? null) === color && v.inStock);
   const days = shipping?.estimatedDays ?? '1-3';
-  const tabs = [
-    { id: 'description', title: t('description'), body: product.description ?? '' },
-    { id: 'details', title: t('details'), body: [product.dimensions, product.madeIn ? `${t('madeIn')}: ${product.madeIn}` : null].filter(Boolean).join('\n\n') },
-    { id: 'materials', title: t('materialCare'), body: [product.material, product.care].filter(Boolean).join('\n\n') },
-    { id: 'shipping', title: t('shippingReturns'), body: [t('perks.shipping', { days }), t('perks.returns'), t('perks.installments'), t('perks.gift')].join('\n') },
-  ].filter((i) => i.body);
+  const details = [
+    product.dimensions ? `${t('dimensions')}: ${product.dimensions}` : null,
+    product.material ? `${t('composition')}: ${product.material}` : null,
+    product.madeIn ? `${t('madeIn')}: ${product.madeIn}` : null,
+  ].filter(Boolean);
+  const boxes = [
+    { title: t('details'), body: details.join('\n') },
+    { title: t('shippingReturns'), body: [t('perks.shipping', { days }), t('perks.returns'), t('perks.installments'), t('perks.gift')].join('\n') },
+    { title: t('care'), body: product.care ?? '' },
+  ].filter((b) => b.body);
+  const swatches: Sibling[] = colors.length > 1 ? [] : siblings;
 
   return (
-    <div className="md:grid md:grid-cols-2">
-      <div className="relative">
-        <div className="absolute top-4 left-4 z-10 md:left-6">{crumb}</div>
-        <Gallery stacked={stacked} all={photos} name={product.name} />
-      </div>
+    <div className="mx-auto w-full max-w-[1320px] md:grid md:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] md:gap-14 md:px-10 md:pt-6 lg:gap-24">
+      <Gallery photos={photos} name={product.name} />
 
-      <div className="md:sticky md:top-[69px] md:self-start">
-        <div className="mx-auto flex max-w-[520px] flex-col items-center gap-7 px-5 py-10 text-center md:min-h-[calc(100svh-69px)] md:justify-center md:px-8">
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="font-serif text-[30px] leading-tight font-light md:text-[34px]">{product.name}</h1>
-            <p className="label text-muted">{[modelNo(product.number), colorName].filter(Boolean).join(' · ')}</p>
-            <p className="label mt-1">
+      <div className="md:sticky md:top-[76px] md:self-start">
+        <div className="flex max-w-[440px] flex-col gap-6 px-5 py-8 md:px-0 md:pt-[18vh]">
+          <div className="flex flex-col gap-1 text-[16px] leading-snug">
+            <h1>
+              <i>{product.name}</i>
+              {colorName ? `, ${colorName}` : null}
+            </h1>
+            <p>
               {money(price, locale)}
-              {compareAt && compareAt > price ? <span className="ml-3 text-muted line-through">{money(compareAt, locale)}</span> : null}
+              {compareAt && compareAt > price ? <span className="ml-2 text-muted line-through">{money(compareAt, locale)}</span> : null}
+              <span className="ml-2 text-[13px] text-muted">({t('vatIncluded')})</span>
             </p>
           </div>
 
-          {lead ? (
-            <div className="relative hidden aspect-square w-full max-w-[360px] bg-ground md:block">
-              <Image src={lead.url} alt={lead.alt ?? product.name} fill priority sizes="360px" className="object-contain mix-blend-multiply" />
+          {product.description ? <p className="whitespace-pre-line text-[14.5px] leading-relaxed text-ink-soft">{product.description.replace(/<[^>]+>/g, ' ').replace(/[ \t]+/g, ' ').trim()}</p> : null}
+
+          {swatches.length ? (
+            <div className="flex flex-wrap gap-2.5" aria-label={t('color')}>
+              {swatches.map((c) => (
+                <Link key={c.slug} href={`/products/${c.slug}`} aria-current={c.current ? 'page' : undefined} title={c.name} className="rounded-full p-[3px] ring-1 ring-transparent aria-[current=page]:ring-ink hover:ring-line">
+                  <Swatch hex={c.hex} hex2={c.hex2} size={18} />
+                  <span className="sr-only">{c.name}</span>
+                </Link>
+              ))}
             </div>
           ) : null}
 
           {colors.length > 1 ? (
-            <div className="flex flex-wrap justify-center gap-2" role="radiogroup" aria-label={t('color')}>
-              {colors.map((c) => {
-                const thumb = thumbFor(c.slug);
-                const on = c.slug === color;
-                return (
-                  <button key={c.slug} type="button" role="radio" aria-checked={on} aria-label={c.name} title={c.name} onClick={() => setColor(c.slug)} className={`relative flex h-16 w-16 items-center justify-center border bg-ground transition-colors ${on ? 'border-ink' : 'border-transparent hover:border-line'} ${!c.inStock ? 'opacity-40' : ''}`}>
-                    {thumb ? <Image src={thumb.url} alt="" fill sizes="64px" className="object-contain p-1.5 mix-blend-multiply" /> : <Swatch hex={c.hex} hex2={c.hex2} size={22} selected={on} />}
-                  </button>
-                );
-              })}
+            <div className="flex flex-wrap gap-2.5" role="radiogroup" aria-label={t('color')}>
+              {colors.map((c) => (
+                <button key={c.slug} type="button" role="radio" aria-checked={c.slug === color} aria-label={c.name} title={c.name} onClick={() => setColor(c.slug)} className={`rounded-full p-[3px] ring-1 ${c.slug === color ? 'ring-ink' : 'ring-transparent hover:ring-line'} ${!c.inStock ? 'opacity-40' : ''}`}>
+                  <Swatch hex={c.hex} hex2={c.hex2} size={18} />
+                </button>
+              ))}
             </div>
           ) : null}
 
           {sizes.length ? (
-            <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col gap-3">
               <p className="label text-muted">{t('size')}</p>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex flex-wrap gap-2">
                 {sizes.map((s) => (
-                  <button key={s} type="button" aria-pressed={s === size} onClick={() => setSize(s)} className={`min-w-12 border px-3 py-2.5 text-sm ${s === size ? 'border-ink bg-ink text-ground' : 'border-line hover:border-ink'} ${!sizeAvailable(s) ? 'text-muted line-through' : ''}`}>
+                  <button key={s} type="button" aria-pressed={s === size} onClick={() => setSize(s)} className={`min-w-11 rounded-[3px] border px-3 py-2 text-sm ${s === size ? 'border-ink bg-ink text-ground' : 'border-line hover:border-ink'} ${!sizeAvailable(s) ? 'text-muted line-through' : ''}`}>
                     {s}
                   </button>
                 ))}
@@ -133,13 +140,30 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
             </div>
           ) : null}
 
-          <div className="flex w-full flex-col gap-3">
+          {boxes.length ? (
+            <div className="rounded-[3px] border border-ink">
+              {boxes.map((b) => (
+                <details key={b.title} className="group border-b border-ink last:border-b-0">
+                  <summary className="label flex cursor-pointer list-none items-center justify-between px-3 py-2.5 [&::-webkit-details-marker]:hidden">
+                    <span>{b.title}</span>
+                    <span aria-hidden="true" className="text-[15px] leading-none font-light group-open:rotate-45 transition-transform">+</span>
+                  </summary>
+                  <p className="whitespace-pre-line px-3 pb-4 text-[13.5px] leading-relaxed text-ink-soft">{b.body}</p>
+                </details>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex flex-col gap-3">
             {soldOut ? (
               <StockAlert variantId={variant!.id} />
             ) : (
-              <div className="flex w-full gap-2">
-                <button type="button" onClick={addToCart} disabled={needsSize || !variant || add.isPending} className="btn-primary flex-1">
-                  {needsSize ? t('selectSize') : t('addToCart')}
+              <div className="flex items-center gap-2">
+                <button type="button" onClick={() => addToCart('checkout')} disabled={needsSize || !variant || add.isPending} className="btn-primary">
+                  {needsSize ? t('selectSize') : t('buyNow')}
+                </button>
+                <button type="button" onClick={() => addToCart('drawer')} disabled={needsSize || !variant || add.isPending} className="btn-outline">
+                  {t('addToCart')}
                 </button>
                 <WishlistButton productId={product.id} initial={wishlisted} />
               </div>
@@ -147,8 +171,6 @@ export function BuyBox({ product, shipping, wishlisted, crumb, tryon = false }: 
             {variant?.lowStock ? <p className="text-xs text-brand">{tc('lowStock', { count: 3 })}</p> : null}
             {tryon ? <TryOn slug={product.slug} color={color} productName={product.name} /> : null}
           </div>
-
-          <ProductTabs items={tabs} />
         </div>
       </div>
     </div>

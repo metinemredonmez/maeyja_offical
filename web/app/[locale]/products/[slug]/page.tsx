@@ -1,12 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { Link } from '@/i18n/navigation';
-import Image from 'next/image';
 import { apiGet, ApiError, currentUser } from '@/lib/api.server';
 import { absoluteUrl, alternates } from '@/lib/seo';
-import type { Product, PublicSettings } from '@/lib/types';
-import { BuyBox } from '@/components/product/buy-box';
+import type { Product, ProductList, PublicSettings } from '@/lib/types';
+import { BuyBox, type Sibling } from '@/components/product/buy-box';
 import { ProductGrid } from '@/components/product/product-grid';
 
 type Params = Promise<{ locale: string; slug: string }>;
@@ -38,9 +36,7 @@ export default async function ProductPage({ params }: { params: Params }) {
   const [p, settings, user] = await Promise.all([load(slug, locale), apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null), currentUser()]);
   if (!p) notFound();
   const wishlist = user ? await apiGet<{ product: { id: string } }[]>('/me/wishlist', { auth: true, locale }).catch(() => []) : [];
-  const atelierPhoto = p.images.length > 1 ? p.images[p.images.length - 1] : null;
   const t = await getTranslations('product');
-  const tn = await getTranslations('nav');
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -70,41 +66,21 @@ export default async function ProductPage({ params }: { params: Params }) {
     })),
   };
 
-  const crumb = (
-    <p className="label text-[10px] text-ink-soft">
-      <Link href="/products" className="hover:text-brand">
-        {tn('bags')}
-      </Link>{' '}
-      / {p.name}
-    </p>
-  );
+  // The model's other colourways are separate products with the same name (BOYY): reached from the swatches.
+  const list = await apiGet<ProductList>('/catalog/products?limit=24', { locale, revalidate: 300 }).catch(() => null);
+  const siblings: Sibling[] = (list?.items ?? [])
+    .filter((x) => x.name === p.name && x.colors.length === 1)
+    .map((x) => ({ slug: x.slug, name: x.colors[0].name, hex: x.colors[0].hex, hex2: x.colors[0].hex2 ?? null, current: x.slug === p.slug }));
 
   return (
     <div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
-      <BuyBox product={p} shipping={settings?.shipping ?? null} wishlisted={wishlist.some((w) => w.product.id === p.id)} crumb={crumb} tryon={Boolean(settings?.tryon?.enabled)} />
-
-      {/* The atelier note over a full-width photo of the bag. */}
-      {p.story ? (
-        <section className="relative mt-24 flex min-h-[70svh] items-end overflow-clip bg-stone text-white md:mt-36">
-          {atelierPhoto ? (
-            <div className="parallax absolute inset-0">
-              <Image src={atelierPhoto.url} alt="" fill sizes="100vw" className="object-cover" />
-            </div>
-          ) : null}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" aria-hidden="true" />
-          <div className="reveal relative flex max-w-3xl flex-col gap-5 px-5 pb-12 md:px-12 md:pb-16">
-            <p className="label opacity-85">{t('atelier')}</p>
-            <p className="font-serif text-[28px] leading-snug font-light md:text-[40px]">{p.story}</p>
-            {p.madeIn ? <p className="label opacity-85">{t('madeIn')}: {p.madeIn}</p> : null}
-          </div>
-        </section>
-      ) : null}
+      <BuyBox product={p} shipping={settings?.shipping ?? null} wishlisted={wishlist.some((w) => w.product.id === p.id)} siblings={siblings} tryon={Boolean(settings?.tryon?.enabled)} />
 
       {p.related.length ? (
-        <section className="px-4 pt-24 md:px-12 md:pt-36">
-          <h2 className="display mb-12 text-center text-[32px] md:text-[48px]">{t('pairsWith')}</h2>
-          <ProductGrid products={p.related} columns={4} />
+        <section className="mx-auto w-full max-w-[1280px] px-4 pt-24 md:px-10 md:pt-32">
+          <h2 className="label mb-8 text-center">{t('pairsWith')}</h2>
+          <ProductGrid products={p.related.slice(0, 4)} columns={4} />
         </section>
       ) : null}
     </div>

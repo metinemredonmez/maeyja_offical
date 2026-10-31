@@ -10,7 +10,7 @@ import { HomeSectionType, Prisma, PrismaClient, ProductStatus } from '@prisma/cl
 import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import sharp from 'sharp';
-import { HOME_V2, PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
+import { HOME_V2, LANGS, PRODUCT_COMMON, PRODUCTS, split } from './seed-data';
 import { JOURNAL_POSTS } from './seed-pages';
 
 const prisma = new PrismaClient();
@@ -65,12 +65,50 @@ async function main() {
   if (!bags || !signature || !colors.ivory) throw new Error('Önce `npm run db:seed` çalıştırın (renkler/kategori eksik)');
 
   const common = split(PRODUCT_COMMON);
+
+  // The colourways are brand names in every language (BOYY); black too, unless renamed in the admin.
+  if (colors.black?.name === 'Siyah') {
+    const black = Object.fromEntries(LANGS.filter((l) => l !== 'tr').map((l) => [l, { name: 'Black' }]));
+    await prisma.color.update({ where: { id: colors.black.id }, data: { name: 'Black', translations: black } });
+    colors.black = { ...colors.black, name: 'Black' };
+  }
+  // Kasım 2026 (Canan, after BOYY): the bags take their Petal names, prices and copy, one colourway per page, with
+  // studio photos on flat grey. The first catalogue is renamed in place, once per bag, so orders, carts and
+  // wishlists keep pointing at the same products; the storefront redirects the old addresses.
+  for (const [i, p] of PRODUCTS.entries()) {
+    const old = await prisma.product.findUnique({ where: { slug: p.replaces.slug }, include: { variants: true, images: true } });
+    if (!old || (await prisma.product.findUnique({ where: { slug: p.slug } }))) continue;
+    const color = colors[p.variants[0].color];
+    const keep = old.variants.find((v) => !v.deletedAt && v.colorId === colors[p.replaces.color]?.id) ?? old.variants[0];
+    const copy = split({ subtitle: p.subtitle, description: p.description, dimensions: p.dimensions, material: p.material });
+    const translations = (old.translations ?? {}) as Record<string, Record<string, string>>;
+    for (const [lang, fields] of Object.entries(copy.translations)) translations[lang] = { ...translations[lang], ...fields };
+    const alt = `${p.name}, ${color.name}`;
+    const fresh: Prisma.ProductImageCreateManyInput[] = [];
+    for (const [n, file] of (await readdir(join(ASSETS, p.slug))).filter((f) => f.endsWith('.webp')).sort().entries()) {
+      const img = await importImage(p.slug, file, alt);
+      fresh.push({ productId: old.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: n, colorId: color.id });
+    }
+    const kept = old.images.filter((img) => !img.url.includes('/catalog/')).sort((a, b) => a.sortOrder - b.sortOrder);
+    await prisma.$transaction([
+      prisma.product.update({
+        where: { id: old.id },
+        data: { slug: p.slug, name: p.name, ...copy.base, translations, basePrice: p.price, compareAtPrice: null, sortOrder: i, isFeatured: p.featured, tags: ['bag', 'leather', 'canta', 'petal', p.slug] },
+      }),
+      prisma.productVariant.update({ where: { id: keep.id }, data: { colorId: color.id, price: null, compareAtPrice: null } }),
+      prisma.productVariant.updateMany({ where: { productId: old.id, id: { not: keep.id }, deletedAt: null }, data: { isActive: false, deletedAt: new Date() } }),
+      prisma.productImage.deleteMany({ where: { productId: old.id, url: { contains: '/catalog/' } } }),
+      prisma.productImage.createMany({ data: fresh }),
+      ...kept.map((k, n) => prisma.productImage.update({ where: { id: k.id }, data: { sortOrder: fresh.length + n } })),
+    ]);
+    console.log(`✓ ${old.name} → ${alt}: ${p.price} TL, ${fresh.length} fotoğraf`);
+  }
   for (const [i, p] of PRODUCTS.entries()) {
     if (await prisma.product.findUnique({ where: { slug: p.slug } })) {
       console.log(`– ${p.name}: zaten var, atlandı`);
       continue;
     }
-    const copy = split({ subtitle: p.subtitle, description: p.description });
+    const copy = split({ subtitle: p.subtitle, description: p.description, dimensions: p.dimensions, material: p.material });
     const translations: Record<string, Record<string, string>> = {};
     for (const t of [common.translations, copy.translations]) {
       for (const [lang, fields] of Object.entries(t)) Object.assign((translations[lang] ??= {}), fields);
@@ -89,14 +127,14 @@ async function main() {
       data: {
         slug: p.slug,
         name: p.name,
-        ...copy.base,
         ...common.base,
+        ...copy.base,
         status: ProductStatus.ACTIVE,
         isFeatured: p.featured,
         basePrice: p.price,
         taxRate: 20,
         sortOrder: i,
-        tags: ['bag', 'leather', 'canta', p.slug],
+        tags: ['bag', 'leather', 'canta', 'petal', p.slug],
         publishedAt: new Date(),
         translations,
         category: { connect: { id: bags.id } },
@@ -302,6 +340,22 @@ async function main() {
       prisma.productImage.create({ data: { productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: 1, colorId: color?.id ?? null } }),
     ]);
     console.log(`✓ ${product.name}: kampanya fotoğrafı ikinci sırada`);
+  }
+
+  // Kasım 2026 homepage (Canan, after BOYY), once: her two photos side by side, then the eight bags on grey.
+  // The earlier sections are only switched off, so they can be turned back on in the admin.
+  if (!(await prisma.homeSection.count({ where: { imageUrl: { contains: '/catalog/_home/30-canan-dress' } } }))) {
+    const dress = await importImage('_home', '30-canan-dress.webp', 'MAEYJA');
+    const bag = await importImage('_home', '31-canan-bag.webp', 'MAEYJA');
+    const ids = (await prisma.product.findMany({ where: { slug: { in: PRODUCTS.map((p) => p.slug) } }, select: { id: true, slug: true } }))
+      .sort((a, b) => PRODUCTS.findIndex((p) => p.slug === a.slug) - PRODUCTS.findIndex((p) => p.slug === b.slug))
+      .map((p) => p.id);
+    await prisma.$transaction([
+      prisma.homeSection.updateMany({ data: { isActive: false } }),
+      prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'diptych', imageUrl: dress.url, secondImageUrl: bag.url, sortOrder: 0, payload: { productIds: [] } } }),
+      prisma.homeSection.create({ data: { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'grid', sortOrder: 1, payload: { productIds: ids } } }),
+    ]);
+    console.log('✓ ana sayfa: Canan’ın iki fotoğrafı ve sekiz çanta (önceki bölümler pasif)');
   }
 
   // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).

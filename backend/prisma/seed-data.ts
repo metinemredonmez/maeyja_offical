@@ -22,8 +22,16 @@ export function split<K extends string>(fields: Record<K, L>): { base: Record<K,
   return { base, translations };
 }
 
+/** A brand name kept as is in every language. */
+const same = (text: string): L => Object.fromEntries(LANGS.map((lang) => [lang, text])) as L;
+
 // ───────── Colours ─────────
 export const COLORS: { slug: string; hex: string; hex2?: string; name: L }[] = [
+  // Kasım 2026 colourways (Canan): brand names, the same in every language, as BOYY does.
+  { slug: 'chili', hex: '#B3261E', name: same('Chili') },
+  { slug: 'botanic', hex: '#1F3B3A', name: same('Botanic') },
+  { slug: 'moon', hex: '#ECE6DA', name: same('Moon') },
+  { slug: 'black-moon', hex: '#141414', hex2: '#ECE6DA', name: same('Black/Moon') },
   { slug: 'red', hex: '#A3121B', name: { tr: 'Kırmızı', en: 'Red', ru: 'Красный', nl: 'Rood', de: 'Rot', fr: 'Rouge', it: 'Rosso', es: 'Rojo', ko: '레드', ja: 'レッド', zh: '红色' } },
   { slug: 'black', hex: '#141414', name: { tr: 'Siyah', en: 'Black', ru: 'Чёрный', nl: 'Zwart', de: 'Schwarz', fr: 'Noir', it: 'Nero', es: 'Negro', ko: '블랙', ja: 'ブラック', zh: '黑色' } },
   { slug: 'white', hex: '#F2EFEA', name: { tr: 'Beyaz', en: 'White', ru: 'Белый', nl: 'Wit', de: 'Weiß', fr: 'Blanc', it: 'Bianco', es: 'Blanco', ko: '화이트', ja: 'ホワイト', zh: '白色' } },
@@ -183,188 +191,173 @@ export const PRODUCT_COMMON: Record<'material' | 'care' | 'story' | 'madeIn', L>
 
 export type SeedProduct = {
   slug: string;
+  /** The model; with the colourway it reads "Petal Box, Chili". Each colourway is its own product (BOYY). */
   name: string;
-  /** Placeholder TRY price (VAT incl.) — set the real one in the admin. */
+  /** TRY, VAT included. */
   price: number;
   featured: boolean;
-  /** Variant per colour, in display order; images come from seed-assets/catalog/<slug>/ by colour tag. */
+  /** The colourway; photos come from seed-assets/catalog/<slug>/ by colour tag. */
   variants: { color: string; sku: string; stock: number }[];
   subtitle: L;
   description: L;
+  dimensions: L;
+  material: L;
+  /** The bag of the first catalogue it replaces: renamed in place on existing databases, so orders keep it. */
+  replaces: { slug: string; color: string };
 };
 
+const COMMA = new Set<Lang>(['tr', 'ru', 'nl', 'de', 'fr', 'it', 'es']);
+
+/** Width × height × depth in cm, in each language's words and decimal mark. */
+function dims(w: number, h: number, d: number): L {
+  const line = (lang: Lang, [a, b, c]: [string, string, string], unit = 'cm') => {
+    const n = (v: number) => (COMMA.has(lang) ? String(v).replace('.', ',') : String(v));
+    return `${a} ${n(w)} · ${b} ${n(h)} · ${c} ${n(d)} ${unit}`;
+  };
+  return {
+    tr: line('tr', ['Genişlik', 'Yükseklik', 'Derinlik']),
+    en: line('en', ['Width', 'Height', 'Depth']),
+    ru: line('ru', ['Ширина', 'Высота', 'Глубина'], 'см'),
+    nl: line('nl', ['Breedte', 'Hoogte', 'Diepte']),
+    de: line('de', ['Breite', 'Höhe', 'Tiefe']),
+    fr: line('fr', ['Largeur', 'Hauteur', 'Profondeur']),
+    it: line('it', ['Larghezza', 'Altezza', 'Profondità']),
+    es: line('es', ['Ancho', 'Alto', 'Fondo']),
+    ko: line('ko', ['가로', '세로', '폭']),
+    ja: `幅${w} × 高さ${h} × マチ${d} cm`,
+    zh: `宽 ${w} × 高 ${h} × 深 ${d} 厘米`,
+  };
+}
+
+const CALFSKIN: L = {
+  tr: 'Gövde: dana derisi. Astar: tekstil.',
+  en: 'Body: calfskin leather. Lining: textile.',
+  ru: 'Корпус: телячья кожа. Подкладка: текстиль.',
+  nl: 'Buitenkant: kalfsleer. Voering: textiel.',
+  de: 'Außen: Kalbsleder. Futter: Textil.',
+  fr: 'Extérieur : cuir de veau. Doublure : textile.',
+  it: 'Esterno: pelle di vitello. Fodera: tessuto.',
+  es: 'Exterior: piel de becerro. Forro: textil.',
+  ko: '겉감: 카프스킨. 안감: 텍스타일.',
+  ja: '本体：カーフレザー　裏地：テキスタイル',
+  zh: '主体：小牛皮；内衬：织物',
+};
+
+/** Canan's copy (Kasım 2026), one text per model. */
+const COPY: Record<'box' | 'shoulder24' | 'shoulder14' | 'lady' | 'cuff' | 'bucket12' | 'bucket20', L> = {
+  box: {
+    tr: 'Dana derisinden Petal Box çanta. Yalın geometrisi ve güçlü kimliğiyle öne çıkan, heykelsi bir imza parça.',
+    en: 'Petal Box bag crafted from calfskin. A sculptural statement piece distinguished by its clean geometry and strong identity.',
+    ru: 'Сумка Petal Box из телячьей кожи. Скульптурный акцентный аксессуар с чистой геометрией и ярким характером.',
+    nl: 'Petal Box-tas van kalfsleer. Een sculpturaal statementstuk met strakke geometrie en een sterke identiteit.',
+    de: 'Petal Box aus Kalbsleder. Ein skulpturales Statement-Piece mit klarer Geometrie und starker Identität.',
+    fr: 'Sac Petal Box en cuir de veau. Une pièce sculpturale forte, à la géométrie épurée et à l’identité affirmée.',
+    it: 'Borsa Petal Box in pelle di vitello. Un pezzo scultoreo di carattere, dalla geometria pulita e dall’identità forte.',
+    es: 'Bolso Petal Box de piel de becerro. Una pieza escultórica de carácter, con una geometría limpia y una identidad marcada.',
+    ko: '카프스킨으로 완성한 Petal Box 백. 깔끔한 기하학적 형태와 뚜렷한 개성이 돋보이는 조각 같은 스테이트먼트 피스.',
+    ja: 'カーフレザーで仕立てたPetal Box。クリーンな幾何学フォルムと強い個性が際立つ、彫刻的なステートメントピース。',
+    zh: 'Petal Box 手袋，采用小牛皮制作。以简洁的几何造型与鲜明个性著称的雕塑感单品。',
+  },
+  shoulder24: {
+    tr: 'Dana derisinden Petal Shoulder çanta. Mimari çizgileri ve zahmetsiz zarafetiyle tanımlanan imza omuz çantamız. Ayırt edici görünümünü koruyarak her gün kullanılmak için tasarlandı.',
+    en: 'Petal Shoulder bag crafted from calfskin. A signature shoulder bag defined by architectural lines and effortless elegance. Designed for everyday use while maintaining a distinctive visual identity.',
+    ru: 'Сумка Petal Shoulder из телячьей кожи. Фирменная сумка на плечо с архитектурными линиями и непринуждённой элегантностью. Создана для каждого дня и при этом сохраняет узнаваемый характер.',
+    nl: 'Petal Shoulder-tas van kalfsleer. Een signature schoudertas met architecturale lijnen en moeiteloze elegantie. Gemaakt voor elke dag, met een herkenbare eigen identiteit.',
+    de: 'Petal Shoulder aus Kalbsleder. Eine Signature-Schultertasche mit architektonischen Linien und müheloser Eleganz. Für jeden Tag gemacht, mit unverwechselbarer Handschrift.',
+    fr: 'Sac Petal Shoulder en cuir de veau. Un sac porté épaule signature, aux lignes architecturales et à l’élégance naturelle. Pensé pour tous les jours, sans rien perdre de son identité.',
+    it: 'Borsa Petal Shoulder in pelle di vitello. Una borsa a spalla iconica, dalle linee architettoniche e dall’eleganza spontanea. Pensata per ogni giorno, con un’identità inconfondibile.',
+    es: 'Bolso Petal Shoulder de piel de becerro. Un bolso de hombro emblemático, de líneas arquitectónicas y elegancia natural. Pensado para el día a día sin perder su identidad.',
+    ko: '카프스킨으로 완성한 Petal Shoulder 백. 건축적인 라인과 자연스러운 우아함이 돋보이는 시그니처 숄더백입니다. 데일리로 사용하기 좋으면서도 고유한 존재감을 지닙니다.',
+    ja: 'カーフレザーで仕立てたPetal Shoulder。建築的なラインと自然なエレガンスが特徴のシグネチャー ショルダーバッグ。日常使いに寄り添いながら、独自の存在感を保ちます。',
+    zh: 'Petal Shoulder 手袋，采用小牛皮制作。以建筑感线条与从容优雅定义的标志性肩背包，适合日常使用，同时保有鲜明的辨识度。',
+  },
+  shoulder14: {
+    tr: 'Dana derisinden Petal Shoulder çanta. Özgün siluetin daha kompakt bir yorumu. Hafif, çok yönlü ve çağdaş.',
+    en: 'Petal Shoulder bag crafted from calfskin. A more compact interpretation of the original silhouette. Light, versatile and contemporary.',
+    ru: 'Сумка Petal Shoulder из телячьей кожи. Более компактная интерпретация оригинального силуэта. Лёгкая, универсальная и современная.',
+    nl: 'Petal Shoulder-tas van kalfsleer. Een compactere interpretatie van het oorspronkelijke silhouet. Licht, veelzijdig en eigentijds.',
+    de: 'Petal Shoulder aus Kalbsleder. Eine kompaktere Interpretation der ursprünglichen Silhouette. Leicht, vielseitig und zeitgemäß.',
+    fr: 'Sac Petal Shoulder en cuir de veau. Une interprétation plus compacte de la silhouette d’origine. Léger, polyvalent et contemporain.',
+    it: 'Borsa Petal Shoulder in pelle di vitello. Un’interpretazione più compatta della silhouette originale. Leggera, versatile e contemporanea.',
+    es: 'Bolso Petal Shoulder de piel de becerro. Una interpretación más compacta de la silueta original. Ligero, versátil y contemporáneo.',
+    ko: '카프스킨으로 완성한 Petal Shoulder 백. 오리지널 실루엣을 더 콤팩트하게 해석했습니다. 가볍고 다재다능하며 현대적입니다.',
+    ja: 'カーフレザーで仕立てたPetal Shoulder。オリジナルのシルエットをよりコンパクトに再解釈。軽やかで汎用性が高く、モダンな一品です。',
+    zh: 'Petal Shoulder 手袋，采用小牛皮制作。原版廓形的更小巧演绎，轻盈、百搭而现代。',
+  },
+  lady: {
+    tr: 'Dana derisinden Petal Lady çanta. Modern yaşam için tasarlanmış zarif bir temel parça. Ölçüsü kompakt, karakteri cömert. Zarif ve feminen. Ayarlanabilir deri askısıyla omuzda ya da çapraz taşınabilir.',
+    en: 'Petal Lady bag crafted from calfskin. A refined essential designed for modern lifestyles. Compact in scale yet generous in character. Elegant and feminine. Features an adjustable leather strap for versatile styling as a shoulder or crossbody bag.',
+    ru: 'Сумка Petal Lady из телячьей кожи. Изысканная база для современного ритма жизни. Компактная по размеру, но щедрая по характеру. Элегантная и женственная. Регулируемый кожаный ремень позволяет носить её на плече или через плечо.',
+    nl: 'Petal Lady-tas van kalfsleer. Een verfijnde basis voor een moderne levensstijl. Compact van formaat, groot van karakter. Elegant en vrouwelijk. Met een verstelbare leren band om over de schouder of crossbody te dragen.',
+    de: 'Petal Lady aus Kalbsleder. Ein raffiniertes Essential für den modernen Alltag. Kompakt im Format, großzügig im Charakter. Elegant und feminin. Mit verstellbarem Lederriemen, über der Schulter oder crossbody zu tragen.',
+    fr: 'Sac Petal Lady en cuir de veau. Un essentiel raffiné pensé pour la vie moderne. Compact par sa taille, généreux par son caractère. Élégant et féminin. Sa bandoulière en cuir réglable permet de le porter à l’épaule ou en travers.',
+    it: 'Borsa Petal Lady in pelle di vitello. Un essenziale raffinato pensato per lo stile di vita moderno. Compatta nelle dimensioni, generosa nel carattere. Elegante e femminile. La tracolla in pelle regolabile permette di portarla a spalla o a tracolla.',
+    es: 'Bolso Petal Lady de piel de becerro. Un esencial refinado pensado para la vida moderna. Compacto en tamaño, generoso en carácter. Elegante y femenino. Su correa de piel ajustable permite llevarlo al hombro o cruzado.',
+    ko: '카프스킨으로 완성한 Petal Lady 백. 현대적인 라이프스타일을 위한 세련된 에센셜입니다. 크기는 콤팩트하지만 존재감은 넉넉합니다. 우아하고 여성스럽습니다. 길이 조절이 가능한 가죽 스트랩으로 숄더백이나 크로스바디로 연출할 수 있습니다.',
+    ja: 'カーフレザーで仕立てたPetal Lady。モダンなライフスタイルのための洗練されたエッセンシャル。サイズはコンパクトながら、存在感は豊か。エレガントでフェミニンな一品です。長さを調節できるレザーストラップで、ショルダーにもクロスボディにも。',
+    zh: 'Petal Lady 手袋，采用小牛皮制作。为现代生活方式打造的精致基本款，尺寸小巧，个性却十分丰盈，优雅而女性化。配有可调节皮质肩带，可单肩背或斜挎。',
+  },
+  cuff: {
+    tr: 'Dana derisinden Petal Cuff çanta. Koleksiyonun tamamındaki tasarım anlayışını taşıyan zarif bir deri aksesuar. Minimal, zarif ve zamansız. Zincir askısıyla omuzda ya da çapraz taşınabilir.',
+    en: 'Petal Cuff bag crafted from calfskin. A refined leather accessory reflecting the same design philosophy found throughout the collection. Minimal, elegant and timeless. Features a chain strap for versatile styling as a shoulder or crossbody bag.',
+    ru: 'Сумка Petal Cuff из телячьей кожи. Изысканный кожаный аксессуар, отражающий единую философию дизайна всей коллекции. Минималистичная, элегантная и вне времени. Цепочка позволяет носить её на плече или через плечо.',
+    nl: 'Petal Cuff-tas van kalfsleer. Een verfijnd leren accessoire in dezelfde ontwerpfilosofie als de hele collectie. Minimaal, elegant en tijdloos. Met een kettingband om over de schouder of crossbody te dragen.',
+    de: 'Petal Cuff aus Kalbsleder. Ein raffiniertes Lederaccessoire, das dieselbe Designhaltung trägt wie die gesamte Kollektion. Minimal, elegant und zeitlos. Mit Kettenriemen, über der Schulter oder crossbody zu tragen.',
+    fr: 'Sac Petal Cuff en cuir de veau. Un accessoire en cuir raffiné qui reflète la philosophie de toute la collection. Minimal, élégant et intemporel. Sa chaîne permet de le porter à l’épaule ou en travers.',
+    it: 'Borsa Petal Cuff in pelle di vitello. Un raffinato accessorio in pelle che riflette la stessa filosofia di design dell’intera collezione. Minimale, elegante e senza tempo. La catena permette di portarla a spalla o a tracolla.',
+    es: 'Bolso Petal Cuff de piel de becerro. Un refinado accesorio de piel que refleja la misma filosofía de diseño de toda la colección. Minimalista, elegante y atemporal. Su cadena permite llevarlo al hombro o cruzado.',
+    ko: '카프스킨으로 완성한 Petal Cuff 백. 컬렉션 전반의 디자인 철학을 담은 세련된 가죽 액세서리입니다. 미니멀하고 우아하며 시대를 타지 않습니다. 체인 스트랩으로 숄더백이나 크로스바디로 연출할 수 있습니다.',
+    ja: 'カーフレザーで仕立てたPetal Cuff。コレクション全体に通じるデザイン哲学を映した、洗練されたレザーアクセサリー。ミニマルでエレガント、そして時代を超える一品。チェーンストラップで、ショルダーにもクロスボディにも。',
+    zh: 'Petal Cuff 手袋，采用小牛皮制作。精致的皮革配饰，延续整个系列的设计理念，极简、优雅而经典。配有链条肩带，可单肩背或斜挎。',
+  },
+  bucket12: {
+    tr: 'Dana derisinden Petal Bucket çanta. Gün içinde rahat hareket ve modern yaşam için tasarlanan Petal Bucket’ın kompakt versiyonu. Ayarlanabilir deri askısıyla omuzda ya da çapraz taşınabilir.',
+    en: 'Petal Bucket bag crafted from calfskin. A compact version of the Petal Bucket designed for everyday movement and modern lifestyles. Features an adjustable leather strap for versatile styling as a shoulder or crossbody bag.',
+    ru: 'Сумка Petal Bucket из телячьей кожи. Компактная версия Petal Bucket для активного дня и современного ритма жизни. Регулируемый кожаный ремень позволяет носить её на плече или через плечо.',
+    nl: 'Petal Bucket-tas van kalfsleer. Een compacte versie van de Petal Bucket, gemaakt voor een dag in beweging en een moderne levensstijl. Met een verstelbare leren band om over de schouder of crossbody te dragen.',
+    de: 'Petal Bucket aus Kalbsleder. Eine kompakte Version der Petal Bucket für einen bewegten Alltag und modernen Lebensstil. Mit verstellbarem Lederriemen, über der Schulter oder crossbody zu tragen.',
+    fr: 'Sac Petal Bucket en cuir de veau. Une version compacte du Petal Bucket, pensée pour bouger au quotidien et pour la vie moderne. Sa bandoulière en cuir réglable permet de le porter à l’épaule ou en travers.',
+    it: 'Borsa Petal Bucket in pelle di vitello. Una versione compatta della Petal Bucket, pensata per muoversi ogni giorno e per lo stile di vita moderno. La tracolla in pelle regolabile permette di portarla a spalla o a tracolla.',
+    es: 'Bolso Petal Bucket de piel de becerro. Una versión compacta del Petal Bucket, pensada para el movimiento diario y la vida moderna. Su correa de piel ajustable permite llevarlo al hombro o cruzado.',
+    ko: '카프스킨으로 완성한 Petal Bucket 백. 일상의 움직임과 현대적인 라이프스타일을 위해 디자인한 Petal Bucket의 콤팩트 버전입니다. 길이 조절이 가능한 가죽 스트랩으로 숄더백이나 크로스바디로 연출할 수 있습니다.',
+    ja: 'カーフレザーで仕立てたPetal Bucket。日々の動きとモダンなライフスタイルのためにデザインした、Petal Bucketのコンパクト版。長さを調節できるレザーストラップで、ショルダーにもクロスボディにも。',
+    zh: 'Petal Bucket 手袋，采用小牛皮制作。Petal Bucket 的小巧版本，为日常出行与现代生活方式而设计。配有可调节皮质肩带，可单肩背或斜挎。',
+  },
+  bucket20: {
+    tr: 'Dana derisinden Petal Bucket çanta. Klasik kova çantanın çağdaş bir yorumu. İşlevsel, çok yönlü ve zahmetsizce zarif.',
+    en: 'Petal Bucket bag crafted from calfskin. A contemporary reinterpretation of the classic bucket bag. Functional, versatile and effortlessly elegant.',
+    ru: 'Сумка Petal Bucket из телячьей кожи. Современная интерпретация классической сумки-ведра. Функциональная, универсальная и непринуждённо элегантная.',
+    nl: 'Petal Bucket-tas van kalfsleer. Een eigentijdse herinterpretatie van de klassieke buckettas. Functioneel, veelzijdig en moeiteloos elegant.',
+    de: 'Petal Bucket aus Kalbsleder. Eine zeitgemäße Neuinterpretation der klassischen Bucket Bag. Funktional, vielseitig und mühelos elegant.',
+    fr: 'Sac Petal Bucket en cuir de veau. Une réinterprétation contemporaine du sac seau classique. Fonctionnel, polyvalent et naturellement élégant.',
+    it: 'Borsa Petal Bucket in pelle di vitello. Una reinterpretazione contemporanea della classica borsa a secchiello. Funzionale, versatile e di un’eleganza spontanea.',
+    es: 'Bolso Petal Bucket de piel de becerro. Una reinterpretación contemporánea del clásico bolso cubo. Funcional, versátil y de una elegancia natural.',
+    ko: '카프스킨으로 완성한 Petal Bucket 백. 클래식 버킷백을 현대적으로 재해석했습니다. 실용적이고 다재다능하며 자연스럽게 우아합니다.',
+    ja: 'カーフレザーで仕立てたPetal Bucket。クラシックなバケットバッグを現代的に再解釈。機能的で汎用性が高く、さりげなくエレガントです。',
+    zh: 'Petal Bucket 手袋，采用小牛皮制作。经典水桶包的当代演绎，实用、百搭，优雅自然。',
+  },
+};
+
+const SUBTITLE = {
+  box: { tr: 'Heykelsi fermuarlı çanta', en: 'Sculptural zip bag', ru: 'Скульптурная сумка на молнии', nl: 'Sculpturale tas met rits', de: 'Skulpturale Reißverschlusstasche', fr: 'Sac sculptural zippé', it: 'Borsa scultorea con zip', es: 'Bolso escultórico con cremallera', ko: '스컬프처럴 지퍼 백', ja: 'スカルプチュラル ジップバッグ', zh: '雕塑感拉链包' },
+  shoulder: { tr: 'Omuz çantası', en: 'Shoulder bag', ru: 'Сумка на плечо', nl: 'Schoudertas', de: 'Schultertasche', fr: 'Sac porté épaule', it: 'Borsa a spalla', es: 'Bolso de hombro', ko: '숄더백', ja: 'ショルダーバッグ', zh: '单肩包' },
+  crossbody: { tr: 'Fermuarlı çapraz çanta', en: 'Zip crossbody bag', ru: 'Сумка через плечо на молнии', nl: 'Crossbodytas met rits', de: 'Crossbody-Tasche mit Reißverschluss', fr: 'Sac bandoulière zippé', it: 'Borsa a tracolla con zip', es: 'Bolso bandolera con cremallera', ko: '지퍼 크로스바디 백', ja: 'ジップ クロスボディバッグ', zh: '拉链斜挎包' },
+  lady: { tr: 'Kulplu kutu çanta', en: 'Top-handle box bag', ru: 'Каркасная сумка с ручками', nl: 'Boxtas met handvatten', de: 'Box-Bag mit Henkeln', fr: 'Sac boîte à poignées', it: 'Borsa a bauletto', es: 'Bolso de mano rígido', ko: '탑 핸들 박스 백', ja: 'トップハンドル ボックスバッグ', zh: '手提方盒包' },
+  cuff: { tr: 'Zincirli mini çanta', en: 'Mini chain bag', ru: 'Мини-сумка на цепочке', nl: 'Mini tas met ketting', de: 'Mini-Tasche mit Kette', fr: 'Mini sac à chaîne', it: 'Mini borsa con catena', es: 'Minibolso con cadena', ko: '미니 체인 백', ja: 'ミニ チェーンバッグ', zh: '迷你链条包' },
+  bucket: { tr: 'Kova çanta', en: 'Bucket bag', ru: 'Сумка-мешок', nl: 'Buideltas', de: 'Beuteltasche', fr: 'Sac seau', it: 'Borsa a secchiello', es: 'Bolso saco', ko: '버킷백', ja: 'バケットバッグ', zh: '水桶包' },
+  bigBucket: { tr: 'Büyük kova çanta', en: 'Large bucket bag', ru: 'Большая сумка-мешок', nl: 'Grote buideltas', de: 'Große Beuteltasche', fr: 'Grand sac seau', it: 'Secchiello grande', es: 'Bolso saco grande', ko: '라지 버킷백', ja: 'ラージ バケットバッグ', zh: '大号水桶包' },
+} satisfies Record<string, L>;
+
+/** Canan's line-up and prices (Kasım 2026), in the order of her grid. */
 export const PRODUCTS: SeedProduct[] = [
-  {
-    slug: 'origami',
-    name: 'Origami',
-    price: 14500,
-    featured: true,
-    variants: [{ color: 'red', sku: 'MY-ORI-RED', stock: 3 }],
-    subtitle: { tr: 'Heykelsi fermuarlı çanta', en: 'Sculptural zip bag', ru: 'Скульптурная сумка на молнии', nl: 'Sculpturale tas met rits', de: 'Skulpturale Reißverschlusstasche', fr: 'Sac sculptural zippé', it: 'Borsa scultorea con zip', es: 'Bolso escultórico con cremallera', ko: '스컬프처럴 지퍼 백', ja: 'スカルプチュラル ジップバッグ', zh: '雕塑感拉链包' },
-    description: {
-      tr: 'İmza modelimiz: köşe boyunca uzanan fermuarı sayesinde küp formundan piramide dönüşür. Elde ya da askısıyla omuzda taşınır.',
-      en: 'Our signature piece: a full-length corner zip lets it shift from cube to pyramid. Carry it by hand or on the shoulder with its strap.',
-      ru: 'Наша фирменная модель: молния вдоль всего ребра превращает куб в пирамиду. Носите в руке или на плече с ремнём.',
-      nl: 'Ons signatuurmodel: een rits over de volle hoek laat de tas veranderen van kubus in piramide. Draag hem in de hand of met de band over de schouder.',
-      de: 'Unser Signature-Modell: Ein durchgehender Eckreißverschluss verwandelt den Würfel in eine Pyramide. In der Hand oder mit dem Riemen über der Schulter zu tragen.',
-      fr: 'Notre pièce signature : une zip d’angle sur toute la hauteur le fait passer du cube à la pyramide. À porter à la main ou à l’épaule avec sa bandoulière.',
-      it: 'Il nostro modello iconico: una zip lungo tutto lo spigolo lo trasforma da cubo a piramide. Da portare a mano o a spalla con la sua tracolla.',
-      es: 'Nuestra pieza insignia: una cremallera en toda la arista lo transforma de cubo en pirámide. Llévalo en la mano o al hombro con su correa.',
-      ko: '메이야의 시그니처: 모서리를 따라 이어지는 지퍼로 큐브에서 피라미드 형태로 변합니다. 손에 들거나 스트랩으로 어깨에 멜 수 있습니다.',
-      ja: 'メイヤのシグネチャー。角に沿って走るジッパーで、キューブからピラミッドへと形を変えます。手持ちでも、ストラップで肩掛けでも。',
-      zh: '品牌标志款：贯穿整条边角的拉链让它在立方体与金字塔形之间变换。可手提，也可配肩带单肩背。',
-    },
-  },
-  {
-    slug: 'valise',
-    name: 'Valise',
-    price: 13500,
-    featured: true,
-    variants: [{ color: 'ivory', sku: 'MY-VAL-IVO', stock: 3 }],
-    subtitle: { tr: 'Kulplu kutu çanta', en: 'Top-handle box bag', ru: 'Каркасная сумка с ручками', nl: 'Boxtas met handvatten', de: 'Box-Bag mit Henkeln', fr: 'Sac boîte à poignées', it: 'Borsa a bauletto', es: 'Bolso de mano rígido', ko: '탑 핸들 박스 백', ja: 'トップハンドル ボックスバッグ', zh: '手提方盒包' },
-    description: {
-      tr: 'Çevresini saran fermuarı ve yuvarlatılmış kulplarıyla yapılandırılmış bir kutu form. Çıkarılabilir askısıyla çapraz da taşınabilir.',
-      en: 'A structured box with a wraparound zip and rounded top handles. Add the removable strap to wear it crossbody.',
-      ru: 'Структурная форма с круговой молнией и округлыми ручками. Со съёмным ремнём её можно носить через плечо.',
-      nl: 'Een gestructureerde box met rondlopende rits en afgeronde handvatten. Met de afneembare band draag je hem crossbody.',
-      de: 'Eine strukturierte Box mit umlaufendem Reißverschluss und abgerundeten Henkeln. Mit dem abnehmbaren Riemen auch crossbody zu tragen.',
-      fr: 'Une forme boîte structurée, zip tout autour et poignées arrondies. Ajoutez la bandoulière amovible pour la porter en travers.',
-      it: 'Una forma strutturata con zip perimetrale e manici arrotondati. Con la tracolla removibile si porta anche a tracolla.',
-      es: 'Una caja estructurada con cremallera envolvente y asas redondeadas. Con la correa extraíble se lleva también cruzado.',
-      ko: '둘레를 감싸는 지퍼와 둥근 핸들을 갖춘 구조적인 박스 백. 탈착식 스트랩으로 크로스바디로도 연출할 수 있습니다.',
-      ja: 'ぐるりと開くジッパーと丸みのあるハンドルを備えた、構築的なボックスシルエット。付属のストラップでクロスボディにも。',
-      zh: '环绕式拉链搭配圆润提手的硬挺方盒造型。加上可拆卸肩带即可斜挎。',
-    },
-  },
-  {
-    slug: 'duo',
-    name: 'Duo',
-    price: 12500,
-    featured: true,
-    variants: [
-      { color: 'bicolor', sku: 'MY-DUO-BIC', stock: 3 },
-      { color: 'green', sku: 'MY-DUO-GRN', stock: 3 },
-    ],
-    subtitle: { tr: 'Omuz çantası', en: 'Shoulder bag', ru: 'Сумка на плечо', nl: 'Schoudertas', de: 'Schultertasche', fr: 'Sac porté épaule', it: 'Borsa a spalla', es: 'Bolso de hombro', ko: '숄더백', ja: 'ショルダーバッグ', zh: '单肩包' },
-    description: {
-      tr: 'Yan kenarı boyunca açılan fermuarlı, sade hatlı bir omuz çantası. Çift renk modelde bir yüzü krem, diğer yüzü siyah.',
-      en: 'A clean-lined shoulder bag that opens along its side seam. The bicolour version pairs a cream face with a black one.',
-      ru: 'Лаконичная сумка на плечо с молнией вдоль бокового шва. В двухцветной версии одна сторона кремовая, другая — чёрная.',
-      nl: 'Een strakke schoudertas die opent langs de zijnaad. De tweekleurige versie combineert een crèmekleurige en een zwarte zijde.',
-      de: 'Eine klar geschnittene Schultertasche, die sich entlang der Seitennaht öffnet. Die zweifarbige Version kombiniert eine cremefarbene mit einer schwarzen Seite.',
-      fr: 'Un sac épaule aux lignes épurées qui s’ouvre le long de la couture latérale. La version bicolore associe une face crème à une face noire.',
-      it: 'Una borsa a spalla dalle linee pulite che si apre lungo la cucitura laterale. La versione bicolore abbina un lato crema a uno nero.',
-      es: 'Un bolso de hombro de líneas limpias que se abre a lo largo de la costura lateral. La versión bicolor combina una cara crema y otra negra.',
-      ko: '옆 솔기를 따라 열리는 깔끔한 라인의 숄더백. 바이컬러는 한 면은 크림, 다른 면은 블랙입니다.',
-      ja: 'サイドに沿って開く、すっきりとしたラインのショルダーバッグ。バイカラーは片面がクリーム、もう片面がブラック。',
-      zh: '沿侧缝开合的简洁单肩包。双色款一面为奶油色，另一面为黑色。',
-    },
-  },
-  {
-    slug: 'tulip',
-    name: 'Tulip',
-    price: 9900,
-    featured: true,
-    variants: [{ color: 'red', sku: 'MY-TUL-RED', stock: 3 }],
-    subtitle: { tr: 'Kova çanta', en: 'Bucket bag', ru: 'Сумка-мешок', nl: 'Buideltas', de: 'Beuteltasche', fr: 'Sac seau', it: 'Borsa a secchiello', es: 'Bolso saco', ko: '버킷백', ja: 'バケットバッグ', zh: '水桶包' },
-    description: {
-      tr: 'Tek kulplu, yumuşak hatlı bir kova çanta. Çıkarılabilir uzun askısıyla omuzda ya da çapraz taşınabilir.',
-      en: 'A softly shaped bucket bag with a single top handle. A removable long strap lets you wear it on the shoulder or crossbody.',
-      ru: 'Мягкая сумка-мешок с одной ручкой. Съёмный длинный ремень позволяет носить её на плече или через плечо.',
-      nl: 'Een zacht gevormde buideltas met één handvat. Met de afneembare lange band draag je hem over de schouder of crossbody.',
-      de: 'Eine weich geformte Beuteltasche mit einem Henkel. Mit dem abnehmbaren langen Riemen über der Schulter oder crossbody zu tragen.',
-      fr: 'Un sac seau aux formes souples, doté d’une seule poignée. Sa longue bandoulière amovible permet de le porter à l’épaule ou en travers.',
-      it: 'Una borsa a secchiello dalle forme morbide con un unico manico. La lunga tracolla removibile permette di portarla a spalla o a tracolla.',
-      es: 'Un bolso saco de formas suaves con una sola asa. Su correa larga extraíble permite llevarlo al hombro o cruzado.',
-      ko: '부드러운 실루엣의 원 핸들 버킷백. 탈착식 롱 스트랩으로 숄더 또는 크로스바디로 멜 수 있습니다.',
-      ja: 'やわらかなフォルムのワンハンドル バケットバッグ。取り外し可能なロングストラップで、肩掛けにも斜め掛けにも。',
-      zh: '线条柔和的单提手水桶包。可拆卸长肩带，单肩或斜挎皆宜。',
-    },
-  },
-  {
-    slug: 'drape',
-    name: 'Drape',
-    price: 12900,
-    featured: false,
-    variants: [{ color: 'green', sku: 'MY-DRP-GRN', stock: 3 }],
-    subtitle: { tr: 'Büyük kova çanta', en: 'Large bucket bag', ru: 'Большая сумка-мешок', nl: 'Grote buideltas', de: 'Große Beuteltasche', fr: 'Grand sac seau', it: 'Secchiello grande', es: 'Bolso saco grande', ko: '라지 버킷백', ja: 'ラージ バケットバッグ', zh: '大号水桶包' },
-    description: {
-      tr: 'Tek parça geniş askısı ve ferah iç hacmiyle her gün için tasarlanmış büyük bir kova çanta. Deri, kullandıkça yumuşayıp dökümlü bir form alır.',
-      en: 'A generous bucket bag with a single wide strap, made for every day. The leather softens and drapes as it is carried.',
-      ru: 'Вместительная сумка-мешок с одним широким ремнём для каждого дня. Со временем кожа становится мягче и красиво драпируется.',
-      nl: 'Een ruime buideltas met één brede band, gemaakt voor elke dag. Het leer wordt zachter en valt soepeler naarmate je hem draagt.',
-      de: 'Eine großzügige Beuteltasche mit einem breiten Riemen für jeden Tag. Das Leder wird mit dem Tragen weicher und fällt fließend.',
-      fr: 'Un grand sac seau à large anse unique, pensé pour tous les jours. Le cuir s’assouplit et prend un tombé fluide au fil du temps.',
-      it: 'Un secchiello capiente con un’unica tracolla larga, pensato per ogni giorno. La pelle si ammorbidisce e si drappeggia con l’uso.',
-      es: 'Un amplio bolso saco con una sola asa ancha, pensado para el día a día. La piel se suaviza y cae con naturalidad con el uso.',
-      ko: '넓은 원 스트랩과 넉넉한 수납력을 갖춘 데일리 버킷백. 사용할수록 가죽이 부드러워지며 자연스러운 드레이프가 생깁니다.',
-      ja: '幅広のワンストラップと余裕のある収納力を備えた、毎日のためのバケットバッグ。使うほどに革がやわらぎ、美しいドレープが生まれます。',
-      zh: '宽肩带、大容量的日常水桶包。皮革越用越柔软，自然垂坠。',
-    },
-  },
-  {
-    slug: 'frame',
-    name: 'Frame',
-    price: 9500,
-    featured: false,
-    variants: [{ color: 'green', sku: 'MY-FRM-GRN', stock: 3 }],
-    subtitle: { tr: 'Fermuarlı çapraz çanta', en: 'Zip crossbody bag', ru: 'Сумка через плечо на молнии', nl: 'Crossbodytas met rits', de: 'Crossbody-Tasche mit Reißverschluss', fr: 'Sac bandoulière zippé', it: 'Borsa a tracolla con zip', es: 'Bolso bandolera con cremallera', ko: '지퍼 크로스바디 백', ja: 'ジップ クロスボディバッグ', zh: '拉链斜挎包' },
-    description: {
-      tr: 'Üst kenarı saran fermuarı ve yaprak formlu çekeceleriyle kompakt bir çapraz çanta. İnce, ayarlanabilir askı.',
-      en: 'A compact crossbody with a wraparound top zip and leaf-shaped pulls, on a slim adjustable strap.',
-      ru: 'Компактная сумка через плечо с молнией по верхнему краю и бегунками в форме листьев, на тонком регулируемом ремне.',
-      nl: 'Een compacte crossbodytas met rondlopende rits en bladvormige treklipjes, aan een smalle verstelbare band.',
-      de: 'Eine kompakte Crossbody-Tasche mit umlaufendem Reißverschluss und blattförmigen Zippern, an einem schmalen verstellbaren Riemen.',
-      fr: 'Un sac bandoulière compact, zip enveloppant et tirettes en forme de feuille, sur une fine bandoulière réglable.',
-      it: 'Una borsa a tracolla compatta con zip avvolgente e tiretti a foglia, su una sottile tracolla regolabile.',
-      es: 'Un bolso bandolera compacto con cremallera envolvente y tiradores en forma de hoja, con correa fina ajustable.',
-      ko: '상단을 감싸는 지퍼와 잎사귀 모양 지퍼 풀러를 갖춘 컴팩트한 크로스바디 백. 슬림한 길이 조절 스트랩.',
-      ja: '上部をぐるりと囲むジッパーとリーフ型の引き手が特徴のコンパクトなクロスボディ。細身の調節可能なストラップ付き。',
-      zh: '环绕式顶部拉链搭配叶片造型拉头的小巧斜挎包，配细款可调节肩带。',
-    },
-  },
-  {
-    slug: 'cube',
-    name: 'Cube',
-    price: 8900,
-    featured: false,
-    variants: [{ color: 'black', sku: 'MY-CUB-BLK', stock: 3 }],
-    subtitle: { tr: 'Mini kutu çanta', en: 'Mini box bag', ru: 'Мини-сумка-коробка', nl: 'Mini boxtas', de: 'Mini-Box-Bag', fr: 'Mini sac boîte', it: 'Mini borsa box', es: 'Minibolso caja', ko: '미니 박스 백', ja: 'ミニ ボックスバッグ', zh: '迷你方盒包' },
-    description: {
-      tr: 'Dikey hatlı, kompakt bir kutu çanta. Kavisli fermuar, yaprak formlu çekeceler ve ince, ayarlanabilir askı.',
-      en: 'A compact, upright box bag with a curved zip, leaf-shaped pulls and a slim adjustable strap.',
-      ru: 'Компактная вертикальная сумка-коробка с изогнутой молнией, бегунками в форме листьев и тонким регулируемым ремнём.',
-      nl: 'Een compacte, rechtopstaande boxtas met gebogen rits, bladvormige treklipjes en een smalle verstelbare band.',
-      de: 'Eine kompakte, aufrechte Box-Bag mit geschwungenem Reißverschluss, blattförmigen Zippern und schmalem verstellbarem Riemen.',
-      fr: 'Un sac boîte compact à la silhouette verticale, zip arrondi, tirettes en forme de feuille et fine bandoulière réglable.',
-      it: 'Una borsa box compatta e verticale con zip curva, tiretti a foglia e sottile tracolla regolabile.',
-      es: 'Un bolso caja compacto y vertical con cremallera curva, tiradores en forma de hoja y correa fina ajustable.',
-      ko: '곡선형 지퍼, 잎사귀 모양 풀러, 슬림한 길이 조절 스트랩을 갖춘 세로형 컴팩트 박스 백.',
-      ja: 'カーブしたジッパー、リーフ型の引き手、細身の調節可能なストラップを備えた縦長のコンパクトなボックスバッグ。',
-      zh: '竖版小巧方盒包，弧形拉链、叶片造型拉头，配细款可调节肩带。',
-    },
-  },
-  {
-    slug: 'lune',
-    name: 'Lune',
-    price: 7900,
-    featured: false,
-    variants: [{ color: 'black', sku: 'MY-LUN-BLK', stock: 3 }],
-    subtitle: { tr: 'Zincirli mini çanta', en: 'Mini chain bag', ru: 'Мини-сумка на цепочке', nl: 'Mini tas met ketting', de: 'Mini-Tasche mit Kette', fr: 'Mini sac à chaîne', it: 'Mini borsa con catena', es: 'Minibolso con cadena', ko: '미니 체인 백', ja: 'ミニ チェーンバッグ', zh: '迷你链条包' },
-    description: {
-      tr: 'Yarım ay formunda bir mini çanta. Düğümlü deri kulp ve altın tonlu zincir askıyla gelir.',
-      en: 'A half-moon mini bag with a knotted leather handle and a gold-tone chain strap.',
-      ru: 'Мини-сумка в форме полумесяца с завязанной кожаной ручкой и цепочкой золотистого цвета.',
-      nl: 'Een halvemaanvormige mini tas met geknoopt leren handvat en goudkleurige ketting.',
-      de: 'Eine Mini-Tasche in Halbmondform mit geknotetem Lederhenkel und goldfarbener Kette.',
-      fr: 'Un mini sac en demi-lune, poignée en cuir nouée et chaîne dorée.',
-      it: 'Una mini borsa a mezzaluna con manico in pelle annodato e catena color oro.',
-      es: 'Un minibolso en forma de media luna con asa de piel anudada y cadena en tono dorado.',
-      ko: '매듭 가죽 핸들과 골드 톤 체인 스트랩을 갖춘 반달 모양 미니 백.',
-      ja: '結んだレザーハンドルとゴールドトーンのチェーンストラップを備えた、半月形のミニバッグ。',
-      zh: '半月造型迷你包，配打结皮革提手与金色链条肩带。',
-    },
-  },
+  { slug: 'petal-box-chili', name: 'Petal Box', price: 20000, featured: true, variants: [{ color: 'chili', sku: 'MY-ORI-RED', stock: 3 }], subtitle: SUBTITLE.box, description: COPY.box, dimensions: dims(16, 12.5, 16), material: CALFSKIN, replaces: { slug: 'origami', color: 'red' } },
+  { slug: 'petal-shoulder-24-botanic', name: 'Petal Shoulder 24', price: 20000, featured: true, variants: [{ color: 'botanic', sku: 'MY-FRM-GRN', stock: 3 }], subtitle: SUBTITLE.shoulder, description: COPY.shoulder24, dimensions: dims(24, 21, 5.5), material: CALFSKIN, replaces: { slug: 'frame', color: 'green' } },
+  { slug: 'petal-shoulder-24-black-moon', name: 'Petal Shoulder 24', price: 20000, featured: true, variants: [{ color: 'black-moon', sku: 'MY-DUO-BIC', stock: 3 }], subtitle: SUBTITLE.shoulder, description: COPY.shoulder24, dimensions: dims(24, 21, 5.5), material: CALFSKIN, replaces: { slug: 'duo', color: 'bicolor' } },
+  { slug: 'petal-shoulder-14-black', name: 'Petal Shoulder 14', price: 15000, featured: true, variants: [{ color: 'black', sku: 'MY-CUB-BLK', stock: 3 }], subtitle: SUBTITLE.crossbody, description: COPY.shoulder14, dimensions: dims(14, 14, 5.5), material: CALFSKIN, replaces: { slug: 'cube', color: 'black' } },
+  { slug: 'petal-lady-moon', name: 'Petal Lady', price: 20000, featured: true, variants: [{ color: 'moon', sku: 'MY-VAL-IVO', stock: 3 }], subtitle: SUBTITLE.lady, description: COPY.lady, dimensions: dims(20, 14, 6), material: CALFSKIN, replaces: { slug: 'valise', color: 'ivory' } },
+  { slug: 'petal-cuff-15-5-black', name: 'Petal Cuff 15.5', price: 15000, featured: true, variants: [{ color: 'black', sku: 'MY-LUN-BLK', stock: 3 }], subtitle: SUBTITLE.cuff, description: COPY.cuff, dimensions: dims(15.5, 14, 6), material: CALFSKIN, replaces: { slug: 'lune', color: 'black' } },
+  { slug: 'petal-bucket-12-chili', name: 'Petal Bucket 12', price: 15000, featured: true, variants: [{ color: 'chili', sku: 'MY-TUL-RED', stock: 3 }], subtitle: SUBTITLE.bucket, description: COPY.bucket12, dimensions: dims(12, 15, 12), material: CALFSKIN, replaces: { slug: 'tulip', color: 'red' } },
+  { slug: 'petal-bucket-20-botanic', name: 'Petal Bucket 20', price: 22000, featured: true, variants: [{ color: 'botanic', sku: 'MY-DRP-GRN', stock: 3 }], subtitle: SUBTITLE.bigBucket, description: COPY.bucket20, dimensions: dims(20, 24.5, 20), material: CALFSKIN, replaces: { slug: 'drape', color: 'green' } },
 ];
 
 // ───────── Homepage, Faz 1 additions (diptych, model strip, banner) ─────────

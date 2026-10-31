@@ -27,7 +27,7 @@ export function WishlistButton({ productId, initial }: { productId: string; init
   };
 
   return (
-    <button type="button" onClick={toggle} disabled={busy} aria-pressed={on} aria-label={on ? t('wishlisted') : t('wishlist')} title={on ? t('wishlisted') : t('wishlist')} className="flex h-12 w-12 shrink-0 items-center justify-center border border-line hover:border-ink">
+    <button type="button" onClick={toggle} disabled={busy} aria-pressed={on} aria-label={on ? t('wishlisted') : t('wishlist')} title={on ? t('wishlisted') : t('wishlist')} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[3px] border border-ink hover:opacity-60">
       <svg aria-hidden="true" width="18" height="16" viewBox="0 0 18 16" fill={on ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.1" className={on ? 'text-brand' : ''}>
         <path d="M9 15S1 10.2 1 5.2A3.9 3.9 0 0 1 9 3.4a3.9 3.9 0 0 1 8 1.8C17 10.2 9 15 9 15Z" />
       </svg>

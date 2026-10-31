@@ -5,7 +5,6 @@ import type { ProductList } from '@/lib/types';
 import { ProductGrid } from '@/components/product/product-grid';
 import { Filters } from '@/components/product/filters';
 import { Pagination } from '@/components/pagination';
-import { Link } from '@/i18n/navigation';
 
 type Search = Record<string, string | string[] | undefined>;
 const str = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
@@ -21,7 +20,6 @@ export default async function ProductsPage({ params, searchParams }: { params: P
   setRequestLocale(locale);
   const sp = await searchParams;
   const t = await getTranslations('shop');
-  const tn = await getTranslations('newsletter');
 
   const qs = new URLSearchParams();
   for (const key of ['color', 'size', 'sort', 'category', 'collection', 'minPrice', 'maxPrice', 'q']) {
@@ -35,33 +33,19 @@ export default async function ProductsPage({ params, searchParams }: { params: P
   const items = list?.items ?? [];
 
   return (
-    <div className="px-4 pt-12 md:px-12 md:pt-20">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <h1 className="display text-[40px] md:text-[56px]">{t('title')}</h1>
-        <p className="max-w-md text-[14px] leading-relaxed text-ink-soft">{t('intro')}</p>
-        <p className="label text-muted">{t('count', { count: list?.total ?? 0 })}</p>
-      </div>
+    <div className="mx-auto w-full max-w-[1280px] px-4 pt-8 md:px-10 md:pt-12">
+      <h1 className="text-center text-[22px]">{t('title')}</h1>
 
       <Filters facets={list?.facets ?? { colors: [], sizes: [], price: null }} current={{ color: str(sp.color), size: str(sp.size), sort: str(sp.sort) }} />
 
       {items.length ? (
-        <div className="pt-10">
-          <ProductGrid products={items} columns={3} />
+        <div className="pt-8">
+          <ProductGrid products={items} columns={4} />
           <Pagination page={list!.page} pages={list!.pages} />
         </div>
       ) : (
         <p className="py-24 text-center text-muted">{t('empty')}</p>
       )}
-
-      <section className="mt-24 grid gap-6 bg-ink p-8 text-ground md:mt-32 md:grid-cols-2 md:items-center md:p-16">
-        <div className="flex flex-col gap-3">
-          <p className="label text-stone-dark">{tn('waitlistTitle')}</p>
-          <h2 className="font-serif text-4xl font-light leading-tight">{tn('waitlistText')}</h2>
-        </div>
-        <Link href="/contact" className="btn-outline justify-self-start border-ground text-ground hover:bg-ground hover:text-ink">
-          {tn('join')}
-        </Link>
-      </section>
     </div>
   );
 }

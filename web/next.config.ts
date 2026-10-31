@@ -18,6 +18,18 @@ const securityHeaders = [
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
 ];
 
+/** Kasım 2026: the bags took their Petal names; old links (Instagram, Google, e-mails) still reach the same bag. */
+const RENAMED: Record<string, string> = {
+  origami: 'petal-box-chili',
+  frame: 'petal-shoulder-24-botanic',
+  duo: 'petal-shoulder-24-black-moon',
+  cube: 'petal-shoulder-14-black',
+  valise: 'petal-lady-moon',
+  lune: 'petal-cuff-15-5-black',
+  tulip: 'petal-bucket-12-chili',
+  drape: 'petal-bucket-20-botanic',
+};
+
 const nextConfig: NextConfig = {
   // deploy.sh builds next to the running version (.next-a / .next-b) and switches over; dev keeps .next.
   distDir: process.env.NEXT_DIST_DIR || '.next',
@@ -35,6 +47,12 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [{ source: '/(.*)', headers: securityHeaders }];
+  },
+  async redirects() {
+    return Object.entries(RENAMED).flatMap(([from, to]) => [
+      { source: `/products/${from}`, destination: `/products/${to}`, permanent: true },
+      { source: `/:locale(tr|ru|nl|de|fr|it|es|ko|ja|zh)/products/${from}`, destination: `/:locale/products/${to}`, permanent: true },
+    ]);
   },
 };
 

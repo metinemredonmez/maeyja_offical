@@ -5,7 +5,7 @@ import { Link } from '@/i18n/navigation';
 import { cleanHtml } from '@/lib/sanitize';
 import { modelNo, money } from '@/lib/format';
 import type { HomeSection, InstagramPost, ProductCard as Card } from '@/lib/types';
-import { ProductCard } from '@/components/product/product-card';
+import { ProductGrid } from '@/components/product/product-grid';
 import { NewsletterForm } from '@/components/newsletter-form';
 import { Swatch } from '@/components/product/swatch';
 import { AutoVideo } from './auto-video';
@@ -151,29 +151,30 @@ function SectionTitle({ title, className = '' }: { title: string | null; classNa
   return title ? <h2 className={`display text-center text-[40px] md:text-[64px] ${className}`}>{title}</h2> : null;
 }
 
-/** Product strip, four across. */
+/**
+ * The bags four across on BOYY's flat grey: each row is one continuous grey band, the name and price under it
+ * (Canan's page 2). The section title and "view all" show only when set in the admin.
+ */
 function Featured({ s }: { s: HomeSection }) {
   const t = useTranslations('common');
   if (!s.products?.length) return null;
   const collectionSlug = (s.payload as { collectionSlug?: string } | null)?.collectionSlug;
   return (
-    <section className="px-4 pt-24 md:px-12 md:pt-36">
-      <div className="reveal mb-12 flex flex-col items-center gap-4 md:mb-16">
-        {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
-        <SectionTitle title={s.title} />
-      </div>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-12 md:grid-cols-4 md:gap-x-6">
-        {s.products.slice(0, 8).map((p, i) => (
-          <div key={p.id} className="reveal">
-            <ProductCard product={p} priority={i < 2} />
-          </div>
-        ))}
-      </div>
-      <div className="mt-14 flex justify-center">
-        <Link href={collectionSlug ? `/collections/${collectionSlug}` : '/products'} className="link-underline">
-          {t('viewAll')}
-        </Link>
-      </div>
+    <section className="mx-auto w-full max-w-[1280px] px-4 pt-20 md:px-10 md:pt-28">
+      {s.title || s.subtitle ? (
+        <div className="reveal mb-10 flex flex-col items-center gap-3 md:mb-14">
+          {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
+          <SectionTitle title={s.title} />
+        </div>
+      ) : null}
+      <ProductGrid products={s.products.slice(0, 12)} columns={4} />
+      {s.ctaUrl && s.ctaLabel ? (
+        <div className="mt-14 flex justify-center">
+          <Link href={collectionSlug ? `/collections/${collectionSlug}` : s.ctaUrl} className="link-underline">
+            {s.ctaLabel ?? t('viewAll')}
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -210,26 +211,29 @@ function ModelStrip({ s }: { s: HomeSection }) {
 }
 
 /**
- * Two still-lifes laid out like an editorial spread (Manu Atelier / Liffner): a large picture on the left, the
- * copy and a smaller picture on the right, each drifting at its own speed. Products picked in the admin turn
- * the pictures into links captioned with the model's name and price.
+ * Two photos side by side, centred on white with no copy (Canan's page 1, after BOYY); one above the other on
+ * phones. Products picked in the admin turn each photo into a link to that bag.
  */
 function Diptych({ s }: { s: HomeSection }) {
   const second = s.secondImageUrl ?? s.mobileImageUrl;
   const [left, right] = s.products ?? [];
+  const cell = (url: string | null, product: Card | undefined, className: string, sizes: string, priority: boolean) => {
+    if (!url) return null;
+    const img = <Image src={url} alt={product?.name ?? ''} fill priority={priority} sizes={sizes} className="object-cover" />;
+    return product ? (
+      <Link href={`/products/${product.slug}`} className={`relative block ${className}`}>
+        {img}
+      </Link>
+    ) : (
+      <div className={`relative ${className}`}>{img}</div>
+    );
+  };
   return (
-    <section className="px-4 pt-24 md:px-12 md:pt-40">
-      <div className="grid gap-y-14 md:grid-cols-12 md:gap-x-6">
-        <Still url={s.imageUrl} product={left} shift="5%" sizes="(min-width: 768px) 58vw, 100vw" className="md:col-span-7" />
-        <div className="flex flex-col gap-14 md:col-span-4 md:col-start-9 md:gap-24">
-          <div className="reveal flex flex-col gap-5 md:pt-28">
-            {s.subtitle ? <p className="label text-muted">{s.subtitle}</p> : null}
-            {s.title ? <h2 className="display text-[36px] leading-[1.05] md:text-[52px]">{s.title}</h2> : null}
-            <Body html={s.body} className="text-[15px] leading-relaxed text-ink-soft" />
-            <Cta s={s} />
-          </div>
-          <Still url={second} product={right} shift="12%" sizes="(min-width: 768px) 33vw, 80vw" className="ml-auto w-[82%] md:ml-0 md:w-full" />
-        </div>
+    <section className="mx-auto w-full max-w-[1200px] px-4 md:px-10">
+      {s.title ? <h2 className="display mb-8 text-center text-[24px]">{s.title}</h2> : null}
+      <div className="flex flex-col md:aspect-[1162/643] md:flex-row">
+        {cell(s.imageUrl, left, 'aspect-[656/643] md:aspect-auto md:h-full md:flex-[656]', '(min-width: 768px) 660px, 100vw', true)}
+        {cell(second, right, 'aspect-[506/643] md:aspect-auto md:h-full md:flex-[506]', '(min-width: 768px) 510px, 100vw', true)}
       </div>
     </section>
   );
@@ -258,6 +262,7 @@ function Still({ url, product, shift, sizes, className }: { url: string | null; 
     </Link>
   );
 }
+
 
 /**
  * Edge-to-edge photo or video (Polène's film, Mlouye's banners). With a product picked in the admin a tall

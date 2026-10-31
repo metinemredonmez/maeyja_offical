@@ -4,7 +4,10 @@ const INTL_LOCALE: Record<string, string> = {
 
 /** Prices are always TRY; only the number formatting follows the UI language. */
 export function money(amount: number, locale = 'tr') {
-  return new Intl.NumberFormat(INTL_LOCALE[locale] ?? 'tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: amount % 1 === 0 ? 0 : 2 }).format(amount);
+  const digits = amount % 1 === 0 ? 0 : 2;
+  // Turkish shoppers read prices as "20.000 TL" (the brand's own price list does too), not "₺20.000".
+  if (locale === 'tr') return `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount)} TL`;
+  return new Intl.NumberFormat(INTL_LOCALE[locale] ?? 'tr-TR', { style: 'currency', currency: 'TRY', maximumFractionDigits: digits }).format(amount);
 }
 
 export function formatDate(iso: string | null | undefined, locale = 'tr', opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }) {
