@@ -343,6 +343,8 @@ model Cart {
   userId     String?  @unique
   guestToken String?  @unique // sent by guests as X-Cart-Token
   couponCode String?
+  /// When the abandoned-cart reminder e-mail went out (one per cart).
+  remindedAt DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

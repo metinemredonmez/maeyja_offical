@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVerticalIcon, SparklesIcon, Trash2Icon } from 'lucide-react';
+import { CaptionsIcon, GripVerticalIcon, SparklesIcon, Trash2Icon } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { AiEditDialog } from '@/components/ai/ai-edit-dialog';
 import { SuggestionsList } from '@/components/ai/suggestions-list';
 import { Button } from '@/components/ui/button';
@@ -14,7 +16,8 @@ import { SimpleSelect } from '@/components/shared/form';
 import { ImageUploader } from '@/components/shared/image-uploader';
 import { MediaPicker } from '@/components/shared/media-picker';
 import { ColorSwatch } from '@/components/shared/primitives';
-import { useAddImage, useDeleteImage, useReorderImages, useUpdateImage, type ImageInput } from '@/lib/queries/catalog';
+import { catalogKeys, useAddImage, useDeleteImage, useReorderImages, useUpdateImage, type ImageInput } from '@/lib/queries/catalog';
+import { api, errorMessage } from '@/lib/api.client';
 import type { Color, Media, ProductImage } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -94,6 +97,21 @@ export function ImagesEditor(props: Props) {
   const confirm = useConfirm();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [describing, setDescribing] = useState(false);
+  const qc = useQueryClient();
+  /** Alt text for every photo still carrying only the product name (Google image search, screen readers). */
+  const describe = async () => {
+    setDescribing(true);
+    try {
+      const r = await api.post<{ updated: number; total: number }>(`/admin/ai/alt/${productId}`, {});
+      await qc.invalidateQueries({ queryKey: catalogKeys.product(productId) });
+      toast.success(r.updated ? `${r.updated} fotoğrafa açıklama yazıldı` : 'Bütün fotoğrafların açıklaması zaten var');
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setDescribing(false);
+    }
+  };
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
   const items: (ImageInput & { _key: string; id?: string })[] =
@@ -152,6 +170,11 @@ export function ImagesEditor(props: Props) {
             </ul>
           </SortableContext>
         </DndContext>
+      )}
+      {productId && items.length > 0 && (
+        <Button type="button" variant="outline" size="sm" onClick={describe} disabled={describing}>
+          <CaptionsIcon /> {describing ? 'Fotoğraflar okunuyor…' : 'AI ile fotoğraf açıklamalarını yaz'}
+        </Button>
       )}
       <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
         <ImageUploader multiple compact onUploaded={(m) => addImage(fromMedia(m))} disabled={add.isPending} />

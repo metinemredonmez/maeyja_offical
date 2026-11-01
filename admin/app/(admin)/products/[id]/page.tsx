@@ -1,8 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArchiveIcon, CopyIcon, ExternalLinkIcon } from 'lucide-react';
+import { ArchiveIcon, CameraIcon, CopyIcon, ExternalLinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProductForm } from '@/components/products/product-form';
 import { useConfirm } from '@/components/shared/confirm-dialog';
@@ -11,6 +11,7 @@ import { QueryState } from '@/components/shared/query-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useDeleteProduct, useDuplicateProduct, useProduct, useUpdateProduct } from '@/lib/queries/catalog';
 import { STORE_URL } from '@/lib/format';
+import { InstagramDialog } from '@/components/ai/instagram-dialog';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -20,6 +21,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const dup = useDuplicateProduct();
   const del = useDeleteProduct();
   const confirm = useConfirm();
+  const [insta, setInsta] = useState(false);
 
   return (
     <QueryState query={query}>
@@ -45,6 +47,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                     <ExternalLinkIcon /> Sitede gör
                   </Button>
                 )}
+                <Button variant="outline" size="sm" onClick={() => setInsta(true)}>
+                  <CameraIcon /> Instagram metni
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => dup.mutate(product.id, { onSuccess: (copy) => router.push(`/products/${copy.id}`) })} disabled={dup.isPending}>
                   <CopyIcon /> Kopyala
                 </Button>
@@ -72,6 +77,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           />
           <ProductForm key={product.updatedAt} product={product} onSubmit={(body) => update.mutateAsync(body)} submitting={update.isPending} error={update.error} />
           {confirm.dialog}
+          {insta && <InstagramDialog open onOpenChange={setInsta} productId={product.id} imageUrl={product.images[0]?.url} />}
         </>
       )}
     </QueryState>

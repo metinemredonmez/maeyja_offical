@@ -501,6 +501,7 @@ export interface Settings {
   maintenance: { enabled: boolean; previewToken: string };
   productPage: { ground: string; tile: string };
   aiStudio: { autoModel: boolean };
+  cartReminder: { enabled: boolean; delayHours: number };
   tracking: {
     metaPixelId: string;
     metaCapiToken: string;

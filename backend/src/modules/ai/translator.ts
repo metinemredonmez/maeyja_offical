@@ -140,7 +140,10 @@ Facts: use only what the admin gave and the brand facts above. Never invent meas
 Fields:
 - fields listed as rich are HTML: one to three short <p> paragraphs (a page or journal body may use a few <h2> headings and more paragraphs); every other field is plain text;
 - subtitle: a few words; seoTitle: under 60 characters, may end with " | MAEYJA"; seoDescription: under 155 characters; aiSummary: two to four plain, factual sentences for AI assistants (what it is, for whom, how it is made, where to buy: maeyja.com);
-- a category or collection description: one or two sentences.
+- a category or collection description: one or two sentences;
+- an e-mail campaign: subject under 50 characters, preheader under 90, a short title, a body of two to four short <p> paragraphs, ctaLabel of two to four words.
+
+Write in Turkish unless already_written.language names another language.
 
 For a category you may also be asked for:
 - children: up to six natural sub-categories (Turkish names, one-sentence descriptions), most common first;

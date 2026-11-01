@@ -12,6 +12,7 @@ import { StatusBadge, ToneBadge } from '@/components/shared/status-badge';
 import { ORDER_STATUS, ORDER_STATUSES } from '@/lib/labels';
 import { formatDate, formatMoney, formatNumber } from '@/lib/format';
 import { useDashboard } from '@/lib/queries/system';
+import { WeeklySummary } from '@/components/ai/weekly-summary';
 import type { RevenueBucket } from '@/lib/types';
 
 function Kpi({ label, bucket, change }: { label: string; bucket: RevenueBucket; change?: number | null }) {
@@ -65,6 +66,8 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Panel" description="Ödenmiş siparişlere göre ciro; KDV dahil." />
+      <WeeklySummary />
+      <div className="h-5" />
       <QueryState query={query}>
         {(d) => {
           const data = d.daily.map((r) => ({ ...r, day: formatDate(r.date).replace(/ \d{4}$/, '') }));

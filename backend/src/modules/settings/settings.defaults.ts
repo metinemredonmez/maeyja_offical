@@ -54,6 +54,11 @@ export const SETTING_DEFAULTS = {
   aiStudio: {
     autoModel: true,
   },
+  /** Abandoned-cart reminder: one short e-mail, written by AI, to signed-in customers who agreed to e-mails. Off until switched on. */
+  cartReminder: {
+    enabled: false,
+    delayHours: 3,
+  },
   /** Maintenance: the storefront answers every page with a "back soon" page (503), except for the staff preview link. */
   maintenance: {
     enabled: false,

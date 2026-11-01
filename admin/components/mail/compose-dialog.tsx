@@ -3,13 +3,15 @@
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { InfoIcon, SendIcon } from 'lucide-react';
+import { InfoIcon, SendIcon, SparklesIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { RichText } from '@/components/shared/rich-text';
+import { api, errorMessage } from '@/lib/api.client';
 import { forwardQuote, prefixSubject, replyQuote, replyRecipients, signatureBlock, splitAddresses, stripSignatureMarkers, swapSignature } from '@/lib/mail';
 import { useSendMail } from '@/lib/queries/mail';
 import { composeSchema, type ComposeFormValues } from '@/lib/schemas/mail';
@@ -38,6 +40,22 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
   const [defaults] = useState(() => draftFor(request, accounts));
   const form = useForm<ComposeFormValues>({ resolver: zodResolver(composeSchema), defaultValues: defaults });
   const errors = form.formState.errors;
+  const [drafting, setDrafting] = useState(false);
+  const replying = Boolean(request.original) && (request.mode === 'reply' || request.mode === 'replyAll');
+  /** "AI ile yanıt yaz": a draft in the customer's language from the shop's facts and their orders, above the quote. */
+  const aiReply = async () => {
+    if (!request.original) return;
+    setDrafting(true);
+    try {
+      const { html } = await api.post<{ html: string }>(`/admin/ai/reply/${request.original.id}`, {});
+      form.setValue('html', `${html}\n${form.getValues('html').replace(/^<p><\/p>\n?/, '')}`, { shouldDirty: true });
+      toast.success('Yanıt taslağı yazıldı — okuyup düzeltin, sonra gönderin');
+    } catch (e) {
+      toast.error(errorMessage(e));
+    } finally {
+      setDrafting(false);
+    }
+  };
   const { mode, original } = request;
   const lostAttachments = mode === 'forward' && (original?.attachments.length ?? 0) > 0;
 
@@ -107,6 +125,15 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
           <Field label="Konu" error={errors.subject} htmlFor="subject" required>
             <Input id="subject" maxLength={300} {...form.register('subject')} />
           </Field>
+          {replying && (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
+              <span>Müşterinin dilinde, mağaza bilgileri ve siparişlerine göre bir yanıt taslağı yazılır; siz okuyup düzeltirsiniz.</span>
+              <Button type="button" size="sm" onClick={aiReply} disabled={drafting}>
+                <SparklesIcon className="size-3.5" />
+                {drafting ? 'Yazılıyor…' : 'AI ile yanıt yaz'}
+              </Button>
+            </div>
+          )}
           <Field label="İleti" error={errors.html} htmlFor="html" required hint="İmza seçili hesaptan gelir; hesabı değiştirirseniz imza da değişir.">
             <Controller control={form.control} name="html" render={({ field }) => <RichText id="html" value={field.value} onChange={field.onChange} rows={16} placeholder="<p>Merhaba,</p>" />} />
           </Field>

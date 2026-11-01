@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangleIcon, UsersIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { AiDraftButton } from '@/components/ai/ai-draft-button';
 import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { Section } from '@/components/shared/primitives';
 import { ImageUrlField } from '@/components/shared/media-picker';
@@ -79,7 +80,11 @@ export function CampaignForm({
     <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_320px]">
       <div className="space-y-5">
         <FormError error={error} />
-        <Section title="E-posta" description="Tek dilde yazılır; dil seçimiyle yalnızca o dildeki kişilere gönderebilirsiniz.">
+        <Section
+          title="E-posta"
+          description="Tek dilde yazılır; dil seçimiyle yalnızca o dildeki kişilere gönderebilirsiniz. Konuya ne duyurmak istediğinizi yazıp “AI ile yaz”a basarsanız gerisi dolar."
+          actions={<AiDraftButton form={form} kind="e-mail campaign (newsletter)" fields={['subject', 'preheader', 'title', 'body', 'ctaLabel']} rich={['body']} start="subject" startLabel="Konu" language={locale && locale !== 'tr' ? LOCALE_LABELS[locale as keyof typeof LOCALE_LABELS] : undefined} />}
+        >
           <div className="grid gap-4">
             <Field label="Konu" error={errors.subject} htmlFor="subject" required hint={`${form.watch('subject').length}/150`}>
               <Input id="subject" maxLength={150} placeholder="Yeni sezon: Origami artık siyahta" {...form.register('subject')} />
