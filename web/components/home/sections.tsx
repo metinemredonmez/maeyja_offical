@@ -103,7 +103,8 @@ function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?:
   return (
     <section className={`relative flex h-[100svh] min-h-[560px] items-end overflow-hidden bg-stone ${media ? 'text-white' : ''}`}>
       <div className="hero-drift absolute inset-0">
-        <div className="intro-zoom absolute inset-0">
+        {/* On screens narrower than the film, keep its right side in view: the model stands there, clear of the product card. */}
+        <div className="intro-zoom absolute inset-0 [&_img]:object-right [&_video]:object-right">
           <Media s={s} sizes="100vw" priority={first} />
         </div>
       </div>

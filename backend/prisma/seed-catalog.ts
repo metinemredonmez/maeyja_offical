@@ -215,6 +215,16 @@ async function main() {
     await prisma.homeSection.update({ where: { id: stillsHero.id }, data: { videoUrl: film } });
     console.log('✓ hero: İzlanda filmi gerçek hareketli kliplerle yenilendi');
   }
+  // That film drew the Petal Box far too big, on long shoulder handles: the v3 film, its poster and the phone still show
+  // the real bag (16 cm, carried by its short strap). Only the seeded v2 film is swapped.
+  const bigBagHero = await prisma.homeSection.findFirst({ where: { type: HomeSectionType.HERO, videoUrl: { contains: '/catalog/_home/hero-iceland-coast-v2' } } });
+  if (bigBagHero) {
+    const film = await importVideo('_home', 'hero-iceland-coast-v3.mp4', 'Petal Box');
+    const wide = await importImage('_home', '40-hero-iceland-petal-box.webp', 'Petal Box, Chili');
+    const tall = await importImage('_home', '41-hero-iceland-petal-box-mobile.webp', 'Petal Box, Chili');
+    await prisma.homeSection.update({ where: { id: bigBagHero.id }, data: { videoUrl: film, imageUrl: wide.url, mobileImageUrl: tall.url } });
+    console.log('✓ hero: gerçek boyutta Petal Box, kısa askısıyla elde (v3 film)');
+  }
   // The banner's earlier stand-ins (Drape table photo, then a Rome film whose bag wasn't true to the Drape) give way
   // to a close shot where the bag matches the product. Only seeded media is replaced.
   const oldBanner = await prisma.homeSection.findFirst({
