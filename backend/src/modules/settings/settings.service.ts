@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { randomBytes, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SETTING_DEFAULTS, SETTING_KEYS, SettingKey, SettingValue } from './settings.defaults';
@@ -23,9 +24,18 @@ export class SettingsService {
     const current = await this.get(key as SettingKey);
     // Only accept keys that exist in the defaults; ignore anything else.
     const allowed = Object.fromEntries(Object.entries(patch).filter(([k]) => k in SETTING_DEFAULTS[key as SettingKey]));
-    const value = { ...current, ...allowed } as Prisma.InputJsonValue;
+    const merged = { ...current, ...allowed } as Record<string, unknown>;
+    if (key === 'maintenance' && merged.enabled && !merged.previewToken) merged.previewToken = randomBytes(16).toString('hex');
+    const value = merged as Prisma.InputJsonValue;
     await this.prisma.setting.upsert({ where: { key }, create: { key, value }, update: { value } });
     return value;
+  }
+
+  /** Whether the storefront is closed for maintenance, and whether a staff preview token lets this visitor in. */
+  async maintenance(preview?: string) {
+    const { enabled, previewToken } = await this.get('maintenance');
+    const a = Buffer.from(preview ?? ''), b = Buffer.from(previewToken);
+    return { enabled, preview: enabled && b.length > 0 && a.length === b.length && timingSafeEqual(a, b) };
   }
 
   /** What the storefront and mobile app may see. */

@@ -42,6 +42,12 @@ export const SETTING_DEFAULTS = {
   tryon: {
     enabled: false,
   },
+  /** Maintenance: the storefront answers every page with a "back soon" page (503), except for the staff preview link. */
+  maintenance: {
+    enabled: false,
+    /** Secret in the staff preview link (?preview=…); made the first time maintenance is switched on. */
+    previewToken: '',
+  },
   /**
    * Ad pixels and search/AI visibility. IDs are public (they reach the browser); the Conversions API token and
    * the GA4 API secret stay on the server and are only used for purchases sent from the server.

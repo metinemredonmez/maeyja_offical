@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { ADMIN_ROLES, Roles } from '../../common/decorators/roles.decorator';
@@ -13,6 +13,13 @@ export class SettingsController {
   @Get('settings/public')
   getPublic() {
     return this.settings.getPublic();
+  }
+
+  /** Asked by the storefront on every page (cached there for a few seconds). */
+  @Public()
+  @Get('settings/maintenance')
+  maintenance(@Query('preview') preview?: string) {
+    return this.settings.maintenance(preview);
   }
 
   @ApiBearerAuth()

@@ -493,6 +493,7 @@ export interface Settings {
   bankTransfer: { enabled: boolean; bankName: string; accountName: string; iban: string; note: Record<string, string> };
   assistant: { enabled: boolean; welcome: Record<string, string>; instructions: string; handoffWhatsapp: string };
   tryon: { enabled: boolean };
+  maintenance: { enabled: boolean; previewToken: string };
   tracking: {
     metaPixelId: string;
     metaCapiToken: string;

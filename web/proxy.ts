@@ -2,6 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
 import { COOKIE } from './lib/cookies';
+import { maintenancePage, maintenanceState, PREVIEW_COOKIE } from './lib/maintenance';
 
 const intl = createIntlMiddleware(routing);
 
@@ -31,8 +32,27 @@ function csp(nonce: string) {
   ].join('; ');
 }
 
-export default function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Staff preview link from the admin (?preview=…): remember it in a cookie and continue on the clean address.
+  const previewParam = request.nextUrl.searchParams.get('preview');
+  if (previewParam) {
+    const url = request.nextUrl.clone();
+    url.searchParams.delete('preview');
+    const res = NextResponse.redirect(url);
+    res.cookies.set(PREVIEW_COOKIE, previewParam, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 7 * 24 * 3600 });
+    return res;
+  }
+  // Maintenance mode (admin top bar): everyone but staff with the preview cookie sees the "back soon" page.
+  const gate = await maintenanceState(request.cookies.get(PREVIEW_COOKIE)?.value);
+  if (gate.enabled && !gate.preview) {
+    const locale = pathname.match(/^\/(tr|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/)?.[1] ?? 'en';
+    return new NextResponse(maintenancePage(locale), {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '1800' },
+    });
+  }
 
   // Customer-only pages: bounce to login (keeping the target) when no session cookie at all.
   const path = stripLocale(pathname);

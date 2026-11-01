@@ -14,7 +14,8 @@ import { useSaveSetting, useSettings } from '@/lib/queries/system';
 import { cn } from '@/lib/utils';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
-const TAB_LABELS: Record<SettingKey, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', tracking: 'İzleme ve görünürlük' };
+/** Maintenance has no tab: it is the one-click button in the top bar. */
+const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance'>, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', tracking: 'İzleme ve görünürlük' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -353,7 +354,7 @@ export default function SettingsPage() {
         {(s) => (
           <Tabs defaultValue="store" className="gap-4">
             <TabsList>
-              {(Object.keys(TAB_LABELS) as SettingKey[]).map((k) => (
+              {(Object.keys(TAB_LABELS) as (keyof typeof TAB_LABELS)[]).map((k) => (
                 <TabsTrigger key={k} value={k}>
                   {TAB_LABELS[k]}
                 </TabsTrigger>

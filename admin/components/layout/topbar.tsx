@@ -8,6 +8,7 @@ import { USER_ROLE } from '@/lib/labels';
 import { fullName } from '@/lib/format';
 import { useLogout } from '@/lib/queries/auth';
 import type { AuthUser } from '@/lib/types';
+import { MaintenanceToggle } from './maintenance-toggle';
 
 type Props = { user: AuthUser | undefined; onOpenSearch: () => void; onOpenMenu: () => void };
 
@@ -30,6 +31,7 @@ export function Topbar({ user, onOpenSearch, onOpenMenu }: Props) {
         <kbd className="hidden rounded border bg-background px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </button>
       <div className="ml-auto flex items-center gap-1">
+        <MaintenanceToggle />
         <DropdownMenu>
           <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="gap-2 pl-1" aria-label="Kullanıcı menüsü" />}>
             <span className="flex size-6 items-center justify-center rounded-full bg-foreground text-[11px] font-semibold text-background">{initials}</span>
