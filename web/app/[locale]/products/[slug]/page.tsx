@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 export default async function ProductPage({ params }: { params: Params }) {
   const { locale, slug } = await params;
   setRequestLocale(locale);
-  const [p, settings, user] = await Promise.all([load(slug, locale), apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null), currentUser()]);
+  const [p, settings, user] = await Promise.all([load(slug, locale), apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null), currentUser()]);
   if (!p) notFound();
   const wishlist = user ? await apiGet<{ product: { id: string } }[]>('/me/wishlist', { auth: true, locale }).catch(() => []) : [];
   const t = await getTranslations('product');
@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: { params: Params }) {
     .map((x) => ({ slug: x.slug, name: x.colors[0].name, hex: x.colors[0].hex, hex2: x.colors[0].hex2 ?? null, current: x.slug === p.slug }));
 
   return (
-    <div>
+    <div data-pdp>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <BuyBox product={p} shipping={settings?.shipping ?? null} wishlisted={wishlist.some((w) => w.product.id === p.id)} siblings={siblings} tryon={Boolean(settings?.tryon?.enabled)} />
 

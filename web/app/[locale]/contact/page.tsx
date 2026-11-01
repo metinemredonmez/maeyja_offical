@@ -18,7 +18,7 @@ export default async function ContactPage({ params }: { params: Params }) {
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations('contact');
-  const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null);
+  const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null);
   return (
     <div className="md:grid md:min-h-[calc(100svh-69px)] md:grid-cols-2">
       <div className="relative aspect-[4/3] overflow-clip bg-stone md:aspect-auto">

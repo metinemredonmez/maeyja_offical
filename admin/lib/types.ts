@@ -494,6 +494,7 @@ export interface Settings {
   assistant: { enabled: boolean; welcome: Record<string, string>; instructions: string; handoffWhatsapp: string };
   tryon: { enabled: boolean };
   maintenance: { enabled: boolean; previewToken: string };
+  productPage: { ground: string; tile: string };
   tracking: {
     metaPixelId: string;
     metaCapiToken: string;

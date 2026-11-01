@@ -45,7 +45,7 @@ export class SettingsService {
 
   /** What the storefront and mobile app may see. */
   async getPublic() {
-    const [store, shipping, bankTransfer, checkout, assistant, tryon, tracking] = await Promise.all([
+    const [store, shipping, bankTransfer, checkout, assistant, tryon, tracking, productPage] = await Promise.all([
       this.get('store'),
       this.get('shipping'),
       this.get('bankTransfer'),
@@ -53,9 +53,13 @@ export class SettingsService {
       this.get('assistant'),
       this.get('tryon'),
       this.get('tracking'),
+      this.get('productPage'),
     ]);
+    // Only plain hex colours reach the page's style attribute.
+    const hex = (v: string, fallback: string) => (/^#[0-9a-f]{6}$/i.test(v) ? v : fallback);
     return {
       store,
+      productPage: { ground: hex(productPage.ground, '#f5f1ea'), tile: hex(productPage.tile, '#e9e3d8') },
       shipping: {
         flatRate: shipping.flatRate,
         freeShippingThreshold: shipping.freeShippingThreshold,

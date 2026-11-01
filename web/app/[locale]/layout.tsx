@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { LOCALES, routing } from '@/i18n/routing';
 import { apiGet, currentUser } from '@/lib/api.server';
@@ -36,7 +36,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'meta' });
-  const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null);
+  const settings = await apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null);
   const google = settings?.tracking?.googleSiteVerification?.trim();
   return {
     metadataBase: new URL(SITE),
@@ -56,7 +56,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
 
   const nonce = (await headers()).get('x-nonce') ?? undefined;
   const [settings, user, products, stockists] = await Promise.all([
-    apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null),
+    // Short revalidate: colour and announcement changes in the admin show within a minute.
+    apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null),
     currentUser(),
     // The Bags and Stores menus.
     apiGet<ProductList>('/catalog/products?limit=24', { locale, revalidate: 300 }).catch(() => null),
@@ -65,7 +66,12 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const models = (products?.items ?? []).map(({ slug, name, number }) => ({ slug, name, number }));
 
   return (
-    <html lang={locale} className={cn(cormorant.variable, inter.variable, tenor.variable)}>
+    <html
+      lang={locale}
+      className={cn(cormorant.variable, inter.variable, tenor.variable)}
+      // Product page colours from the admin (globals.css applies them while a product page is shown).
+      style={settings?.productPage ? ({ '--pdp-ground': settings.productPage.ground, '--pdp-tile': settings.productPage.tile } as CSSProperties) : undefined}
+    >
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider>
           <Providers nonce={nonce}>

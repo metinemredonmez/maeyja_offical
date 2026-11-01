@@ -193,6 +193,8 @@ export interface PublicSettings {
   checkout: { guestCheckout: boolean; maxQtyPerItem: number };
   assistant?: { enabled: boolean; welcome: Record<string, string> };
   tryon?: { enabled: boolean };
+  /** Product page colours (admin → Ayarlar → Ürün sayfası rengi). */
+  productPage?: { ground: string; tile: string };
   tracking?: { metaPixelId: string; ga4Id: string; googleAdsId: string; googleAdsPurchaseLabel: string; googleSiteVerification: string; allowAiCrawlers: boolean };
   bankTransfer: { enabled: boolean; bankName?: string; accountName?: string; iban?: string; note?: Record<string, string> };
 }

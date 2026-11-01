@@ -42,6 +42,14 @@ export const SETTING_DEFAULTS = {
   tryon: {
     enabled: false,
   },
+  /**
+   * Colours of the product pages only: the page ground and the tile behind the bag photos (BOYY: white page,
+   * #F2F2F2 tiles — the photos' own studio grey). The defaults are the site's cream.
+   */
+  productPage: {
+    ground: '#f5f1ea',
+    tile: '#e9e3d8',
+  },
   /** Maintenance: the storefront answers every page with a "back soon" page (503), except for the staff preview link. */
   maintenance: {
     enabled: false,

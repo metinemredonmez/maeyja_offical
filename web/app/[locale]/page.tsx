@@ -14,7 +14,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   setRequestLocale(locale);
   const [sections, settings, posts] = await Promise.all([
     apiGet<HomeSection[]>('/content/home', { locale, revalidate: 60 }).catch(() => []),
-    apiGet<PublicSettings>('/settings/public', { revalidate: 300 }).catch(() => null),
+    apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null),
     apiGet<InstagramPost[]>('/content/instagram', { revalidate: 600 }).catch(() => []),
   ]);
   return (

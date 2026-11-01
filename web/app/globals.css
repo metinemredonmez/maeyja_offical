@@ -358,3 +358,13 @@ html:lang(zh) {
 .ph {
   background: var(--color-sand);
 }
+
+/* Product pages take their colours from the admin (Ayarlar → Ürün sayfası rengi): the page ground, header and footer
+   included, and the tile behind the photos. Other pages keep the site's cream. */
+html:has([data-pdp]) {
+  --color-ground: var(--pdp-ground, #f5f1ea);
+  --color-stone: var(--pdp-tile, #e9e3d8);
+}
+html:has([data-pdp]) body {
+  background: var(--color-ground);
+}

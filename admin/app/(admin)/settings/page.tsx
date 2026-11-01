@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
 /** Maintenance has no tab: it is the one-click button in the top bar. */
-const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance'>, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', tracking: 'İzleme ve görünürlük' };
+const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance'>, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', productPage: 'Ürün sayfası rengi', tracking: 'İzleme ve görünürlük' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -228,6 +228,61 @@ function TryOnTab({ value }: { value: Settings['tryon'] }) {
   );
 }
 
+const PRODUCT_PAGE_PRESETS: { label: string; ground: string; tile: string }[] = [
+  { label: 'Krem (şimdiki)', ground: '#f5f1ea', tile: '#e9e3d8' },
+  { label: 'Beyaz – BOYY gibi', ground: '#ffffff', tile: '#f2f2f2' },
+];
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Page ground and photo tile of the product pages; the rest of the site keeps its cream. */
+function ProductPageTab({ value }: { value: Settings['productPage'] }) {
+  const d = useDraft('productPage', value);
+  const set = (k: 'ground' | 'tile', v: string) => d.setDraft({ ...d.draft, [k]: v });
+  const valid = HEX.test(d.draft.ground) && HEX.test(d.draft.tile);
+  const color = (k: 'ground' | 'tile', label: string, hint: string) => (
+    <Field label={label} hint={hint} htmlFor={`pp-${k}`}>
+      <div className="flex items-center gap-2">
+        <input type="color" aria-label={label} value={HEX.test(d.draft[k]) ? d.draft[k] : '#000000'} onChange={(e) => set(k, e.target.value)} className="h-9 w-12 cursor-pointer rounded-md border bg-transparent p-1" />
+        <Input id={`pp-${k}`} value={d.draft[k]} onChange={(e) => set(k, e.target.value.trim())} maxLength={7} className="w-32 font-mono" aria-invalid={!HEX.test(d.draft[k])} />
+      </div>
+    </Field>
+  );
+  return (
+    <Section
+      title="Ürün sayfası rengi"
+      description="Yalnızca ürün sayfalarında geçerlidir; ana sayfa ve diğer sayfalar krem kalır. Çanta fotoğraflarının kendi zemini #F2F2F2 açık gridir: sayfa beyaz olunca BOYY'deki gibi beyaz üstünde gri kutular olarak görünür. Kaydedince sitede en geç bir dakikada değişir."
+    >
+      <div className="flex flex-wrap gap-2">
+        {PRODUCT_PAGE_PRESETS.map((p) => (
+          <Button key={p.label} type="button" size="sm" variant={d.draft.ground === p.ground && d.draft.tile === p.tile ? 'default' : 'outline'} onClick={() => d.setDraft({ ground: p.ground, tile: p.tile })}>
+            <span className="size-3.5 rounded-sm border" style={{ background: p.ground }} />
+            <span className="size-3.5 rounded-sm border" style={{ background: p.tile }} />
+            {p.label}
+          </Button>
+        ))}
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {color('ground', 'Sayfa zemini', 'Ürün sayfasının arka planı, üst çubuk ve alt bilgi dahil.')}
+        {color('tile', 'Fotoğraf zemini', 'Fotoğrafın arkasındaki kutu; fotoğraf yüklenirken ve kenarlarda görünür.')}
+      </div>
+      <div className="rounded-lg border p-6" style={{ background: HEX.test(d.draft.ground) ? d.draft.ground : undefined }} aria-hidden="true">
+        <p className="mb-3 text-xs text-muted-foreground">Önizleme</p>
+        <div className="flex items-end gap-6">
+          <div className="flex aspect-[4/5] w-28 items-end justify-center pb-4" style={{ background: HEX.test(d.draft.tile) ? d.draft.tile : undefined }}>
+            <div className="h-14 w-16 rounded-sm bg-[#B3261E]" />
+          </div>
+          <div className="space-y-1 text-sm">
+            <p className="italic">Petal Box, Chili</p>
+            <p className="text-muted-foreground">20.000 TL</p>
+          </div>
+        </div>
+      </div>
+      {!valid && <p className="text-xs text-destructive">Renk kodu # ile başlayan 6 haneli olmalı, ör. #ffffff.</p>}
+      <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} blocked={!valid} />
+    </Section>
+  );
+}
+
 type TrackingKey = Exclude<keyof Settings['tracking'], 'allowAiCrawlers'>;
 
 /** What each ID looks like; a wrong paste (an e-mail, a whole HTML tag, the admin password) is caught before saving. */
@@ -380,6 +435,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="tryon">
               <TryOnTab key={JSON.stringify(s.tryon)} value={s.tryon} />
+            </TabsContent>
+            <TabsContent value="productPage">
+              <ProductPageTab key={JSON.stringify(s.productPage)} value={s.productPage} />
             </TabsContent>
             <TabsContent value="tracking">
               <TrackingTab key={JSON.stringify(s.tracking)} value={s.tracking} />
