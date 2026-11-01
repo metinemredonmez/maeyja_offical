@@ -341,6 +341,28 @@ async function main() {
     ]);
     console.log(`✓ ${product.name}: kampanya fotoğrafı ikinci sırada`);
   }
+  // The renamed bags keep the first catalogue's photos after Canan's: the campaign photo, then the terracotta set.
+  // Its white cut-out is one of Canan's shots, so it is not repeated. Added once, while none of them is there.
+  for (const p of PRODUCTS) {
+    const { slug, color: oldColor } = p.replaces;
+    const product = await prisma.product.findUnique({ where: { slug: p.slug }, include: { images: true } });
+    if (!product || product.images.some((i) => i.url.includes(`/catalog/${slug}/`) || i.url.includes(`/catalog/_lifestyle/${slug}-`))) continue;
+    const files = [
+      ...lifestyle.filter((f) => f === `${slug}-${oldColor}.webp`).map((f) => ['_lifestyle', f]),
+      ...(await readdir(join(ASSETS, slug)).catch(() => [] as string[])).filter((f) => f.endsWith(`-${oldColor}.webp`) && !f.startsWith('10-')).sort().map((f) => [slug, f]),
+    ];
+    const color = colors[p.variants[0].color];
+    const alt = `${p.name}, ${color.name}`;
+    const start = Math.max(-1, ...product.images.map((i) => i.sortOrder)) + 1;
+    const added: Prisma.ProductImageCreateManyInput[] = [];
+    for (const [n, [folder, file]] of files.entries()) {
+      const img = await importImage(folder, file, alt);
+      added.push({ productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: start + n, colorId: color.id });
+    }
+    if (!added.length) continue;
+    await prisma.productImage.createMany({ data: added });
+    console.log(`✓ ${alt}: önceki fotoğraflar geri eklendi (${added.length})`);
+  }
 
   // Kasım 2026 homepage (Canan, after BOYY), once: her two photos side by side, then the eight bags on grey.
   // The earlier sections are only switched off, so they can be turned back on in the admin.
