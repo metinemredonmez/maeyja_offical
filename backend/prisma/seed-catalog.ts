@@ -297,6 +297,30 @@ async function main() {
     await prisma.homeSection.update({ where: { id: firstWall.id }, data: { imageUrl: wall.url } });
     console.log('✓ ana sayfa: vitrin fotoğrafı yenilendi');
   }
+  // The second shelf wall had two bags that weren't the real ones (a tall-handled Bucket 20, a cream-and-navy
+  // Black/Moon); the third has the real bags cut out of their product photos. Only the seeded picture is replaced.
+  const secondWall = await prisma.homeSection.findFirst({ where: { layout: 'boutique', imageUrl: { contains: '/catalog/_home/18-boutique-wall' } } });
+  if (secondWall) {
+    const wall = await importImage('_home', '19-boutique-wall.webp', 'MAEYJA');
+    await prisma.homeSection.update({ where: { id: secondWall.id }, data: { imageUrl: wall.url } });
+    console.log('✓ ana sayfa: vitrinde gerçek Bucket 20 ve Black/Moon');
+  }
+  // The green banner showed a bag on a long strap at the hip; the real Petal Bucket 20 is worn on the shoulder by
+  // its short handle. The old copy named the "Drape" and linked to a page that no longer exists — while it is still
+  // the seeded copy, it names and links the Bucket 20 (the other languages follow the Turkish by themselves).
+  const strapBanner = await prisma.homeSection.findFirst({ where: { layout: 'full', imageUrl: { contains: '/catalog/_home/12-campaign-drape-close' } } });
+  if (strapBanner) {
+    const banner = await importImage('_home', '13-campaign-bucket20.webp', 'Petal Bucket 20, Botanic');
+    await prisma.homeSection.update({
+      where: { id: strapBanner.id },
+      data: {
+        imageUrl: banner.url,
+        ...(strapBanner.title === 'Drape, şişe yeşili' ? { title: 'Petal Bucket 20, Botanic' } : {}),
+        ...(strapBanner.ctaUrl === '/products/drape' ? { ctaUrl: '/products/petal-bucket-20-botanic' } : {}),
+      },
+    });
+    console.log('✓ banner: gerçek Bucket 20, kısa sapı omuzda');
+  }
   // The first studio portraits gave the Origami a long strap, then wore it on the shoulder; now she carries it by
   // its short handles on her forearm. Earlier seeded versions (13, 19) are swapped wherever they are still used.
   const oldStudio = ['/catalog/_home/13-campaign-studio', '/catalog/_home/19-campaign-studio'];
