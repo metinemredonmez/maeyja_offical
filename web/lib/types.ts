@@ -22,6 +22,8 @@ export interface ProductCard {
   number?: number | null;
   name: string;
   subtitle: string | null;
+  /** For AI assistants: llms.txt and structured data. */
+  aiSummary?: string | null;
   price: number;
   compareAtPrice: number | null;
   hasPriceRange: boolean;
@@ -50,6 +52,7 @@ export interface Product {
   name: string;
   subtitle: string | null;
   description: string | null;
+  aiSummary?: string | null;
   story: string | null;
   material: string | null;
   care: string | null;
@@ -254,6 +257,7 @@ export interface Page {
   body: string;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary?: string | null;
   updatedAt: string;
 }
 
@@ -266,6 +270,7 @@ export interface JournalPost {
   publishedAt: string | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary?: string | null;
 }
 
 export interface Faq {

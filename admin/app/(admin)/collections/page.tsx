@@ -35,6 +35,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
       translations: (collection?.translations as Record<string, Record<string, string>>) ?? {},
       seoTitle: collection?.seoTitle ?? '',
       seoDescription: collection?.seoDescription ?? '',
+      aiSummary: collection?.aiSummary ?? '',
     },
   });
   const onSubmit = form.handleSubmit(async (raw) => {
@@ -52,6 +53,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
         translations: cleanTranslations(v.translations) ?? {},
         seoTitle: nul(v.seoTitle),
         seoDescription: nul(v.seoDescription),
+        aiSummary: nul(v.aiSummary),
       },
     });
     onOpenChange(false);

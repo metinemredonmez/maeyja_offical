@@ -59,6 +59,8 @@ export class CategoryDto {
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
+  /** For AI assistants: llms.txt and the page's structured data. */
+  @IsOptional() @IsString() @MaxLength(1200) aiSummary?: string | null;
 }
 export class UpdateCategoryDto extends PartialType(CategoryDto) {}
 
@@ -72,6 +74,8 @@ export class CollectionDto {
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
+  /** For AI assistants: llms.txt and the page's structured data. */
+  @IsOptional() @IsString() @MaxLength(1200) aiSummary?: string | null;
 }
 export class UpdateCollectionDto extends PartialType(CollectionDto) {}
 
@@ -138,6 +142,8 @@ export class ProductDto {
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
+  /** For AI assistants: llms.txt and the page's structured data. */
+  @IsOptional() @IsString() @MaxLength(1200) aiSummary?: string | null;
   @IsOptional() @IsArray() @IsString({ each: true }) collectionIds?: string[];
 
   @ApiPropertyOptional({ type: [VariantDto], description: 'Only on create' })

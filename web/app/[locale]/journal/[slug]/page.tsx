@@ -29,8 +29,20 @@ export default async function JournalPostPage({ params }: { params: Params }) {
   setRequestLocale(locale);
   const post = await load(slug, locale);
   if (!post) notFound();
+  // Structured data with the admin's note for AI assistants (falls back to the excerpt).
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    abstract: post.aiSummary ?? post.excerpt ?? undefined,
+    datePublished: post.publishedAt ?? undefined,
+    image: post.coverImageUrl ?? undefined,
+    author: { '@type': 'Organization', name: 'MAEYJA' },
+    inLanguage: locale,
+  };
   return (
     <article className="px-4 pt-12 md:px-12 md:pt-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <header className="mx-auto mb-12 flex max-w-3xl flex-col gap-5">
         <p className="label text-muted">{formatDate(post.publishedAt, locale)}</p>
         <h1 className="font-serif text-5xl font-light leading-none md:text-[64px]">{post.title}</h1>

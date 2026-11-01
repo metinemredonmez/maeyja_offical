@@ -44,6 +44,7 @@ export const translationsSchema = z.record(z.string(), z.record(z.string(), z.st
 export const seoSchema = {
   seoTitle: optionalText(160),
   seoDescription: optionalText(320),
+  aiSummary: optionalText(1200),
 };
 
 export const optionalUrl = z

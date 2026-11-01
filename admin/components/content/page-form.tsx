@@ -26,11 +26,12 @@ export function PageForm({ page, onSubmit, submitting, error }: { page?: Page; o
       translations: (page?.translations as Record<string, Record<string, string>>) ?? {},
       seoTitle: page?.seoTitle ?? '',
       seoDescription: page?.seoDescription ?? '',
+      aiSummary: page?.aiSummary ?? '',
     },
   });
   const submit = form.handleSubmit(async (raw) => {
     const v = pageSchema.parse(raw);
-    await onSubmit({ slug: v.slug, title: v.title, body: v.body, status: v.status, translations: cleanTranslations(v.translations) ?? {}, seoTitle: v.seoTitle ?? (page ? (null as unknown as undefined) : undefined), seoDescription: v.seoDescription ?? (page ? (null as unknown as undefined) : undefined) });
+    await onSubmit({ slug: v.slug, title: v.title, body: v.body, status: v.status, translations: cleanTranslations(v.translations) ?? {}, seoTitle: v.seoTitle ?? (page ? (null as unknown as undefined) : undefined), seoDescription: v.seoDescription ?? (page ? (null as unknown as undefined) : undefined), aiSummary: v.aiSummary ?? (page ? (null as unknown as undefined) : undefined) });
   });
   return (
     <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_300px]">

@@ -36,6 +36,7 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
       translations: (category?.translations as Record<string, Record<string, string>>) ?? {},
       seoTitle: category?.seoTitle ?? '',
       seoDescription: category?.seoDescription ?? '',
+      aiSummary: category?.aiSummary ?? '',
     },
   });
   const onSubmit = form.handleSubmit(async (raw) => {
@@ -53,6 +54,7 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
         translations: cleanTranslations(v.translations) ?? {},
         seoTitle: v.seoTitle ?? (category ? null : undefined),
         seoDescription: v.seoDescription ?? (category ? null : undefined),
+        aiSummary: v.aiSummary ?? (category ? null : undefined),
       },
     });
     onOpenChange(false);

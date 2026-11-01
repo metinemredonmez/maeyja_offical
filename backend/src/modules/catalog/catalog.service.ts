@@ -181,13 +181,15 @@ export class CatalogService {
   toCard(p: CardSource, lang: Locale, numbers?: Map<string, number>) {
     const prices = p.variants.map((v) => effectivePrice(v, p));
     const price = prices.length ? Math.min(...prices) : toNumber(p.basePrice);
-    const { name, subtitle } = localize({ name: p.name, subtitle: p.subtitle, translations: p.translations }, lang);
+    const { name, subtitle, aiSummary } = localize({ name: p.name, subtitle: p.subtitle, aiSummary: p.aiSummary, translations: p.translations }, lang);
     return {
       id: p.id,
       slug: p.slug,
       number: numbers?.get(p.id) ?? null,
       name,
       subtitle,
+      // For AI assistants (llms.txt); written in the admin next to the SEO fields.
+      aiSummary: aiSummary ?? null,
       price,
       compareAtPrice: p.compareAtPrice ? toNumber(p.compareAtPrice) : null,
       hasPriceRange: new Set(prices).size > 1,

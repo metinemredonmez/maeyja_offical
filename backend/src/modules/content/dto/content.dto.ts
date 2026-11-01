@@ -37,6 +37,8 @@ export class PageDto {
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
+  /** For AI assistants: llms.txt and the page's structured data. */
+  @IsOptional() @IsString() @MaxLength(1200) aiSummary?: string | null;
 }
 export class UpdatePageDto extends PartialType(PageDto) {}
 
@@ -51,6 +53,8 @@ export class JournalPostDto {
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
+  /** For AI assistants: llms.txt and the page's structured data. */
+  @IsOptional() @IsString() @MaxLength(1200) aiSummary?: string | null;
 }
 export class UpdateJournalPostDto extends PartialType(JournalPostDto) {}
 

@@ -31,7 +31,7 @@ export const useReorderHomeSections = () =>
   useApiMutation<HomeSection[], string[]>({ mutationFn: (ids) => api.put('/admin/home-sections/order', { ids }), invalidate: [contentKeys.home], success: 'Sıralama kaydedildi' });
 
 // ───────────── pages ─────────────
-export type PageInput = { slug: string; title: string; body: string; status?: ContentStatus; translations?: Record<string, Record<string, string>>; seoTitle?: string; seoDescription?: string };
+export type PageInput = { slug: string; title: string; body: string; status?: ContentStatus; translations?: Record<string, Record<string, string>>; seoTitle?: string; seoDescription?: string; aiSummary?: string };
 export const usePages = () => useQuery({ queryKey: contentKeys.pages, queryFn: () => api.get<Page[]>('/admin/pages') });
 export const usePage = (id: string | undefined) => useQuery({ queryKey: contentKeys.page(id ?? ''), queryFn: () => api.get<Page>(`/admin/pages/${id}`), enabled: Boolean(id) });
 export const useSavePage = () =>
@@ -54,6 +54,7 @@ export type JournalInput = {
   translations?: Record<string, Record<string, string>>;
   seoTitle?: string;
   seoDescription?: string;
+  aiSummary?: string;
 };
 export const useJournal = (params: JournalListParams) =>
   useQuery({ queryKey: contentKeys.journalList(params), queryFn: () => api.get<Paginated<JournalPost>>(`/admin/journal${qs(params)}`), placeholderData: keepPreviousData });

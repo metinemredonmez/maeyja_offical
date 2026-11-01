@@ -10,13 +10,13 @@ type Delegate = {
 
 /** What gets translated per table. Product names are model names and stay as they are. */
 export const TRANSLATABLE: { model: string; kind: string; fields: string[] }[] = [
-  { model: 'product', kind: 'product page', fields: ['subtitle', 'description', 'story', 'material', 'care', 'dimensions', 'madeIn', 'sizeGuide', 'seoTitle', 'seoDescription'] },
-  { model: 'category', kind: 'product category', fields: ['name', 'description', 'seoTitle', 'seoDescription'] },
-  { model: 'collection', kind: 'collection', fields: ['name', 'description', 'seoTitle', 'seoDescription'] },
+  { model: 'product', kind: 'product page', fields: ['subtitle', 'description', 'story', 'material', 'care', 'dimensions', 'madeIn', 'sizeGuide', 'seoTitle', 'seoDescription', 'aiSummary'] },
+  { model: 'category', kind: 'product category', fields: ['name', 'description', 'seoTitle', 'seoDescription', 'aiSummary'] },
+  { model: 'collection', kind: 'collection', fields: ['name', 'description', 'seoTitle', 'seoDescription', 'aiSummary'] },
   { model: 'color', kind: 'leather colour name', fields: ['name'] },
   { model: 'homeSection', kind: 'homepage section', fields: ['title', 'subtitle', 'body', 'ctaLabel'] },
-  { model: 'page', kind: 'store page', fields: ['title', 'body', 'seoTitle', 'seoDescription'] },
-  { model: 'journalPost', kind: 'journal article', fields: ['title', 'excerpt', 'body', 'seoTitle', 'seoDescription'] },
+  { model: 'page', kind: 'store page', fields: ['title', 'body', 'seoTitle', 'seoDescription', 'aiSummary'] },
+  { model: 'journalPost', kind: 'journal article', fields: ['title', 'excerpt', 'body', 'seoTitle', 'seoDescription', 'aiSummary'] },
   { model: 'faq', kind: 'FAQ entry', fields: ['group', 'question', 'answer'] },
   { model: 'pressItem', kind: 'press quote (the publication name is not part of it)', fields: ['title', 'quote'] },
   { model: 'stockist', kind: 'stockist location: write city and district names the way readers of the language know them; keep shop, mall and street names as they are', fields: ['city', 'address'] },

@@ -57,6 +57,7 @@ function toDefaults(p?: Product): ProductFormValues {
     translations: (p?.translations as Record<string, Record<string, string>> | null) ?? {},
     seoTitle: p?.seoTitle ?? '',
     seoDescription: p?.seoDescription ?? '',
+    aiSummary: p?.aiSummary ?? '',
   };
 }
 
@@ -87,6 +88,7 @@ export function toProductPayload(v: ProductFormOutput, editing: boolean): Produc
     translations: cleanTranslations(v.translations) ?? {},
     seoTitle: text(v.seoTitle) as string | undefined,
     seoDescription: text(v.seoDescription) as string | undefined,
+    aiSummary: text(v.aiSummary) as string | undefined,
   };
 }
 

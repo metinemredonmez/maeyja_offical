@@ -91,6 +91,7 @@ export interface Category {
   translations: Translations | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary: string | null;
   _count?: { products: number };
 }
 
@@ -105,6 +106,7 @@ export interface Collection {
   translations: Translations | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary: string | null;
   _count?: { products: number };
 }
 
@@ -188,6 +190,7 @@ export interface Product {
   translations: Translations | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -390,6 +393,7 @@ export interface Page {
   translations: Translations | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary: string | null;
   updatedAt: string;
 }
 
@@ -405,6 +409,7 @@ export interface JournalPost {
   translations: Translations | null;
   seoTitle: string | null;
   seoDescription: string | null;
+  aiSummary: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -45,6 +45,8 @@ export default async function ProductPage({ params }: { params: Params }) {
     description: p.description ? p.description.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : undefined,
     sku: p.variants[0]?.sku,
     image: p.images.map((i) => i.url),
+    // The admin's note for AI assistants.
+    disambiguatingDescription: p.aiSummary ?? undefined,
     brand: { '@type': 'Brand', name: 'MAEYJA' },
     material: p.material ?? undefined,
     offers: p.variants.map((v) => ({

@@ -28,8 +28,11 @@ export default async function CmsPage({ params }: { params: Params }) {
   setRequestLocale(locale);
   const page = await load(slug, locale);
   if (!page) notFound();
+  // Structured data with the admin's note for AI assistants (falls back to the SEO description).
+  const jsonLd = { '@context': 'https://schema.org', '@type': 'WebPage', name: page.title, description: page.seoDescription ?? undefined, abstract: page.aiSummary ?? page.seoDescription ?? undefined, inLanguage: locale };
   return (
     <article className="mx-auto max-w-3xl px-4 pt-12 md:pt-20">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
       <h1 className="mb-10 font-serif text-5xl font-light leading-none md:text-[56px]">{page.title}</h1>
       <div className="prose-cms" dangerouslySetInnerHTML={{ __html: cleanHtml(page.body, locale) }} />
     </article>

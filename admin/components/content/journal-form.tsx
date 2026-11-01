@@ -31,6 +31,7 @@ export function JournalForm({ post, onSubmit, submitting, error }: { post?: Jour
       translations: (post?.translations as Record<string, Record<string, string>>) ?? {},
       seoTitle: post?.seoTitle ?? '',
       seoDescription: post?.seoDescription ?? '',
+      aiSummary: post?.aiSummary ?? '',
     },
   });
   const title = form.watch('title');
@@ -53,6 +54,7 @@ export function JournalForm({ post, onSubmit, submitting, error }: { post?: Jour
       translations: cleanTranslations(v.translations) ?? {},
       seoTitle: nul(v.seoTitle) as string | undefined,
       seoDescription: nul(v.seoDescription) as string | undefined,
+      aiSummary: nul(v.aiSummary) as string | undefined,
     });
   });
 

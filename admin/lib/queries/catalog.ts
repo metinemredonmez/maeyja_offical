@@ -68,6 +68,7 @@ export type ProductInput = {
   translations?: Record<string, Record<string, string>>;
   seoTitle?: string;
   seoDescription?: string;
+  aiSummary?: string;
   collectionIds?: string[];
   variants?: VariantInput[];
   images?: ImageInput[];
