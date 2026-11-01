@@ -370,6 +370,27 @@ async function main() {
     await prisma.productImage.createMany({ data: added });
     console.log(`✓ ${alt}: önceki fotoğraflar geri eklendi (${added.length})`);
   }
+  // Canan's shots on travertine in late sun instead of the white studio: the same pictures in the same order, her
+  // bags untouched, only the background. Swapped once per bag while the white set is still there.
+  for (const p of PRODUCTS) {
+    const product = await prisma.product.findUnique({ where: { slug: p.slug }, include: { images: { orderBy: { sortOrder: 'asc' } } } });
+    const white = product?.images.filter((i) => new RegExp(`/catalog/${p.slug}/2\\d-`).test(i.url)) ?? [];
+    if (!product || !white.length) continue;
+    const color = colors[p.variants[0].color];
+    const alt = `${p.name}, ${color.name}`;
+    const fresh: Prisma.ProductImageCreateManyInput[] = [];
+    for (const [n, file] of (await readdir(join(ASSETS, p.slug))).filter((f) => /^3\d-.*\.webp$/.test(f)).sort().entries()) {
+      const img = await importImage(p.slug, file, alt);
+      fresh.push({ productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: n, colorId: color.id });
+    }
+    const rest = product.images.filter((i) => !white.includes(i));
+    await prisma.$transaction([
+      prisma.productImage.deleteMany({ where: { id: { in: white.map((i) => i.id) } } }),
+      prisma.productImage.createMany({ data: fresh }),
+      ...rest.map((k, n) => prisma.productImage.update({ where: { id: k.id }, data: { sortOrder: fresh.length + n } })),
+    ]);
+    console.log(`✓ ${alt}: ${fresh.length} fotoğraf travertin üstünde`);
+  }
 
   // Kasım 2026 (Canan), once: her two photos side by side right under the hero, and the collection grid shows the
   // eight bags in her order; the rest of the homepage stays as it was. The first version of this switched every
