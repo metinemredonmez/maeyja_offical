@@ -63,7 +63,7 @@ async function main() {
   const colors = Object.fromEntries((await prisma.color.findMany()).map((c) => [c.slug, c]));
   const bags = await prisma.category.findUnique({ where: { slug: 'bags' } });
   const signature = await prisma.collection.findUnique({ where: { slug: 'signature' } });
-  if (!bags || !signature || !colors.ivory) throw new Error('Önce `npm run db:seed` çalıştırın (renkler/kategori eksik)');
+  if (!bags || !signature || !colors.moon) throw new Error('Önce `npm run db:seed` çalıştırın (renkler/kategori eksik)');
 
   const common = split(PRODUCT_COMMON);
 

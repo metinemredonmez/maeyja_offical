@@ -109,7 +109,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
         ctaUrl: nul(HAS_CTA.includes(type) ? v.ctaUrl : undefined) as string | undefined,
         payload,
         isActive: v.isActive,
-        translations: cleanTranslations(v.translations) ?? {},
+        translations: cleanTranslations(v.translations, v) ?? {},
       } as Partial<HomeSection> & { type: HomeSectionType },
     });
     onClose();

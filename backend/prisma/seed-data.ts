@@ -27,17 +27,13 @@ const same = (text: string): L => Object.fromEntries(LANGS.map((lang) => [lang, 
 
 // ───────── Colours ─────────
 export const COLORS: { slug: string; hex: string; hex2?: string; name: L }[] = [
-  // Kasım 2026 colourways (Canan): brand names, the same in every language, as BOYY does.
+  // Kasım 2026 colourways (Canan): brand names, the same in every language, as BOYY does. Only these four (and
+  // Black/Moon, a bag in both); the first seed's Kırmızı, Beyaz, Yeşil, Çift Renk and Fildişi were dropped.
   { slug: 'chili', hex: '#B3261E', name: same('Chili') },
   { slug: 'botanic', hex: '#1F3B3A', name: same('Botanic') },
   { slug: 'moon', hex: '#ECE6DA', name: same('Moon') },
   { slug: 'black-moon', hex: '#141414', hex2: '#ECE6DA', name: same('Black/Moon') },
-  { slug: 'red', hex: '#A3121B', name: { tr: 'Kırmızı', en: 'Red', ru: 'Красный', nl: 'Rood', de: 'Rot', fr: 'Rouge', it: 'Rosso', es: 'Rojo', ko: '레드', ja: 'レッド', zh: '红色' } },
   { slug: 'black', hex: '#141414', name: { tr: 'Siyah', en: 'Black', ru: 'Чёрный', nl: 'Zwart', de: 'Schwarz', fr: 'Noir', it: 'Nero', es: 'Negro', ko: '블랙', ja: 'ブラック', zh: '黑色' } },
-  { slug: 'white', hex: '#F2EFEA', name: { tr: 'Beyaz', en: 'White', ru: 'Белый', nl: 'Wit', de: 'Weiß', fr: 'Blanc', it: 'Bianco', es: 'Blanco', ko: '화이트', ja: 'ホワイト', zh: '白色' } },
-  { slug: 'green', hex: '#1F3B3A', name: { tr: 'Yeşil', en: 'Green', ru: 'Зелёный', nl: 'Groen', de: 'Grün', fr: 'Vert', it: 'Verde', es: 'Verde', ko: '그린', ja: 'グリーン', zh: '绿色' } },
-  { slug: 'bicolor', hex: '#141414', hex2: '#E9E2D6', name: { tr: 'Çift Renk', en: 'Bicolour', ru: 'Двухцветный', nl: 'Tweekleurig', de: 'Zweifarbig', fr: 'Bicolore', it: 'Bicolore', es: 'Bicolor', ko: '바이컬러', ja: 'バイカラー', zh: '双色' } },
-  { slug: 'ivory', hex: '#E9E2D6', name: { tr: 'Fildişi', en: 'Ivory', ru: 'Слоновая кость', nl: 'Ivoor', de: 'Elfenbein', fr: 'Ivoire', it: 'Avorio', es: 'Marfil', ko: '아이보리', ja: 'アイボリー', zh: '象牙白' } },
 ];
 
 // ───────── Taxonomy ─────────

@@ -85,7 +85,7 @@ export function toProductPayload(v: ProductFormOutput, editing: boolean): Produc
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean),
-    translations: cleanTranslations(v.translations) ?? {},
+    translations: cleanTranslations(v.translations, v) ?? {},
     seoTitle: text(v.seoTitle) as string | undefined,
     seoDescription: text(v.seoDescription) as string | undefined,
     aiSummary: text(v.aiSummary) as string | undefined,

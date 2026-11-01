@@ -34,7 +34,7 @@ function FaqDialog({ item, groups, onClose }: { item: Faq | null; groups: string
   });
   const onSubmit = form.handleSubmit(async (raw) => {
     const v = faqSchema.parse(raw);
-    await save.mutateAsync({ id: item?.id, body: { group: v.group ?? (item ? null : undefined), question: v.question, answer: v.answer, sortOrder: v.sortOrder, isActive: v.isActive, translations: cleanTranslations(v.translations) ?? {} } });
+    await save.mutateAsync({ id: item?.id, body: { group: v.group ?? (item ? null : undefined), question: v.question, answer: v.answer, sortOrder: v.sortOrder, isActive: v.isActive, translations: cleanTranslations(v.translations, v) ?? {} } });
     onClose();
   }, onInvalid);
   return (

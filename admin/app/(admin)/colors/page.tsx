@@ -44,7 +44,7 @@ function ColorDialog({ open, onOpenChange, color }: { open: boolean; onOpenChang
   });
   const onSubmit = form.handleSubmit(async (raw) => {
     const v = colorSchema.parse(raw);
-    await save.mutateAsync({ id: color?.id, body: { name: v.name, slug: v.slug || undefined, hex: v.hex.toUpperCase(), hex2: v.hex2 ? v.hex2.toUpperCase() : null, sortOrder: v.sortOrder, translations: cleanTranslations(v.translations) ?? {} } });
+    await save.mutateAsync({ id: color?.id, body: { name: v.name, slug: v.slug || undefined, hex: v.hex.toUpperCase(), hex2: v.hex2 ? v.hex2.toUpperCase() : null, sortOrder: v.sortOrder, translations: cleanTranslations(v.translations, v) ?? {} } });
     onOpenChange(false);
   }, onInvalid);
   const hex = form.watch('hex');

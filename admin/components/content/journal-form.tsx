@@ -51,7 +51,7 @@ export function JournalForm({ post, onSubmit, submitting, error }: { post?: Jour
       coverImageUrl: nul(v.coverImageUrl) as string | undefined,
       status: v.status,
       publishedAt: v.publishedAt ? fromLocalInput(v.publishedAt) : v.status === 'PUBLISHED' && !post?.publishedAt ? new Date().toISOString() : editing ? null : undefined,
-      translations: cleanTranslations(v.translations) ?? {},
+      translations: cleanTranslations(v.translations, v) ?? {},
       seoTitle: nul(v.seoTitle) as string | undefined,
       seoDescription: nul(v.seoDescription) as string | undefined,
       aiSummary: nul(v.aiSummary) as string | undefined,

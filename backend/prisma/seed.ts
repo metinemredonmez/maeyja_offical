@@ -64,9 +64,17 @@ async function main() {
     const merged = fillTranslations(row.translations, translations);
     if (merged) await prisma.color.update({ where: { id: row.id }, data: { translations: json(merged) } });
   }
-  // First-seed swatches that don't match the real leather; only fixed if nobody edited them.
-  await prisma.color.updateMany({ where: { slug: 'bicolor', hex2: '#A3121B' }, data: { hex2: '#E9E2D6' } });
-  await prisma.color.updateMany({ where: { slug: 'green', hex: '#2F4A36' }, data: { hex: '#1F3B3A' } });
+  // Kasım 2026 (Canan): only the shop's colourways stay. The first seed's colours go, unless a bag on sale or one of
+  // its photos still uses one; variants of deleted products just lose the colour.
+  const live = { deletedAt: null, product: { deletedAt: null } };
+  const dropped = await prisma.color.findMany({
+    where: { slug: { in: ['red', 'white', 'green', 'bicolor', 'ivory'] }, variants: { none: live }, images: { none: { product: { deletedAt: null } } } },
+    select: { id: true, name: true },
+  });
+  if (dropped.length) {
+    await prisma.color.deleteMany({ where: { id: { in: dropped.map((c) => c.id) } } });
+    console.log(`✓ eski renkler silindi: ${dropped.map((c) => c.name).join(', ')}`);
+  }
 
   // ── Taxonomy
   for (const c of CATEGORIES) {

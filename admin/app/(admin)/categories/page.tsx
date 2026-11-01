@@ -79,7 +79,7 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
         parentId: v.parentId || null,
         sortOrder: v.sortOrder,
         isActive: v.isActive,
-        translations: cleanTranslations(v.translations) ?? {},
+        translations: cleanTranslations(v.translations, v) ?? {},
         seoTitle: v.seoTitle ?? (category ? null : undefined),
         seoDescription: v.seoDescription ?? (category ? null : undefined),
         aiSummary: v.aiSummary ?? (category ? null : undefined),

@@ -122,9 +122,11 @@ export function TranslationsTabs({ form, fields, className, extraBase, kind, onE
         </Field>
       );
     }
+    // A short field left empty shows its Turkish text (a product name is the same in every language).
+    const turkish = base ? '' : String(form.watch(f.name) ?? '').trim();
     return (
-      <Field key={name} label={f.label} required={base && f.required} error={error} hint={f.hint} htmlFor={id}>
-        <Input id={id} maxLength={f.maxLength} placeholder={placeholder} {...form.register(name)} />
+      <Field key={name} label={f.label} required={base && f.required} error={error} hint={!base && turkish ? (f.hint ?? 'Boşsa Türkçesi kullanılır') : f.hint} htmlFor={id}>
+        <Input id={id} maxLength={f.maxLength} placeholder={turkish || placeholder} {...form.register(name)} />
       </Field>
     );
   };

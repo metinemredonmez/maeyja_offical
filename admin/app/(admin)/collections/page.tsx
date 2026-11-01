@@ -50,7 +50,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
         coverImageUrl: nul(v.coverImageUrl),
         sortOrder: v.sortOrder,
         isActive: v.isActive,
-        translations: cleanTranslations(v.translations) ?? {},
+        translations: cleanTranslations(v.translations, v) ?? {},
         seoTitle: nul(v.seoTitle),
         seoDescription: nul(v.seoDescription),
         aiSummary: nul(v.aiSummary),

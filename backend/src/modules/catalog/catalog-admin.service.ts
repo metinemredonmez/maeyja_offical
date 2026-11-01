@@ -26,6 +26,8 @@ import {
 } from './dto/catalog.dto';
 
 const LOW_STOCK = 3;
+/** A variant still on sale: neither it nor its product is deleted. */
+const LIVE_VARIANT = { deletedAt: null, product: { deletedAt: null } } satisfies Prisma.ProductVariantWhereInput;
 const json = (v: unknown) => (v === undefined ? undefined : v === null ? Prisma.JsonNull : (v as Prisma.InputJsonValue));
 
 @Injectable()
@@ -328,8 +330,9 @@ export class CatalogAdminService {
     return { ok: true };
   }
 
+  /** Counts only variants still on sale: those of deleted products or deleted variants don't hold a colour. */
   listColors() {
-    return this.prisma.color.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], include: { _count: { select: { variants: true } } } });
+    return this.prisma.color.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], include: { _count: { select: { variants: { where: LIVE_VARIANT } } } } });
   }
 
   async createColor(dto: ColorDto) {
@@ -343,7 +346,7 @@ export class CatalogAdminService {
   }
 
   async deleteColor(id: string) {
-    const used = await this.prisma.productVariant.count({ where: { colorId: id, deletedAt: null } });
+    const used = await this.prisma.productVariant.count({ where: { colorId: id, ...LIVE_VARIANT } });
     if (used) throw new BadRequestException(`Bu renk ${used} varyantta kullanılıyor`);
     await this.prisma.color.delete({ where: { id } });
     return { ok: true };
