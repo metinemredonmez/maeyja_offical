@@ -364,7 +364,7 @@ async function main() {
     if (!files.length) continue;
     const color = colors[p.variants[0].color];
     const alt = `${p.name}, ${color.name}`;
-    const at = product.images.filter((i) => new RegExp(`/catalog/${p.slug}/2\\d-`).test(i.url)).length;
+    const at = product.images.filter((i) => new RegExp(`/catalog/${p.slug}/[12]\\d-`).test(i.url)).length;
     const added: Prisma.ProductImageCreateManyInput[] = [];
     for (const [n, file] of files.entries()) {
       const img = await importImage(p.slug, file, alt);
@@ -376,6 +376,18 @@ async function main() {
       prisma.productImage.createMany({ data: added }),
     ]);
     console.log(`✓ ${alt}: mankenli fotoğraf eklendi`);
+  }
+  // Canan's shots with a little more life (contrast, colour, crispness; the ground stays #F2F2F2): 21-chili becomes
+  // 11-chili in the same place, once.
+  for (const p of PRODUCTS) {
+    const product = await prisma.product.findUnique({ where: { slug: p.slug }, include: { images: true } });
+    for (const img of product?.images ?? []) {
+      const file = img.url.match(new RegExp(`/catalog/${p.slug}/2(\\d-.+?)-\\d+\\.webp$`))?.[1];
+      if (!file || !(await access(join(ASSETS, p.slug, `1${file}.webp`)).then(() => true, () => false))) continue;
+      const vivid = await importImage(p.slug, `1${file}.webp`, img.alt ?? p.name);
+      await prisma.productImage.update({ where: { id: img.id }, data: { url: vivid.url, width: vivid.width, height: vivid.height } });
+      console.log(`✓ ${p.name}: 2${file} → 1${file} (canlı)`);
+    }
   }
 
   // Kasım 2026 (Canan), once: her two photos side by side right under the hero, and the collection grid shows the

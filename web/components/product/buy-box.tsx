@@ -81,6 +81,7 @@ export function BuyBox({ product, shipping, wishlisted, siblings, tryon = false 
   ].filter(Boolean);
   const boxes = [
     { title: t('details'), body: details.join('\n') },
+    { title: t('warranty'), body: t('warrantyText') },
     { title: t('shippingReturns'), body: [t('perks.shipping', { days }), t('perks.returns'), t('perks.installments'), t('perks.gift')].join('\n') },
     { title: t('care'), body: product.care ?? '' },
   ].filter((b) => b.body);
