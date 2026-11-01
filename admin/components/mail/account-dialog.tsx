@@ -6,7 +6,7 @@ import { InfoIcon, MailIcon, ServerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { RichText } from '@/components/shared/rich-text';
 import { useSaveMailAccount } from '@/lib/queries/mail';
 import { mailAccountSchema, newMailAccountSchema, type MailAccountFormValues } from '@/lib/schemas/mail';
@@ -85,7 +85,7 @@ export function MailAccountDialog({ account, onClose }: { account: MailAccount |
       },
     });
     onClose();
-  });
+  }, onInvalid);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>

@@ -17,6 +17,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+import { NullIsUnset } from '../../../common/dto/null-is-unset';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
@@ -54,8 +55,8 @@ export class CategoryDto {
   @IsOptional() @IsString() @MaxLength(1000) description?: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @IsString() parentId?: string | null;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
@@ -69,8 +70,8 @@ export class CollectionDto {
   @IsOptional() @Matches(SLUG) slug?: string;
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
   @IsOptional() @IsString() coverImageUrl?: string;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
@@ -84,7 +85,7 @@ export class ColorDto {
   @IsOptional() @Matches(SLUG) slug?: string;
   @Matches(/^#[0-9A-Fa-f]{6}$/) hex: string;
   @IsOptional() @Matches(/^#[0-9A-Fa-f]{6}$/) hex2?: string | null;
-  @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
 }
 export class UpdateColorDto extends PartialType(ColorDto) {}
@@ -100,8 +101,8 @@ export class VariantDto {
   @IsInt() @Min(0) stock: number;
   @IsOptional() @IsString() @MaxLength(64) barcode?: string;
   @IsOptional() @IsInt() @Min(0) weightGrams?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
-  @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
 }
 export class UpdateVariantDto extends PartialType(VariantDto) {}
 
@@ -116,7 +117,7 @@ export class ImageDto {
   @IsOptional() @IsString() colorId?: string | null;
   @IsOptional() @IsInt() width?: number;
   @IsOptional() @IsInt() height?: number;
-  @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
 }
 export class UpdateImageDto extends PartialType(ImageDto) {}
 
@@ -131,13 +132,13 @@ export class ProductDto {
   @IsOptional() @IsString() @MaxLength(200) dimensions?: string;
   @IsOptional() @IsString() @MaxLength(60) madeIn?: string;
   @IsOptional() @IsString() sizeGuide?: string;
-  @IsOptional() @IsEnum(ProductStatus) status?: ProductStatus;
-  @IsOptional() @IsBoolean() isFeatured?: boolean;
+  @NullIsUnset() @IsOptional() @IsEnum(ProductStatus) status?: ProductStatus;
+  @NullIsUnset() @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) basePrice: number;
   @IsOptional() @IsNumber({ maxDecimalPlaces: 2 }) @Min(0) compareAtPrice?: number | null;
   @IsOptional() @IsInt() @Min(0) taxRate?: number | null;
   @IsOptional() @IsString() categoryId?: string | null;
-  @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
@@ -163,7 +164,7 @@ export class ProductDto {
 export class UpdateProductDto extends PartialType(ProductDto) {}
 
 export class AdminProductQueryDto extends PaginationQueryDto {
-  @IsOptional() @IsEnum(ProductStatus) status?: ProductStatus;
+  @NullIsUnset() @IsOptional() @IsEnum(ProductStatus) status?: ProductStatus;
   @IsOptional() @IsString() categoryId?: string;
   @IsOptional() @Transform(toBool) @IsBoolean() lowStock?: boolean;
 }

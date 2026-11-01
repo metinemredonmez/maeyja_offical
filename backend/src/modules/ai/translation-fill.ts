@@ -79,6 +79,34 @@ export async function fillMissingTranslations(
         return Boolean(meta && meta.outHash === hash(value) && meta.srcHash !== hash(base));
       };
 
+      // Turkish emptied in the admin: its machine translations go too (otherwise the old text lives on in the other
+      // languages). A translation written by hand without Turkish has no matching outHash and is kept.
+      const orphans = TARGET_LOCALES.flatMap((lang) =>
+        spec.fields
+          .filter((f) => {
+            const base = row[f];
+            const value = current[lang]?.[f];
+            const meta = metas.get(`${id}|${lang}|${f}`);
+            return (typeof base !== 'string' || !base.trim()) && Boolean(value?.trim()) && meta?.outHash === hash(value!);
+          })
+          .map((field) => ({ lang, field, value: current[lang]![field] })),
+      );
+      if (orphans.length) {
+        const fresh = await table.findUnique({ where: { id }, select: { translations: true } });
+        const merged = JSON.parse(JSON.stringify(fresh?.translations ?? {})) as Translations;
+        const gone = orphans.filter((o) => merged[o.lang]?.[o.field] === o.value);
+        for (const o of gone) {
+          delete merged[o.lang]![o.field];
+          if (!Object.keys(merged[o.lang]!).length) delete merged[o.lang];
+          delete current[o.lang]?.[o.field];
+        }
+        if (gone.length) {
+          await table.update({ where: { id }, data: { translations: merged } });
+          await prisma.translationMeta.deleteMany({ where: { model: spec.model, rowId: id, OR: gone.map((o) => ({ lang: o.lang, field: o.field })) } });
+          opts.log?.(`${key}: Türkçesi silinen ${gone.length} çeviri kaldırıldı`);
+        }
+      }
+
       const todo = new Map<string, string[]>();
       const inStep: { lang: string; field: string; srcHash: string; outHash: string }[] = [];
       for (const lang of TARGET_LOCALES) {

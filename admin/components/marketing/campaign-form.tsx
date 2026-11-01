@@ -4,7 +4,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AlertTriangleIcon, UsersIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { Section } from '@/components/shared/primitives';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { RichText } from '@/components/shared/rich-text';
@@ -73,7 +73,7 @@ export function CampaignForm({
       audience: v.audience,
       locale: v.locale || null,
     });
-  });
+  }, onInvalid);
 
   return (
     <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_320px]">

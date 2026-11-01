@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { DateTime, Money } from '@/components/shared/primitives';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -26,7 +26,7 @@ function UpdateDialog({ rr, onClose }: { rr: ReturnRequest; onClose: () => void 
     const v = returnUpdateSchema.parse(raw);
     await update.mutateAsync({ id: rr.id, status: v.status, adminNote: v.adminNote });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>

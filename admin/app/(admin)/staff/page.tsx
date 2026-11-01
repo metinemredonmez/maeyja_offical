@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { DateTime } from '@/components/shared/primitives';
 import { ErrorState } from '@/components/shared/query-state';
@@ -30,7 +30,7 @@ function CreateStaffDialog({ onClose }: { onClose: () => void }) {
   const onSubmit = form.handleSubmit(async (v) => {
     await create.mutateAsync(v);
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>

@@ -3,7 +3,7 @@
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { Section } from '@/components/shared/primitives';
 import { SeoFields } from '@/components/shared/seo-fields';
 import { TranslationsTabs } from '@/components/shared/translations-tabs';
@@ -32,7 +32,7 @@ export function PageForm({ page, onSubmit, submitting, error }: { page?: Page; o
   const submit = form.handleSubmit(async (raw) => {
     const v = pageSchema.parse(raw);
     await onSubmit({ slug: v.slug, title: v.title, body: v.body, status: v.status, translations: cleanTranslations(v.translations) ?? {}, seoTitle: v.seoTitle ?? (page ? (null as unknown as undefined) : undefined), seoDescription: v.seoDescription ?? (page ? (null as unknown as undefined) : undefined), aiSummary: v.aiSummary ?? (page ? (null as unknown as undefined) : undefined) });
-  });
+  }, onInvalid);
   return (
     <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_300px]">
       <div className="space-y-5">

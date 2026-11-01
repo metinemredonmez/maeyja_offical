@@ -39,7 +39,22 @@ export const requiredInt = z
   .transform((v) => Number(v))
   .refine((v) => Number.isInteger(v), 'Tam sayı olmalı');
 
-export const translationsSchema = z.record(z.string(), z.record(z.string(), z.string())).optional();
+/**
+ * A translation the form never touched is `undefined` (rich-text fields of a language with no text yet): that is
+ * "no translation", not an error — the old strict schema silently blocked every save of such a record.
+ */
+export const translationsSchema = z
+  .record(z.string(), z.record(z.string(), z.string().nullish()).nullish())
+  .optional()
+  .transform((t) => {
+    if (!t) return t;
+    const out: Record<string, Record<string, string>> = {};
+    for (const [lang, fields] of Object.entries(t)) {
+      if (!fields) continue;
+      out[lang] = Object.fromEntries(Object.entries(fields).filter((e): e is [string, string] => typeof e[1] === 'string'));
+    }
+    return out;
+  });
 
 export const seoSchema = {
   seoTitle: optionalText(160),

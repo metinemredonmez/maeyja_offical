@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { PageHeader } from '@/components/shared/page-header';
 import { DateTime, Thumb } from '@/components/shared/primitives';
@@ -44,7 +44,7 @@ function PressDialog({ item, onClose }: { item: PressItem | null; onClose: () =>
       body: { publication: v.publication, title: nul(v.title), quote: nul(v.quote), url: nul(v.url), logoUrl: nul(v.logoUrl), imageUrl: nul(v.imageUrl), publishedAt: v.publishedAt ? fromLocalInput(v.publishedAt) : item ? null : undefined, sortOrder: v.sortOrder, isActive: v.isActive },
     });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">

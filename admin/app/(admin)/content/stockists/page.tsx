@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useDeleteStockist, useSaveStockist, useStockists } from '@/lib/queries/content';
@@ -38,7 +38,7 @@ function StockistDialog({ item, onClose }: { item: Stockist | null; onClose: () 
     const nul = <T,>(x: T | undefined) => x ?? (item ? null : undefined);
     await save.mutateAsync({ id: item?.id, body: { name: v.name, city: v.city, country: v.country, address: nul(v.address), phone: nul(v.phone), url: nul(v.url), mapUrl: nul(v.mapUrl), sortOrder: v.sortOrder, isActive: v.isActive } });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">

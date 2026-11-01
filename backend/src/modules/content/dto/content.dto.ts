@@ -2,6 +2,7 @@ import { PartialType } from '@nestjs/swagger';
 import { ContentStatus, HomeSectionType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, IsString, Length, Matches, MaxLength } from 'class-validator';
+import { NullIsUnset } from '../../../common/dto/null-is-unset';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
 
@@ -23,8 +24,8 @@ export class HomeSectionDto {
   @IsOptional() @IsString() @MaxLength(60) ctaLabel?: string;
   @IsOptional() @IsString() @MaxLength(300) ctaUrl?: string;
   @IsOptional() @IsObject() payload?: Record<string, unknown>;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
 }
 export class UpdateHomeSectionDto extends PartialType(HomeSectionDto) {}
@@ -33,7 +34,7 @@ export class PageDto {
   @Matches(SLUG) slug: string;
   @IsString() @MaxLength(160) title: string;
   @IsString() @MaxLength(200000) body: string;
-  @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
+  @NullIsUnset() @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
   @IsOptional() @IsString() @MaxLength(320) seoDescription?: string;
@@ -48,7 +49,7 @@ export class JournalPostDto {
   @IsOptional() @IsString() @MaxLength(400) excerpt?: string;
   @IsString() @MaxLength(200000) body: string;
   @IsOptional() @IsString() coverImageUrl?: string;
-  @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
+  @NullIsUnset() @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
   @IsOptional() @Type(() => Date) @IsDate() publishedAt?: Date;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
   @IsOptional() @IsString() @MaxLength(160) seoTitle?: string;
@@ -66,21 +67,21 @@ export class PressItemDto {
   @IsOptional() @IsString() logoUrl?: string;
   @IsOptional() @IsString() imageUrl?: string;
   @IsOptional() @Type(() => Date) @IsDate() publishedAt?: Date;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
 }
 export class UpdatePressItemDto extends PartialType(PressItemDto) {}
 
 export class StockistDto {
   @IsString() @MaxLength(120) name: string;
   @IsString() @MaxLength(60) city: string;
-  @IsOptional() @IsString() @Length(2, 2) country?: string;
+  @NullIsUnset() @IsOptional() @IsString() @Length(2, 2) country?: string;
   @IsOptional() @IsString() @MaxLength(300) address?: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
   @IsOptional() @IsString() url?: string;
   @IsOptional() @IsString() mapUrl?: string;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
 }
 export class UpdateStockistDto extends PartialType(StockistDto) {}
 
@@ -88,8 +89,8 @@ export class FaqDto {
   @IsOptional() @IsString() @MaxLength(60) group?: string;
   @IsString() @MaxLength(300) question: string;
   @IsString() @MaxLength(5000) answer: string;
-  @IsOptional() @IsInt() sortOrder?: number;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsInt() sortOrder?: number;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsObject() translations?: Record<string, Record<string, string>>;
 }
 export class UpdateFaqDto extends PartialType(FaqDto) {}
@@ -111,5 +112,5 @@ export class ContactDto {
 }
 
 export class ContentListQueryDto extends PaginationQueryDto {
-  @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
+  @NullIsUnset() @IsOptional() @IsEnum(ContentStatus) status?: ContentStatus;
 }

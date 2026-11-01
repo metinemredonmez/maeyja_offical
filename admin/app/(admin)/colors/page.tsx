@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { ColorSwatch } from '@/components/shared/primitives';
 import { TranslationsTabs } from '@/components/shared/translations-tabs';
@@ -46,7 +46,7 @@ function ColorDialog({ open, onOpenChange, color }: { open: boolean; onOpenChang
     const v = colorSchema.parse(raw);
     await save.mutateAsync({ id: color?.id, body: { name: v.name, slug: v.slug || undefined, hex: v.hex.toUpperCase(), hex2: v.hex2 ? v.hex2.toUpperCase() : null, sortOrder: v.sortOrder, translations: cleanTranslations(v.translations) ?? {} } });
     onOpenChange(false);
-  });
+  }, onInvalid);
   const hex = form.watch('hex');
   const hex2 = form.watch('hex2');
   return (

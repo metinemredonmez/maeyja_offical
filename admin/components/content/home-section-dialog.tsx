@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { ProductPicker } from '@/components/shared/pickers';
 import { TranslationsTabs } from '@/components/shared/translations-tabs';
@@ -108,7 +108,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
       } as Partial<HomeSection> & { type: HomeSectionType },
     });
     onClose();
-  });
+  }, onInvalid);
 
   const meta = HOME_SECTION_TYPE[type];
   return (

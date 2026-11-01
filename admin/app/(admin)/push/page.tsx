@@ -7,7 +7,7 @@ import { AlertTriangleIcon, SendIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { PageHeader } from '@/components/shared/page-header';
 import { UserPicker } from '@/components/shared/pickers';
@@ -28,7 +28,7 @@ function PushForm({ disabled }: { disabled: boolean }) {
     const v = pushSchema.parse(raw);
     await send.mutateAsync({ title: v.title, body: v.body, url: v.url, imageUrl: v.imageUrl, target: v.target, userIds: v.target === 'USERS' ? v.userIds : undefined });
     form.reset();
-  });
+  }, onInvalid);
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
       <FormError error={send.error} />

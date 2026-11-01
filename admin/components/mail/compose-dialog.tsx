@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { RichText } from '@/components/shared/rich-text';
 import { forwardQuote, prefixSubject, replyQuote, replyRecipients, signatureBlock, splitAddresses, stripSignatureMarkers, swapSignature } from '@/lib/mail';
 import { useSendMail } from '@/lib/queries/mail';
@@ -60,7 +60,7 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
       replyToId: original && (mode === 'reply' || mode === 'replyAll') ? original.id : undefined,
     });
     onClose();
-  });
+  }, onInvalid);
 
   return (
     <Dialog open onOpenChange={(o) => !o && close()}>

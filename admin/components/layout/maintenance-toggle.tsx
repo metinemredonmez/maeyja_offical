@@ -4,8 +4,8 @@ import { ConstructionIcon, ExternalLinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { useSaveSetting, useSettings } from '@/lib/queries/system';
+import { STORE_URL } from '@/lib/format';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maeyja.com').replace(/\/$/, '');
 
 /**
  * One button in the top bar that closes the shop for maintenance (a "back soon" page, in every language) and opens
@@ -33,7 +33,7 @@ export function MaintenanceToggle() {
   return (
     <>
       {m.enabled && m.previewToken ? (
-        <Button variant="ghost" size="sm" render={<a href={`${SITE_URL}/?preview=${m.previewToken}`} target="_blank" rel="noopener" />}>
+        <Button variant="ghost" size="sm" render={<a href={`${STORE_URL}/?preview=${m.previewToken}`} target="_blank" rel="noopener" />}>
           <ExternalLinkIcon /> <span className="hidden sm:inline">Önizle</span>
         </Button>
       ) : null}

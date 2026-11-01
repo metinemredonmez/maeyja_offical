@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
-import { Field, FormError, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { PageHeader } from '@/components/shared/page-header';
 import { Thumb } from '@/components/shared/primitives';
@@ -57,7 +57,7 @@ function CollectionDialog({ open, onOpenChange, collection }: { open: boolean; o
       },
     });
     onOpenChange(false);
-  });
+  }, onInvalid);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

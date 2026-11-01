@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-import { Field, FormError, SimpleSelect, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { DateTime, KeyValue, Money, Section, Thumb } from '@/components/shared/primitives';
 import { QueryState } from '@/components/shared/query-state';
@@ -51,7 +51,7 @@ function StatusDialog({ order, target, onClose }: { order: OrderDetail; target: 
     const v = statusChangeSchema.parse(raw);
     await update.mutateAsync({ status: v.status, note: v.note, restock: showRestock ? v.restock : undefined, refundOnProvider: showProvider ? v.refundOnProvider : undefined, notifyCustomer: showNotify ? v.notifyCustomer : undefined });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -102,7 +102,7 @@ function ShipDialog({ order, open, onClose }: { order: OrderDetail; open: boolea
     const v = shipSchema.parse(raw);
     await ship.mutateAsync({ carrier: v.carrier, trackingNumber: v.trackingNumber, trackingUrl: v.trackingUrl, notifyCustomer: v.notifyCustomer });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>

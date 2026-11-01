@@ -64,3 +64,6 @@ export function buildSku(productSlug: string, colorSlug?: string | null, size?: 
     .map((s) => slugify(s).toUpperCase())
     .join('-');
 }
+
+/** The storefront (maeyja.com): NEXT_PUBLIC_WEB_URL, else this admin's own address without "admin." (admin.maeyja.com → maeyja.com). */
+export const STORE_URL = (process.env.NEXT_PUBLIC_WEB_URL || (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maeyja.com').replace('://admin.', '://')).replace(/\/$/, '');

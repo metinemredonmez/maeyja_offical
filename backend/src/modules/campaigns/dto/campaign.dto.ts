@@ -2,6 +2,7 @@ import { PartialType } from '@nestjs/swagger';
 import { CampaignAudience } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUrl, Length, Matches, MaxLength, ValidateIf } from 'class-validator';
+import { NullIsUnset } from '../../../common/dto/null-is-unset';
 import { LOCALES } from '../../../common/utils/i18n.util';
 
 /** '' from a cleared form field means "not set". */
@@ -16,7 +17,7 @@ export class CampaignDto {
   @Transform(emptyToNull) @IsOptional() @IsString() @MaxLength(60) ctaLabel?: string | null;
   // Absolute https link or a storefront path such as /products/origami
   @Transform(emptyToNull) @IsOptional() @IsString() @MaxLength(500) @Matches(/^(https:\/\/|\/)/) ctaUrl?: string | null;
-  @IsOptional() @IsEnum(CampaignAudience) audience?: CampaignAudience;
+  @NullIsUnset() @IsOptional() @IsEnum(CampaignAudience) audience?: CampaignAudience;
   /** null → every language. */
   @Transform(emptyToNull) @IsOptional() @IsIn(LOCALES as readonly string[]) locale?: string | null;
 }
@@ -24,7 +25,7 @@ export class CampaignDto {
 export class UpdateCampaignDto extends PartialType(CampaignDto) {}
 
 export class AudienceQueryDto {
-  @IsOptional() @IsEnum(CampaignAudience) audience?: CampaignAudience;
+  @NullIsUnset() @IsOptional() @IsEnum(CampaignAudience) audience?: CampaignAudience;
   @Transform(emptyToNull) @IsOptional() @IsIn(LOCALES as readonly string[]) locale?: string | null;
 }
 

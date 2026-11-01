@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { QueryState } from '@/components/shared/query-state';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { useDeleteProduct, useDuplicateProduct, useProduct, useUpdateProduct } from '@/lib/queries/catalog';
+import { STORE_URL } from '@/lib/format';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -40,7 +41,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             actions={
               <>
                 {product.status === 'ACTIVE' && (
-                  <Button variant="outline" size="sm" render={<a href={`${process.env.NEXT_PUBLIC_WEB_URL ?? 'http://localhost:3001'}/products/${product.slug}`} target="_blank" rel="noreferrer" />}>
+                  <Button variant="outline" size="sm" render={<a href={`${STORE_URL}/products/${product.slug}`} target="_blank" rel="noreferrer" />}>
                     <ExternalLinkIcon /> Sitede gör
                   </Button>
                 )}

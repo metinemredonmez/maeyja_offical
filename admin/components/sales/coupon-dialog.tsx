@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { COUPON_TYPE } from '@/lib/labels';
 import { fromLocalInput, toLocalInput } from '@/lib/format';
 import { useSaveCoupon } from '@/lib/queries/orders';
@@ -50,7 +50,7 @@ export function CouponDialog({ coupon, onClose }: { coupon: Coupon | null; onClo
       },
     });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">

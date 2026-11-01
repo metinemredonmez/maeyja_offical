@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SimpleSelect, SubmitButton, onInvalid } from '@/components/shared/form';
 import { ImageUrlField } from '@/components/shared/media-picker';
 import { Section } from '@/components/shared/primitives';
 import { SeoFields } from '@/components/shared/seo-fields';
@@ -56,7 +56,7 @@ export function JournalForm({ post, onSubmit, submitting, error }: { post?: Jour
       seoDescription: nul(v.seoDescription) as string | undefined,
       aiSummary: nul(v.aiSummary) as string | undefined,
     });
-  });
+  }, onInvalid);
 
   return (
     <form onSubmit={submit} noValidate className="grid gap-5 lg:grid-cols-[1fr_300px]">

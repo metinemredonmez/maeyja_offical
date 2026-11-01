@@ -1,8 +1,9 @@
 'use client';
 
 import { useId } from 'react';
-import type { FieldError } from 'react-hook-form';
+import type { FieldError, FieldErrors } from 'react-hook-form';
 import { AlertCircleIcon, Loader2Icon } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,6 +41,30 @@ export function Field({
       {msg ? <p className="text-xs text-rose-700">{msg}</p> : hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
+}
+
+/** Every `path → message` in a react-hook-form error tree (nested objects and arrays). */
+function flattenErrors(errors: unknown, prefix = ''): { path: string; message: string }[] {
+  if (!errors || typeof errors !== 'object') return [];
+  const e = errors as Record<string, unknown>;
+  if (typeof e.message === 'string' && e.message) return [{ path: prefix, message: e.message }];
+  return Object.entries(e)
+    .filter(([k]) => k !== 'ref' && k !== 'type' && k !== 'types')
+    .flatMap(([k, v]) => flattenErrors(v, prefix ? `${prefix}.${k}` : k));
+}
+
+/**
+ * Second argument of `handleSubmit`: a form that fails validation must never look like a dead "Kaydet" button.
+ * Names the fields (translation tabs and closed panels too) in a toast and scrolls to the first visible one.
+ */
+export function onInvalid(errors: FieldErrors) {
+  const list = flattenErrors(errors);
+  console.error('Form doğrulanamadı', list);
+  const shown = list.slice(0, 4).map((x) => `${x.path.replace(/^translations\.(\w+)\./, '$1 · ')}: ${x.message}`);
+  toast.error('Kaydedilmedi — şu alanları düzeltin', { description: shown.join('\n') + (list.length > 4 ? `\n+${list.length - 4} alan daha` : ''), duration: 8000 });
+  const first = list.map((x) => document.getElementById(x.path.replace(/\./g, '-'))).find((el) => el && el.offsetParent);
+  first?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  first?.focus({ preventScroll: true });
 }
 
 /** Shows backend `message` (string or string[]) above the form. */

@@ -5,7 +5,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { Field, FormError, SimpleSelect, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, onInvalid, SimpleSelect, SubmitButton, SwitchField } from '@/components/shared/form';
 import { Section } from '@/components/shared/primitives';
 import { SeoFields } from '@/components/shared/seo-fields';
 import { TranslationsTabs } from '@/components/shared/translations-tabs';
@@ -127,7 +127,7 @@ export function ProductForm({ product, onSubmit, submitting, error }: Props) {
       body.images = images.map((img, i) => ({ ...omitKey(img), sortOrder: i }));
     }
     await onSubmit(body);
-  });
+  }, onInvalid);
 
   const statusOptions = (Object.keys(PRODUCT_STATUS) as ProductStatus[]).map((s) => ({ value: s, label: PRODUCT_STATUS[s].label }));
 

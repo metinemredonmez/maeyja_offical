@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Field, FormError, SubmitButton } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { KeyValue, Section } from '@/components/shared/primitives';
 import { QueryState } from '@/components/shared/query-state';
@@ -30,7 +30,7 @@ function PasswordCard() {
   const onSubmit = form.handleSubmit(async (v) => {
     await change.mutateAsync({ currentPassword: v.currentPassword, newPassword: v.newPassword });
     form.reset();
-  });
+  }, onInvalid);
   return (
     <Section title="Şifre değiştir" description="Değişiklik sonrası diğer cihazlardaki oturumlar kapatılır; bu oturum yenilenir.">
       <form id="password" onSubmit={onSubmit} className="grid max-w-md gap-4" noValidate>
@@ -120,7 +120,7 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
   const onSubmit = form.handleSubmit(async (v) => {
     const r = await enable.mutateAsync({ code: v.code });
     setCodes(r.backupCodes);
-  });
+  }, onInvalid);
   const copySecret = () => data && navigator.clipboard.writeText(data.secret).then(() => toast.success('Anahtar kopyalandı'));
 
   return (
@@ -185,7 +185,7 @@ function DisableDialog({ onClose }: { onClose: () => void }) {
     const v = mfaDisableSchema.parse(raw);
     await disable.mutateAsync(v);
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -222,7 +222,7 @@ function RegenerateDialog({ onClose }: { onClose: () => void }) {
   const onSubmit = form.handleSubmit(async (v) => {
     const r = await regen.mutateAsync({ code: v.code });
     setCodes(r.backupCodes);
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && !codes && onClose()}>
       <DialogContent className="sm:max-w-md" showCloseButton={!codes}>

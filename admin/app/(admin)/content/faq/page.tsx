@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
-import { Field, FormError, SubmitButton, SwitchField } from '@/components/shared/form';
+import { Field, FormError, SubmitButton, SwitchField, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
 import { EmptyState, QueryState } from '@/components/shared/query-state';
 import { StatusBadge } from '@/components/shared/status-badge';
@@ -36,7 +36,7 @@ function FaqDialog({ item, groups, onClose }: { item: Faq | null; groups: string
     const v = faqSchema.parse(raw);
     await save.mutateAsync({ id: item?.id, body: { group: v.group ?? (item ? null : undefined), question: v.question, answer: v.answer, sortOrder: v.sortOrder, isActive: v.isActive, translations: cleanTranslations(v.translations) ?? {} } });
     onClose();
-  });
+  }, onInvalid);
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">

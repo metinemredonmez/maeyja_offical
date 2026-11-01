@@ -2,6 +2,7 @@ import { PartialType } from '@nestjs/swagger';
 import { CouponType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsEnum, IsInt, IsNumber, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
+import { NullIsUnset } from '../../../common/dto/null-is-unset';
 
 export class CouponDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
@@ -16,7 +17,7 @@ export class CouponDto {
   @IsOptional() @IsInt() @Min(1) usageLimitPerUser?: number | null;
   @IsOptional() @Type(() => Date) @IsDate() startsAt?: Date | null;
   @IsOptional() @Type(() => Date) @IsDate() endsAt?: Date | null;
-  @IsOptional() @IsBoolean() isActive?: boolean;
+  @NullIsUnset() @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 export class UpdateCouponDto extends PartialType(CouponDto) {}
