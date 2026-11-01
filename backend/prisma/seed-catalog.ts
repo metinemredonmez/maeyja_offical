@@ -356,6 +356,27 @@ async function main() {
     const { count } = await prisma.productImage.deleteMany({ where: { productId: product.id, url: { contains: `/catalog/${p.replaces.slug}/` } } });
     if (count) console.log(`✓ ${p.name}: ${count} terrakota kaide fotoğrafı ürün sayfasından kaldırıldı`);
   }
+  // The bag on a model in the same grey studio (BOYY), right after Canan's shots. Added once per bag.
+  for (const p of PRODUCTS) {
+    const product = await prisma.product.findUnique({ where: { slug: p.slug }, include: { images: { orderBy: { sortOrder: 'asc' } } } });
+    if (!product || product.images.some((i) => i.url.includes(`/catalog/${p.slug}/40-`))) continue;
+    const files = (await readdir(join(ASSETS, p.slug))).filter((f) => /^40-.*\.webp$/.test(f)).sort();
+    if (!files.length) continue;
+    const color = colors[p.variants[0].color];
+    const alt = `${p.name}, ${color.name}`;
+    const at = product.images.filter((i) => new RegExp(`/catalog/${p.slug}/2\\d-`).test(i.url)).length;
+    const added: Prisma.ProductImageCreateManyInput[] = [];
+    for (const [n, file] of files.entries()) {
+      const img = await importImage(p.slug, file, alt);
+      added.push({ productId: product.id, url: img.url, width: img.width, height: img.height, alt, sortOrder: at + n, colorId: color.id });
+    }
+    await prisma.$transaction([
+      ...product.images.slice(at).map((k, n) => prisma.productImage.update({ where: { id: k.id }, data: { sortOrder: at + added.length + n } })),
+      ...product.images.slice(0, at).map((k, n) => prisma.productImage.update({ where: { id: k.id }, data: { sortOrder: n } })),
+      prisma.productImage.createMany({ data: added }),
+    ]);
+    console.log(`✓ ${alt}: mankenli fotoğraf eklendi`);
+  }
 
   // Kasım 2026 (Canan), once: her two photos side by side right under the hero, and the collection grid shows the
   // eight bags in her order; the rest of the homepage stays as it was. The first version of this switched every

@@ -193,8 +193,8 @@ export class CatalogService {
       hasPriceRange: new Set(prices).size > 1,
       isFeatured: p.isFeatured,
       publishedAt: p.publishedAt,
-      // First two images drive the hover swap on the listing grid.
-      images: p.images.slice(0, 2).map((i) => ({ url: i.url, alt: this.imageAlt(name, i.color, lang), width: i.width, height: i.height })),
+      // First two images drive the hover swap on the listing grid; the on-model shot stays on the product page.
+      images: p.images.filter((i) => !i.url.includes('-on-model')).slice(0, 2).map((i) => ({ url: i.url, alt: this.imageAlt(name, i.color, lang), width: i.width, height: i.height })),
       colors: this.uniqueColors(p.variants, lang),
       inStock: p.variants.some((v) => v.stock > 0),
     };
