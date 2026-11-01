@@ -371,20 +371,34 @@ async function main() {
     console.log(`✓ ${alt}: önceki fotoğraflar geri eklendi (${added.length})`);
   }
 
-  // Kasım 2026 homepage (Canan, after BOYY), once: her two photos side by side, then the eight bags on grey.
-  // The earlier sections are only switched off, so they can be turned back on in the admin.
-  if (!(await prisma.homeSection.count({ where: { imageUrl: { contains: '/catalog/_home/30-canan-dress' } } }))) {
+  // Kasım 2026 (Canan), once: her two photos side by side right under the hero, and the collection grid shows the
+  // eight bags in her order; the rest of the homepage stays as it was. The first version of this switched every
+  // other section off and gave the bags a grid of their own (its photos kept the 'diptych' layout): undone here.
+  const canan = await prisma.homeSection.findFirst({ where: { imageUrl: { contains: '/catalog/_home/30-canan-dress' } } });
+  if (!canan || canan.layout === 'diptych') {
     const dress = await importImage('_home', '30-canan-dress.webp', 'MAEYJA');
     const bag = await importImage('_home', '31-canan-bag.webp', 'MAEYJA');
     const ids = (await prisma.product.findMany({ where: { slug: { in: PRODUCTS.map((p) => p.slug) } }, select: { id: true, slug: true } }))
       .sort((a, b) => PRODUCTS.findIndex((p) => p.slug === a.slug) - PRODUCTS.findIndex((p) => p.slug === b.slug))
       .map((p) => p.id);
+    const ownGrid = canan
+      ? await prisma.homeSection.findFirst({ where: { type: HomeSectionType.FEATURED_PRODUCTS, createdAt: { gte: canan.createdAt } }, orderBy: { createdAt: 'asc' } })
+      : null;
+    const others = await prisma.homeSection.findMany({
+      where: { id: { notIn: [canan?.id, ownGrid?.id].filter((id): id is string => !!id) } },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+    const at = others.findIndex((s) => s.type === HomeSectionType.HERO) + 1;
+    const order = [...others.slice(0, at), null, ...others.slice(at)];
+    const collection = others.find((s) => s.type === HomeSectionType.FEATURED_PRODUCTS && s.layout !== 'strip');
+    const pair = { type: HomeSectionType.EDITORIAL, layout: 'pair', imageUrl: dress.url, secondImageUrl: bag.url, isActive: true, sortOrder: at, payload: { productIds: [] } };
     await prisma.$transaction([
-      prisma.homeSection.updateMany({ data: { isActive: false } }),
-      prisma.homeSection.create({ data: { type: HomeSectionType.EDITORIAL, layout: 'diptych', imageUrl: dress.url, secondImageUrl: bag.url, sortOrder: 0, payload: { productIds: [] } } }),
-      prisma.homeSection.create({ data: { type: HomeSectionType.FEATURED_PRODUCTS, layout: 'grid', sortOrder: 1, payload: { productIds: ids } } }),
+      ...order.flatMap((s, n) => (s ? [prisma.homeSection.update({ where: { id: s.id }, data: { sortOrder: n, ...(canan ? { isActive: true } : {}) } })] : [])),
+      canan ? prisma.homeSection.update({ where: { id: canan.id }, data: pair }) : prisma.homeSection.create({ data: pair }),
+      ...(collection ? [prisma.homeSection.update({ where: { id: collection.id }, data: { payload: { ...(collection.payload as object), productIds: ids } } })] : []),
+      ...(ownGrid && collection ? [prisma.homeSection.update({ where: { id: ownGrid.id }, data: { isActive: false, sortOrder: order.length } })] : []),
     ]);
-    console.log('✓ ana sayfa: Canan’ın iki fotoğrafı ve sekiz çanta (önceki bölümler pasif)');
+    console.log('✓ ana sayfa: Canan’ın iki fotoğrafı banner’ın altında, koleksiyon onun sırasıyla; diğer bölümler açık');
   }
 
   // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).

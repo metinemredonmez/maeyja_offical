@@ -23,6 +23,7 @@ const LAYOUTS: Partial<Record<HomeSectionType, { value: string; label: string }[
   EDITORIAL: [
     { value: 'split', label: 'Görsel + metin' },
     { value: 'diptych', label: 'Yan yana iki fotoğraf' },
+    { value: 'pair', label: 'İki fotoğraf, yazısız (ortada)' },
     { value: 'full', label: 'Tam genişlik banner / video' },
     { value: 'sideways', label: 'Yan yatık manken (tam genişlik)' },
     { value: 'boutique', label: 'Vitrin: geniş + dikey fotoğraf' },
@@ -70,7 +71,7 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
   });
   // The side-by-side layout captions both photos, so it takes two products; every other card takes one.
   const layout = form.watch('layout');
-  const cards = layout === 'diptych' ? 2 : 1;
+  const cards = layout === 'diptych' || layout === 'pair' ? 2 : 1;
 
   const onSubmit = form.handleSubmit(async (raw) => {
     const v = homeSectionSchema.parse(raw);

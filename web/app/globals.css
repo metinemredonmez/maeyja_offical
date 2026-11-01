@@ -1,25 +1,23 @@
 @import 'tailwindcss';
 
 @theme {
-  /* BOYY: white page, flat light-grey studio behind every bag, black type. */
-  --color-ground: #ffffff;
-  --color-stone: #f2f2f2;
-  --color-stone-dark: #e2e2e2;
-  --color-sand: #f2f2f2;
-  --color-line: #e3e3e3;
-  --color-ink: #111111;
-  --color-ink-soft: #333333;
-  --color-muted: #737373;
+  /* Warm cream ground (Liffner), stone tiles behind products. */
+  --color-ground: #f5f1ea;
+  --color-stone: #e9e3d8;
+  --color-stone-dark: #ddd5c8;
+  --color-sand: #ede7dd;
+  --color-line: #e2dbd0;
+  --color-ink: #1a1a1a;
+  --color-ink-soft: #3a3733;
+  --color-muted: #6b6762;
   --color-brand: #a3121b;
   --color-white: #ffffff;
 
-  /* One book serif for everything, as BOYY does; the wordmark keeps its own sans. */
-  --font-serif: var(--font-text), 'Source Serif 4', Georgia, var(--font-cjk, serif), serif;
-  --font-sans: var(--font-serif);
-  --font-label: var(--font-serif);
-  --font-logo: var(--font-logo-sans), Inter, system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), 'Cormorant Garamond', Georgia, var(--font-cjk, serif), serif;
+  --font-sans: var(--font-inter), Inter, var(--font-cjk, system-ui), system-ui, sans-serif;
+  --font-label: var(--font-tenor), 'Tenor Sans', var(--font-inter), var(--font-cjk, system-ui), sans-serif;
 
-  --tracking-label: 0.08em;
+  --tracking-label: 0.14em;
   --tracking-logo: 0.42em;
 }
 
@@ -54,29 +52,29 @@
     font-family: var(--font-label);
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.16em;
   }
-  /* BOYY headings: the same serif, regular weight, sentence case. */
+  /* Polène-style headings: big, thin, uppercase serif. */
   .display {
     font-family: var(--font-serif);
-    font-weight: 400;
-    letter-spacing: -0.005em;
-    line-height: 1.1;
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 0.95;
   }
   .btn,
   .btn-primary,
   .btn-outline {
     display: inline-flex;
-    min-height: 2.75rem;
+    min-height: 3rem;
     align-items: center;
     justify-content: center;
-    gap: 0.6rem;
-    padding-inline: 1.5rem;
-    border-radius: 3px;
+    gap: 0.75rem;
+    padding-inline: 2rem;
     font-family: var(--font-label);
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.18em;
     transition: color 150ms, background-color 150ms, border-color 150ms;
   }
   .btn:disabled,
@@ -90,7 +88,7 @@
     color: var(--color-ground);
   }
   .btn-primary:hover:not(:disabled) {
-    background: #333;
+    background: var(--color-brand);
   }
   .btn-outline {
     border: 1px solid var(--color-ink);
@@ -107,10 +105,11 @@
     font-family: var(--font-label);
     font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.18em;
   }
   .link-underline:hover {
-    opacity: 0.6;
+    border-color: var(--color-brand);
+    color: var(--color-brand);
   }
   .field {
     width: 100%;
@@ -312,6 +311,7 @@
   }
 }
 
+/* Header over the home hero: transparent with white type until the hero scrolls away or a menu opens. */
 /* System fonts for Japanese, Korean and Chinese (see the locale layout). */
 html:lang(ja) {
   --font-cjk: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', YuGothic, Meiryo, 'Noto Sans JP', sans-serif;
@@ -328,18 +328,30 @@ html:lang(zh) {
     color 300ms,
     border-color 300ms;
 }
+.site-header[data-home]:not([data-solid]):not(:has([aria-expanded='true'])) {
+  border-color: transparent;
+  background: transparent;
+  color: #fff;
+  backdrop-filter: none;
+}
 .wordmark {
-  font-family: var(--font-logo);
-  font-weight: 400;
+  display: inline-block;
+  transform-origin: 50% 0;
+  transform: translateY(calc(var(--y0, 0px) * (1 - var(--p, 1)))) scale(calc(1 + (var(--s, 1) - 1) * (1 - var(--p, 1))));
+  transition: opacity 700ms;
 }
-/* Home: the masthead under the bar carries the big wordmark (Canan's page 1); the bar's own one appears once it
-   has scrolled away. */
-.site-header[data-home]:not([data-solid]) .wordmark {
+/* A menu opened over the hero turns the bar cream; the giant wordmark tucks into its slot instead of hanging below it. */
+.site-header[data-home]:has([aria-expanded='true']) .wordmark {
+  transform: none;
+  transition: opacity 700ms, transform 250ms ease-out;
+}
+/* The focus ring would be scaled up with the giant wordmark into a thick black frame over the hero. */
+.site-header[data-home]:not([data-solid]) .wordmark:focus-visible {
+  outline: none;
+}
+/* Until the giant size is measured, keep it out of sight instead of flashing the small logo. */
+.site-header[data-home]:not([data-ready]) .wordmark {
   opacity: 0;
-  pointer-events: none;
-}
-.site-header .wordmark {
-  transition: opacity 300ms;
 }
 
 /* Image placeholder until product photography lands */
