@@ -48,7 +48,7 @@ export default async function proxy(request: NextRequest) {
   const gate = await maintenanceState(request.cookies.get(PREVIEW_COOKIE)?.value);
   if (gate.enabled && !gate.preview) {
     const locale = pathname.match(/^\/(tr|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/)?.[1] ?? 'en';
-    return new NextResponse(maintenancePage(locale), {
+    return new NextResponse(maintenancePage(locale, gate.contact), {
       status: 503,
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '1800' },
     });

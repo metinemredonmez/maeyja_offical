@@ -33,9 +33,14 @@ export class SettingsService {
 
   /** Whether the storefront is closed for maintenance, and whether a staff preview token lets this visitor in. */
   async maintenance(preview?: string) {
-    const { enabled, previewToken } = await this.get('maintenance');
+    const [{ enabled, previewToken }, store] = await Promise.all([this.get('maintenance'), this.get('store')]);
     const a = Buffer.from(preview ?? ''), b = Buffer.from(previewToken);
-    return { enabled, preview: enabled && b.length > 0 && a.length === b.length && timingSafeEqual(a, b) };
+    return {
+      enabled,
+      preview: enabled && b.length > 0 && a.length === b.length && timingSafeEqual(a, b),
+      // Shown on the maintenance page so customers can still reach the shop.
+      contact: { email: store.email, phone: store.phone, instagram: store.instagram },
+    };
   }
 
   /** What the storefront and mobile app may see. */
