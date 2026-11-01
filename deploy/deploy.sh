@@ -59,7 +59,9 @@ deploy_backend() {
 
 # Yeni sürüm, çalışan sürümün yanındaki boş klasöre (.next-a / .next-b) derlenir; site build boyunca açık kalır ve
 # yalnızca sondaki yeniden başlatmada 1-2 sn kesilir. Açılmazsa eski klasöre geri döner (eskisi ancak başarıdan sonra silinir).
-deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = port
+# $4 = açıldığını anlamak için istenen yol. Mağaza için /robots.txt: bakım modunda her sayfa bilerek 503 döner, bu
+# dosya ise bakım kapısından geçmez — yoksa bakımdayken her deploy "açılmadı" sanılıp geri alınır.
+deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = port, $4 = yol
   if [ ! -f "$ROOT/$1/package.json" ]; then echo "– $1 henüz yok, atlandı"; return; fi
   echo "▶ $1"
   cd "$ROOT/$1"
@@ -72,7 +74,7 @@ deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = po
   echo "$new" > .next-slot
   cd "$ROOT"
   pm2_restart "$2"
-  if ! wait_http "http://127.0.0.1:$3/"; then
+  if ! wait_http "http://127.0.0.1:$3${4:-/}"; then
     echo "✗ $1 45 sn içinde açılmadı (:$3) — önceki sürüme dönülüyor"
     pm2 logs "$2" --lines 50 --nostream
     echo "$old" > "$ROOT/$1/.next-slot"
@@ -86,9 +88,9 @@ deploy_next() {               # $1 = klasör (web|admin), $2 = pm2 adı, $3 = po
 for t in "${TARGETS[@]}"; do
   case "$t" in
     backend|api) deploy_backend ;;
-    web)         deploy_next web   maeyja-web   "$WEB_PORT" ;;
-    admin)       deploy_next admin maeyja-admin "$ADMIN_PORT" ;;
-    all)         deploy_backend; deploy_next web maeyja-web "$WEB_PORT"; deploy_next admin maeyja-admin "$ADMIN_PORT" ;;
+    web)         deploy_next web   maeyja-web   "$WEB_PORT" /robots.txt ;;
+    admin)       deploy_next admin maeyja-admin "$ADMIN_PORT" /login ;;
+    all)         deploy_backend; deploy_next web maeyja-web "$WEB_PORT" /robots.txt; deploy_next admin maeyja-admin "$ADMIN_PORT" /login ;;
     *)           echo "Bilinmeyen hedef: $t (backend|web|admin|all)"; exit 1 ;;
   esac
 done
