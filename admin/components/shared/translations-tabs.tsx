@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Controller, type FieldErrors, type UseFormReturn } from 'react-hook-form';
-import { Languages } from 'lucide-react';
+import { Languages, SparklesIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,15 +33,22 @@ type Props = {
   extraBase?: React.ReactNode;
   /** Tells the translator what it is translating ("ürün sayfası", "SSS"…). */
   kind?: string;
+  /** Category forms: "AI ile doldur" also brings sub-category and product ideas and a tip. */
+  onExtras?: (extras: DraftExtras) => void;
 };
+
+export type DraftExtras = { children?: { name: string; description: string }[]; products?: { name: string; subtitle: string; description: string }[]; tip?: string };
+/** Fields "AI ile doldur" may draft; facts (material, size guide, measurements…) are left to the shop. */
+const DRAFTABLE = ['subtitle', 'description', 'story', 'care', 'excerpt', 'body', 'answer', 'seoTitle', 'seoDescription', 'aiSummary'];
 
 /**
  * One tab per locale. The TR tab edits base fields; other tabs edit
  * `translations[lang][field]`. Empty translated fields fall back to Turkish.
  */
-export function TranslationsTabs({ form, fields, className, extraBase, kind }: Props) {
+export function TranslationsTabs({ form, fields, className, extraBase, kind, onExtras }: Props) {
   const [lang, setLang] = useState<Locale>(DEFAULT_LOCALE);
   const [translating, setTranslating] = useState(false);
+  const [drafting, setDrafting] = useState(false);
   const translations = form.watch('translations') as Record<string, Record<string, string>> | undefined;
   const errors = form.formState.errors as FieldErrors<Record<string, unknown>>;
 
@@ -122,14 +129,56 @@ export function TranslationsTabs({ form, fields, className, extraBase, kind }: P
     );
   };
 
+  /**
+   * "AI ile doldur": from what is written in Turkish (at least the name), Claude drafts the empty Turkish fields and
+   * the SEO texts, then every language is translated. Nothing is saved until the form is.
+   */
+  const aiFill = async () => {
+    const values = form.getValues() as Record<string, unknown>;
+    const text = (k: string) => (typeof values[k] === 'string' ? (values[k] as string) : '');
+    const first = fields[0];
+    if (!text(first.name).trim()) {
+      toast.error(`Önce “${first.label}” alanını yazın`);
+      return;
+    }
+    const known = new Set([...fields.map((f) => f.name), ...Object.keys(values)]);
+    const want = DRAFTABLE.filter((k) => known.has(k) && !text(k).replace(/<[^>]*>/g, '').trim());
+    if (!want.length && !onExtras) {
+      toast.success('Boş alan yok — doldurulacak bir şey kalmadı');
+      return;
+    }
+    // What is written, minus ids, addresses and the slug (no meaning for the writer).
+    const given = Object.fromEntries([...known].map((k) => [k, text(k)]).filter(([k, v]) => k !== 'slug' && !/(Id|Ids|Url)$/.test(k) && v.trim()));
+    const rich = fields.filter((f) => f.type === 'rich').map((f) => f.name);
+    setDrafting(true);
+    try {
+      const res = await api.post<{ fields: Record<string, string> } & DraftExtras>('/admin/ai/draft', { kind: kind ?? 'store content', given, want, rich, extras: Boolean(onExtras) });
+      for (const [k, v] of Object.entries(res.fields)) form.setValue(k, v, { shouldDirty: true });
+      onExtras?.(res);
+      toast.success(`${Object.keys(res.fields).length} alan dolduruldu — şimdi diğer dillere çevriliyor`);
+    } catch (e) {
+      toast.error(errorMessage(e));
+      return;
+    } finally {
+      setDrafting(false);
+    }
+    await autoTranslate();
+  };
+
   return (
     <Tabs value={lang} onValueChange={(v) => setLang(v as Locale)} className={cn('gap-4', className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-        <span>Türkçe metni yazıp kaydedin: diğer 10 dil bir iki dakika içinde kendiliğinden çevrilir, Türkçesi değişen alanlar da yeniden çevrilir. Elle düzelttiğiniz çeviriler korunur. Hemen görmek için:</span>
-        <Button type="button" size="sm" variant="outline" onClick={autoTranslate} disabled={translating}>
-          <Languages className="size-3.5" />
-          {translating ? 'Çevriliyor…' : 'Otomatik çevir'}
-        </Button>
+        <span>Adını yazıp “AI ile doldur”a basın: boş alanlar Türkçe dolar ve 10 dile çevrilir; bakıp kaydedin. Türkçeyi kendiniz yazarsanız da diğer diller kaydettikten bir iki dakika sonra kendiliğinden çevrilir.</span>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" onClick={aiFill} disabled={drafting || translating}>
+            <SparklesIcon className="size-3.5" />
+            {drafting ? 'Yazılıyor…' : 'AI ile doldur'}
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={autoTranslate} disabled={translating || drafting}>
+            <Languages className="size-3.5" />
+            {translating ? 'Çevriliyor…' : 'Otomatik çevir'}
+          </Button>
+        </div>
       </div>
       <TabsList variant="line" className="!h-auto w-full flex-wrap justify-start gap-x-0.5 gap-y-1 border-b pb-1">
         {LOCALES.map((l) => {

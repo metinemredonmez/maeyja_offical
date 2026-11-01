@@ -34,6 +34,8 @@ Legal and policy texts are translated faithfully and completely, without adding 
 Answer only with the JSON object requested: one entry per target language code, each holding every field key of the input with its translation.`;
 
 export type FieldMap = Record<string, string>;
+export type DraftInput = { kind: string; given: FieldMap; want: string[]; rich: string[]; extras: boolean };
+export type Draft = { fields: FieldMap; children?: { name: string; description: string }[]; products?: { name: string; subtitle: string; description: string }[]; tip?: string };
 export type TranslationMap = Partial<Record<Locale, FieldMap>>;
 
 /** Above this much text × languages, each language gets its own request so outputs stay small. */
@@ -64,6 +66,33 @@ export class Translator {
     };
     await Promise.all(Array.from({ length: Math.min(3, groups.length) }, worker));
     return out;
+  }
+
+  /** "AI ile doldur": a Turkish first draft of a record's empty fields from what is already written (nothing is saved). */
+  async draft(input: DraftInput): Promise<Draft> {
+    const str = { type: 'string' };
+    const item = (keys: string[]) => ({ type: 'object', properties: Object.fromEntries(keys.map((k) => [k, str])), required: keys, additionalProperties: false });
+    const properties: Record<string, unknown> = { fields: item(input.want) };
+    if (input.extras) {
+      properties.children = { type: 'array', items: item(['name', 'description']) };
+      properties.products = { type: 'array', items: item(['name', 'subtitle', 'description']) };
+      properties.tip = str;
+    }
+    const schema = { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
+    const response = await this.client.beta.messages.create({
+      model: MODEL,
+      max_tokens: 8000,
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
+      system: DRAFT_SYSTEM,
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema } },
+      messages: [{ role: 'user', content: JSON.stringify({ record_type: input.kind, already_written: input.given, draft_these_fields: input.want, rich_fields: input.rich, extras: input.extras }) }],
+    });
+    if (response.stop_reason === 'refusal') throw new Error(`İstek reddedildi (${response.stop_details?.category ?? 'bilinmiyor'})`);
+    if (response.stop_reason === 'max_tokens') throw new Error('Yanıt çok uzun, yarıda kesildi');
+    const parsed = JSON.parse(response.content.map((b) => (b.type === 'text' ? b.text : '')).join('')) as Draft;
+    const fields = Object.fromEntries(input.want.flatMap((k) => (typeof parsed.fields?.[k] === 'string' && parsed.fields[k].trim() ? [[k, parsed.fields[k].trim()]] : [])));
+    return { fields, children: parsed.children?.slice(0, 6), products: parsed.products?.slice(0, 6), tip: parsed.tip };
   }
 
   private async request(source: FieldMap, targets: Locale[], kind: string): Promise<TranslationMap> {
@@ -101,3 +130,21 @@ export class Translator {
     return out;
   }
 }
+
+const DRAFT_SYSTEM = `You write the Turkish copy of the online store of MAEYJA, a small label of handcrafted leather goods (designed in France, cut and stitched by hand in an Istanbul atelier; it may grow into new lines such as jewellery or clothing). The admin has started a record — at least its name — and asks you for a first draft of the empty fields, which they will review before saving.
+
+Voice: calm, precise, quietly luxurious — like Polène or The Row. Natural Turkish, short sentences, no exclamation marks, no marketing clichés, no emoji.
+
+Facts: use only what the admin gave and the brand facts above. Never invent measurements, prices, materials, stones or metals, stock, awards, press or stockists; where a fact is unknown, write around it.
+
+Fields:
+- fields listed as rich are HTML: one to three short <p> paragraphs (a page or journal body may use a few <h2> headings and more paragraphs); every other field is plain text;
+- subtitle: a few words; seoTitle: under 60 characters, may end with " | MAEYJA"; seoDescription: under 155 characters; aiSummary: two to four plain, factual sentences for AI assistants (what it is, for whom, how it is made, where to buy: maeyja.com);
+- a category or collection description: one or two sentences.
+
+For a category you may also be asked for:
+- children: up to six natural sub-categories (Turkish names, one-sentence descriptions), most common first;
+- products: up to six product ideas the brand could add to this category, in its own style (a short name, a few-word subtitle, a two-sentence description; no prices or measurements);
+- tip: two or three sentences of practical advice for the shop owner about this category (what customers look for, how to photograph or present it).
+
+Answer only with the JSON object requested.`;

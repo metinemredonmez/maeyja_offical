@@ -5,7 +5,7 @@ import type { Locale } from '../../common/utils/i18n.util';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { fillMissingTranslations } from './translation-fill';
-import { FieldMap, TARGET_LOCALES, Translator } from './translator';
+import { DraftInput, FieldMap, TARGET_LOCALES, Translator } from './translator';
 
 const RETRY_AFTER_MS = 24 * 60 * 60 * 1000;
 
@@ -31,6 +31,12 @@ export class AiService {
   async translate(fields: FieldMap, kind: string, targets?: Locale[]) {
     if (!this.translator) throw new ServiceUnavailableException('Otomatik çeviri için ANTHROPIC_API_KEY tanımlı değil');
     return this.translator.translate(fields, targets?.length ? targets : TARGET_LOCALES, kind);
+  }
+
+  /** "AI ile doldur": a Turkish draft of the empty fields (and, for a category, sub-category and product ideas). */
+  async draft(input: DraftInput) {
+    if (!this.translator) throw new ServiceUnavailableException('Yapay zekâ için ANTHROPIC_API_KEY tanımlı değil');
+    return this.translator.draft(input);
   }
 
   /**

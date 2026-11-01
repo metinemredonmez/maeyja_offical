@@ -3,8 +3,11 @@
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { LightbulbIcon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useConfirm } from '@/components/shared/confirm-dialog';
@@ -15,14 +18,39 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Thumb } from '@/components/shared/primitives';
 import { SeoFields } from '@/components/shared/seo-fields';
 import { StatusBadge } from '@/components/shared/status-badge';
-import { TranslationsTabs } from '@/components/shared/translations-tabs';
+import { TranslationsTabs, type DraftExtras } from '@/components/shared/translations-tabs';
+import { api, errorMessage } from '@/lib/api.client';
+import { slugify } from '@/lib/format';
 import { cleanTranslations } from '@/lib/i18n';
-import { useCategories, useDeleteCategory, useSaveCategory } from '@/lib/queries/catalog';
+import { catalogKeys, useCategories, useDeleteCategory, useSaveCategory } from '@/lib/queries/catalog';
 import { categorySchema, type CategoryFormValues } from '@/lib/schemas/catalog';
 import type { Category } from '@/lib/types';
 
+/** One AI idea with a tick box. */
+function Idea({ checked, onChange, title, text }: { checked: boolean; onChange: (v: boolean) => void; title: string; text: string }) {
+  return (
+    <label className="flex cursor-pointer gap-2 rounded-md px-1.5 py-1 hover:bg-muted">
+      <Checkbox checked={checked} onCheckedChange={(v) => onChange(Boolean(v))} className="mt-0.5" />
+      <span className="text-sm">
+        <span className="font-medium">{title}</span>
+        <span className="block text-xs text-muted-foreground">{text}</span>
+      </span>
+    </label>
+  );
+}
+
 function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; onOpenChange: (o: boolean) => void; category: Category | null; all: Category[] }) {
   const save = useSaveCategory();
+  const qc = useQueryClient();
+  const [ideas, setIdeas] = useState<DraftExtras | null>(null);
+  const [kids, setKids] = useState<Set<number>>(new Set());
+  const [items, setItems] = useState<Set<number>>(new Set());
+  const toggle = (set: Set<number>, i: number, on: boolean) => {
+    const next = new Set(set);
+    if (on) next.add(i);
+    else next.delete(i);
+    return next;
+  };
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
@@ -41,7 +69,7 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
   });
   const onSubmit = form.handleSubmit(async (raw) => {
     const v = categorySchema.parse(raw);
-    await save.mutateAsync({
+    const saved = await save.mutateAsync({
       id: category?.id,
       body: {
         name: v.name,
@@ -57,8 +85,37 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
         aiSummary: v.aiSummary ?? (category ? null : undefined),
       },
     });
+    // The ticked AI ideas: sub-categories under this one, and draft products in it (not on the shop until published).
+    const pickedKids = (ideas?.children ?? []).filter((_, i) => kids.has(i));
+    const pickedItems = (ideas?.products ?? []).filter((_, i) => items.has(i));
+    if (pickedKids.length || pickedItems.length) {
+      try {
+        for (const c of pickedKids) await api.post('/admin/categories', { name: c.name, description: c.description, parentId: saved.id, isActive: true, translations: {} });
+        for (const p of pickedItems) {
+          const sku = `MY-${slugify(p.name).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`.slice(0, 64);
+          await api.post('/admin/products', {
+            name: p.name,
+            subtitle: p.subtitle,
+            description: `<p>${p.description.replace(/</g, '&lt;')}</p>`,
+            status: 'DRAFT',
+            isFeatured: false,
+            basePrice: 0,
+            categoryId: saved.id,
+            collectionIds: [],
+            tags: [],
+            translations: {},
+            variants: [{ sku, stock: 0, isActive: true, sortOrder: 0 }],
+          });
+        }
+        toast.success(`${pickedKids.length} alt kategori ve ${pickedItems.length} taslak ürün eklendi — diğer diller birkaç dakikada kendiliğinden çevrilir`);
+      } catch (e) {
+        toast.error(`Önerilerin bir kısmı eklenemedi: ${errorMessage(e)}`);
+      }
+      await Promise.all([qc.invalidateQueries({ queryKey: catalogKeys.categories }), qc.invalidateQueries({ queryKey: catalogKeys.products })]);
+    }
     onOpenChange(false);
   }, onInvalid);
+  const topLevel = !form.watch('parentId');
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
@@ -70,6 +127,11 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
           <FormError error={save.error} />
           <TranslationsTabs kind="product category"
             form={form}
+            onExtras={(x) => {
+              setIdeas(x);
+              setKids(new Set());
+              setItems(new Set());
+            }}
             fields={[
               { name: 'name', label: 'Ad', required: true, maxLength: 80 },
               { name: 'description', label: 'Açıklama', type: 'textarea', rows: 3, maxLength: 1000 },
@@ -92,6 +154,33 @@ function CategoryDialog({ open, onOpenChange, category, all }: { open: boolean; 
               </div>
             }
           />
+          {ideas && (
+            <div className="grid gap-3 rounded-lg border border-dashed p-3">
+              {ideas.tip && (
+                <p className="flex gap-2 rounded-md bg-muted/60 px-2.5 py-2 text-xs text-muted-foreground">
+                  <LightbulbIcon className="mt-0.5 size-3.5 shrink-0" /> {ideas.tip}
+                </p>
+              )}
+              {topLevel && !!ideas.children?.length && (
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium">Alt kategori önerileri</p>
+                  <p className="text-xs text-muted-foreground">İşaretledikleriniz kaydedince bu kategorinin altında açılır.</p>
+                  {ideas.children.map((c, i) => (
+                    <Idea key={i} checked={kids.has(i)} onChange={(on) => setKids((s) => toggle(s, i, on))} title={c.name} text={c.description} />
+                  ))}
+                </div>
+              )}
+              {!!ideas.products?.length && (
+                <div className="grid gap-1">
+                  <p className="text-sm font-medium">Bu kategoriye eklenebilecek ürünler</p>
+                  <p className="text-xs text-muted-foreground">İşaretledikleriniz taslak ürün olarak açılır (sitede görünmez); fiyatını, fotoğrafını ve rengini sonra ekleyip yayına alırsınız.</p>
+                  {ideas.products.map((p, i) => (
+                    <Idea key={i} checked={items.has(i)} onChange={(on) => setItems((s) => toggle(s, i, on))} title={`${p.name} — ${p.subtitle}`} text={p.description} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <SeoFields register={form.register} errors={form.formState.errors} watch={(n) => form.watch(n)} />
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
