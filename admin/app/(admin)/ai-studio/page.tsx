@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { CameraIcon, CaptionsIcon, ImagesIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ export default function AiStudioPage() {
   const autoModel = settings.data?.aiStudio?.autoModel ?? true;
   const reminder = settings.data?.cartReminder ?? { enabled: false, delayHours: 3 };
   const [insta, setInsta] = useState(false);
+  const ig = useQuery({ queryKey: ['instagram-status'], queryFn: () => api.get<{ connected: boolean; username?: string }>('/admin/instagram/status'), staleTime: 5 * 60_000 });
   const [alts, setAlts] = useState<string | null>(null);
   /** Alt text for the photos of every product, one product after the other. */
   const describeAll = async () => {
@@ -80,13 +82,30 @@ export default function AiStudioPage() {
           <Section title="Hızlı işler">
             <div className="grid gap-2">
               <Button type="button" variant="outline" onClick={() => setInsta(true)} disabled={!productId}>
-                <CameraIcon /> Instagram metni yaz
+                <CameraIcon /> Instagram’da paylaş
               </Button>
               <Button type="button" variant="outline" onClick={describeAll} disabled={Boolean(alts) || !list.length}>
                 <CaptionsIcon /> {alts ? `Okunuyor ${alts}` : 'Bütün ürün fotoğraflarına açıklama yaz'}
               </Button>
               <p className="text-xs text-muted-foreground">Instagram metni için yukarıdan ürün seçin. Fotoğraf açıklamaları Google görsel aramasına ve ekran okuyuculara yarar; yalnızca hâlâ ürün adını taşıyanlar yazılır.</p>
             </div>
+          </Section>
+          <Section title="Instagram bağlantısı">
+            {ig.data?.connected ? (
+              <p className="text-sm">
+                Bağlı: <span className="font-medium">@{ig.data.username}</span>. Ürün sayfasındaki “Instagram metni”nden doğrudan yayınlayabilirsiniz.
+              </p>
+            ) : (
+              <div className="grid gap-2 text-xs text-muted-foreground">
+                <p className="text-sm text-foreground">{ig.isLoading ? 'Bakılıyor…' : 'Henüz bağlı değil.'} “Telefondan paylaş” bağlantısız da çalışır. Doğrudan yayınlamak için bir kerelik:</p>
+                <ol className="list-decimal space-y-1 pl-4">
+                  <li>Instagram uygulamasında hesabı profesyonel hesaba çevirin (Ayarlar → Hesap türü → İşletme).</li>
+                  <li>developers.facebook.com’da bir uygulama açın, “Instagram API (Instagram ile giriş)”i ekleyin, @maeyja_official’ı bağlayıp erişim anahtarı (access token) oluşturun.</li>
+                  <li>Anahtarı sunucudaki backend/.env dosyasına INSTAGRAM_ACCESS_TOKEN= olarak yazın ve deploy edin.</li>
+                </ol>
+                <p>Anahtar haftada bir kendiliğinden yenilenir; ana sayfadaki Instagram fotoğrafları da aynı bağlantıyla gelir.</p>
+              </div>
+            )}
           </Section>
           <Section title="Otomatik">
             <SwitchField

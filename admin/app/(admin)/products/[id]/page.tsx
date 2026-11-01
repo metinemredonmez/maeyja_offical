@@ -48,7 +48,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={() => setInsta(true)}>
-                  <CameraIcon /> Instagram metni
+                  <CameraIcon /> Instagram
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => dup.mutate(product.id, { onSuccess: (copy) => router.push(`/products/${copy.id}`) })} disabled={dup.isPending}>
                   <CopyIcon /> Kopyala
@@ -77,7 +77,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           />
           <ProductForm key={product.updatedAt} product={product} onSubmit={(body) => update.mutateAsync(body)} submitting={update.isPending} error={update.error} />
           {confirm.dialog}
-          {insta && <InstagramDialog open onOpenChange={setInsta} productId={product.id} imageUrl={product.images[0]?.url} />}
+          {insta && <InstagramDialog open onOpenChange={setInsta} productId={product.id} images={product.images.map((i) => i.url)} />}
         </>
       )}
     </QueryState>
