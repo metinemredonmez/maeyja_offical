@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { FilmIcon, SparklesIcon } from 'lucide-react';
+import { AiEditDialog } from '@/components/ai/ai-edit-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -71,6 +74,8 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
   });
   // The side-by-side layout captions both photos, so it takes two products; every other card takes one.
   const layout = form.watch('layout');
+  const imageUrl = form.watch('imageUrl');
+  const [ai, setAi] = useState<'photo' | 'video' | null>(null);
   const cards = layout === 'diptych' || layout === 'pair' ? 2 : 1;
 
   const onSubmit = form.handleSubmit(async (raw) => {
@@ -147,6 +152,18 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                     <Field label="Görsel" error={form.formState.errors.imageUrl}>
                       <Controller control={form.control} name="imageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
                     </Field>
+                    {imageUrl && (
+                      <div className="flex flex-wrap gap-2">
+                        <Button type="button" size="sm" variant="outline" onClick={() => setAi('photo')}>
+                          <SparklesIcon /> AI ile düzenle
+                        </Button>
+                        {HAS_VIDEO.includes(type) && (
+                          <Button type="button" size="sm" variant="outline" onClick={() => setAi('video')}>
+                            <FilmIcon /> Görselden video yap
+                          </Button>
+                        )}
+                      </div>
+                    )}
                     <Field label="Mobil görsel (opsiyonel)" error={form.formState.errors.mobileImageUrl}>
                       <Controller control={form.control} name="mobileImageUrl" render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
                     </Field>
@@ -218,6 +235,16 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
             <SubmitButton loading={save.isPending}>Kaydet</SubmitButton>
           </DialogFooter>
         </form>
+        {ai && imageUrl && (
+          <AiEditDialog
+            open
+            onOpenChange={(o) => !o && setAi(null)}
+            imageUrl={imageUrl}
+            kinds={ai === 'video' ? ['video'] : ['scene', 'model']}
+            onUse={(s) => form.setValue(s.kind === 'video' ? 'videoUrl' : 'imageUrl', s.url, { shouldDirty: true })}
+            useLabel={ai === 'video' ? 'Bu bölümün videosu yap' : 'Bu bölümün görseli yap'}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

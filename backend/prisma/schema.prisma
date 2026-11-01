@@ -901,3 +901,21 @@ model MailAttachment {
 
   @@unique([messageId, index])
 }
+
+/// AI studio results (on-model photo, photo in a scene, video) waiting for a decision in the admin: added to the
+/// product, put on the homepage as a banner, or dismissed. New products get one on-model suggestion automatically.
+model AiSuggestion {
+  id        String   @id @default(cuid())
+  productId String?
+  kind      String // model | scene | video
+  url       String
+  mimeType  String
+  width     Int?
+  height    Int?
+  sourceUrl String?
+  status    String   @default("pending") // pending | added | banner | dismissed
+  auto      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([productId, status])
+}

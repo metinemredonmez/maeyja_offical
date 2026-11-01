@@ -500,6 +500,7 @@ export interface Settings {
   tryon: { enabled: boolean };
   maintenance: { enabled: boolean; previewToken: string };
   productPage: { ground: string; tile: string };
+  aiStudio: { autoModel: boolean };
   tracking: {
     metaPixelId: string;
     metaCapiToken: string;

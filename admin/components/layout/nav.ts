@@ -22,6 +22,7 @@ import {
   TagIcon,
   TicketPercentIcon,
   UsersIcon,
+  SparklesIcon,
   UserCogIcon,
   FolderTreeIcon,
 } from 'lucide-react';
@@ -47,6 +48,7 @@ export const NAV: NavGroup[] = [
       { href: '/collections', label: 'Koleksiyonlar', icon: LayersIcon, roles: ALL },
       { href: '/colors', label: 'Renkler', icon: PaletteIcon, roles: ALL },
       { href: '/media', label: 'Medya', icon: ImageIcon, roles: STAFF },
+      { href: '/ai-studio', label: 'AI stüdyo', icon: SparklesIcon, roles: STAFF },
     ],
   },
   {

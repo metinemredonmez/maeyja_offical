@@ -50,6 +50,10 @@ export const SETTING_DEFAULTS = {
     ground: '#f5f1ea',
     tile: '#e9e3d8',
   },
+  /** AI studio in the admin: new products get an on-model photo suggestion of their own (it waits for approval). */
+  aiStudio: {
+    autoModel: true,
+  },
   /** Maintenance: the storefront answers every page with a "back soon" page (503), except for the staff preview link. */
   maintenance: {
     enabled: false,
