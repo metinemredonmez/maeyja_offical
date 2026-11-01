@@ -33,8 +33,11 @@ export class AiService {
     return this.translator.translate(fields, targets?.length ? targets : TARGET_LOCALES, kind);
   }
 
-  /** Content added in Turkish gets its other languages within minutes, without anyone pressing a button. */
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  /**
+   * Content written or changed in Turkish gets its other languages within a minute or two, without anyone pressing a
+   * button. A run that finds nothing to do only reads the tables.
+   */
+  @Cron(CronExpression.EVERY_MINUTE)
   async autoFill() {
     if (!this.auto || !this.translator || this.running) return;
     this.running = true;

@@ -22,20 +22,38 @@ export const TRANSLATABLE: { model: string; kind: string; fields: string[] }[] =
   { model: 'stockist', kind: 'stockist location: write city and district names the way readers of the language know them; keep shop, mall and street names as they are', fields: ['city', 'address'] },
 ];
 
+/** Records which Turkish text (srcHash) each translation (outHash) belongs to. */
+function remember(prisma: PrismaClient, model: string, rowId: string, rows: { lang: string; field: string; srcHash: string; outHash: string }[]) {
+  return prisma.$transaction(
+    rows.map((w) =>
+      prisma.translationMeta.upsert({
+        where: { model_rowId_lang_field: { model, rowId, lang: w.lang, field: w.field } },
+        create: { model, rowId, ...w },
+        update: { srcHash: w.srcHash, outHash: w.outHash },
+      }),
+    ),
+  );
+}
+
 /** Seeded "… metni buraya gelecek." stand-ins are not worth translating. */
 const PLACEHOLDER = /metni buraya gelecek/;
 
-const hash = (text: string) => createHash('sha1').update(text).digest('hex').slice(0, 16);
+export const hash = (text: string) => createHash('sha1').update(text).digest('hex').slice(0, 16);
 
 type Translations = Record<string, Record<string, string> | undefined>;
 type Meta = { srcHash: string; outHash: string };
 
 /**
- * Keeps every language in step with the Turkish text:
+ * Keeps every language in step with the Turkish text. For each translated field it remembers which Turkish text
+ * the translation belongs to (srcHash) and what the translation was (outHash):
  * - an empty translation slot is filled;
- * - a slot the translator filled earlier is redone when its Turkish source has changed since — unless someone
- *   edited that translation by hand (its text no longer matches what the translator wrote), which is kept.
- * The row is re-read just before writing, so an edit made meanwhile wins. `skip` backs off recently failed rows.
+ * - a translation seen for the first time (seeded, or filled with the admin's "Otomatik çevir") is taken as
+ *   matching the Turkish of that moment;
+ * - a translation someone edited (it no longer matches outHash) is kept, and taken as matching the current Turkish;
+ * - a translation nobody touched is redone as soon as its Turkish changes.
+ * So writing the Turkish is enough: the other languages follow, and hand corrections survive until the Turkish of
+ * that field changes again. The row is re-read just before writing, so an edit made meanwhile wins. `skip` backs off
+ * recently failed rows.
  */
 export async function fillMissingTranslations(
   prisma: PrismaClient,
@@ -62,15 +80,24 @@ export async function fillMissingTranslations(
       };
 
       const todo = new Map<string, string[]>();
+      const inStep: { lang: string; field: string; srcHash: string; outHash: string }[] = [];
       for (const lang of TARGET_LOCALES) {
         const fields = spec.fields.filter((f) => {
           const base = row[f];
           if (typeof base !== 'string' || !base.trim() || PLACEHOLDER.test(base)) return false;
-          const value = current[lang]?.[f]?.trim();
-          return !value || isMachineStale(lang, f, base, current[lang]![f]);
+          const value = current[lang]?.[f];
+          if (!value?.trim()) return true;
+          const meta = metas.get(`${id}|${lang}|${f}`);
+          if (!meta || meta.outHash !== hash(value)) {
+            // First seen, or edited by hand since: it belongs to the Turkish as it is now.
+            inStep.push({ lang, field: f, srcHash: hash(base), outHash: hash(value) });
+            return false;
+          }
+          return isMachineStale(lang, f, base, value);
         });
         if (fields.length) todo.set(lang, fields);
       }
+      if (inStep.length) await remember(prisma, spec.model, id, inStep);
       if (!todo.size) continue;
 
       const needed = [...new Set([...todo.values()].flat())];
@@ -93,15 +120,7 @@ export async function fillMissingTranslations(
         }
         if (written.length) {
           await table.update({ where: { id }, data: { translations: merged } });
-          await prisma.$transaction(
-            written.map((w) =>
-              prisma.translationMeta.upsert({
-                where: { model_rowId_lang_field: { model: spec.model, rowId: id, lang: w.lang, field: w.field } },
-                create: { model: spec.model, rowId: id, ...w },
-                update: { srcHash: w.srcHash, outHash: w.outHash },
-              }),
-            ),
-          );
+          await remember(prisma, spec.model, id, written);
           filled += written.length;
           opts.log?.(`${key}: ${written.length} alan`);
         }

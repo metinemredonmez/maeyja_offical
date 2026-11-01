@@ -7,6 +7,7 @@
  */
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, ProductStatus } from '@prisma/client';
+import { createHash } from 'crypto';
 import { access, copyFile, mkdir, readFile, readdir, stat, writeFile } from 'fs/promises';
 import { join, resolve } from 'path';
 import sharp from 'sharp';
@@ -428,6 +429,27 @@ async function main() {
       ...(ownGrid && collection ? [prisma.homeSection.update({ where: { id: ownGrid.id }, data: { isActive: false, sortOrder: order.length } })] : []),
     ]);
     console.log('✓ ana sayfa: Canan’ın iki fotoğrafı banner’ın altında, koleksiyon onun sırasıyla; diğer bölümler açık');
+  }
+
+  // Kasım 2026: Canan rewrote "Hakkımızda" in Turkish (and its English by hand), but the other languages still carry
+  // the old text and had no record of which Turkish they came from, so the translator took them as current. Mark
+  // those as belonging to the old Turkish; the translator then redoes them within a minute. English stays.
+  const about = await prisma.page.findUnique({ where: { slug: 'about' }, select: { id: true, translations: true } });
+  if (about) {
+    const known = new Set((await prisma.translationMeta.findMany({ where: { model: 'page', rowId: about.id } })).map((m) => `${m.lang}|${m.field}`));
+    const outdated: Prisma.TranslationMetaCreateManyInput[] = [];
+    for (const [lang, fields] of Object.entries((about.translations ?? {}) as Record<string, Record<string, string> | undefined>)) {
+      if (lang === 'en' || !fields) continue;
+      for (const [field, value] of Object.entries(fields)) {
+        if (typeof value !== 'string' || !value.trim() || known.has(`${lang}|${field}`)) continue;
+        // Same fingerprint as the translator's (sha1, 16 hex); srcHash matches no Turkish text, so it reads as outdated.
+        outdated.push({ model: 'page', rowId: about.id, lang, field, srcHash: 'eski-turkce', outHash: createHash('sha1').update(value).digest('hex').slice(0, 16) });
+      }
+    }
+    if (outdated.length) {
+      await prisma.translationMeta.createMany({ data: outdated, skipDuplicates: true });
+      console.log(`✓ Hakkımızda: ${outdated.length} eski çeviri yeniden çevrilecek (İngilizce korunuyor)`);
+    }
   }
 
   // First journal posts (created once per slug; edits and deletions in the admin are respected afterwards).

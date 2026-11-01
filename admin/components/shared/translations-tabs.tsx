@@ -53,26 +53,41 @@ export function TranslationsTabs({ form, fields, className, extraBase, kind }: P
 
   const path = (l: Locale, name: string) => (l === DEFAULT_LOCALE ? name : `translations.${l}.${name}`);
 
-  /** Fills the empty language fields from the Turkish text (Claude). Nothing is saved until the form is. */
+  /**
+   * Fills, from the Turkish text (Claude), every language field that is empty or out of date: its Turkish was changed
+   * in this form while the translation was left as it was. Translations edited by hand here are kept. Nothing is
+   * saved until the form is (and the server does the same on its own a minute after saving).
+   */
   const autoTranslate = async () => {
+    const initial = (form.formState.defaultValues ?? {}) as Record<string, unknown> & { translations?: Record<string, Record<string, string>> };
+    const turkishChanged = (name: string) => String(initial[name] ?? '') !== String(form.getValues(name) ?? '');
+    const needs = (l: Locale, name: string) => {
+      const now = String(form.getValues(`translations.${l}.${name}`) ?? '');
+      return !now.trim() || (turkishChanged(name) && now === String(initial.translations?.[l]?.[name] ?? ''));
+    };
     const source = Object.fromEntries(fields.map((f) => [f.name, String(form.getValues(f.name) ?? '')]).filter(([, v]) => v.trim()));
     if (!Object.keys(source).length) {
       toast.error('Önce Türkçe metni yazın');
       return;
     }
+    const targets = LOCALES.filter((l) => l !== DEFAULT_LOCALE && Object.keys(source).some((name) => needs(l, name)));
+    const wanted = Object.fromEntries(Object.entries(source).filter(([name]) => targets.some((l) => needs(l, name))));
+    if (!targets.length) {
+      toast.success('Bütün diller güncel — Türkçeyi değiştirdiğinizde değişen alanlar yeniden çevrilir');
+      return;
+    }
     setTranslating(true);
     try {
-      const { translations } = await api.post<{ translations: Record<string, Record<string, string>> }>('/admin/ai/translate', { fields: source, kind });
+      const { translations } = await api.post<{ translations: Record<string, Record<string, string>> }>('/admin/ai/translate', { fields: wanted, kind, targets });
       let count = 0;
       for (const [l, values] of Object.entries(translations)) {
         for (const [name, value] of Object.entries(values)) {
-          const target = `translations.${l}.${name}`;
-          if (String(form.getValues(target) ?? '').trim()) continue;
-          form.setValue(target, value, { shouldDirty: true });
+          if (!needs(l as Locale, name)) continue;
+          form.setValue(`translations.${l}.${name}`, value, { shouldDirty: true });
           count++;
         }
       }
-      toast.success(count ? `${count} alan çevrildi — kaydetmeden önce göz atın` : 'Boş çeviri alanı yoktu (yeniden çevirmek için alanı temizleyin)');
+      toast.success(`${count} alan çevrildi — kaydetmeden önce göz atabilirsiniz`);
     } catch (e) {
       toast.error(errorMessage(e));
     } finally {
@@ -110,7 +125,7 @@ export function TranslationsTabs({ form, fields, className, extraBase, kind }: P
   return (
     <Tabs value={lang} onValueChange={(v) => setLang(v as Locale)} className={cn('gap-4', className)}>
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-        <span>Türkçe metni yazın; diğer 10 dil otomatik çevrilir (boş alanlar). Kaydetmeden önce kontrol edebilirsiniz.</span>
+        <span>Türkçe metni yazıp kaydedin: diğer 10 dil bir iki dakika içinde kendiliğinden çevrilir, Türkçesi değişen alanlar da yeniden çevrilir. Elle düzelttiğiniz çeviriler korunur. Hemen görmek için:</span>
         <Button type="button" size="sm" variant="outline" onClick={autoTranslate} disabled={translating}>
           <Languages className="size-3.5" />
           {translating ? 'Çevriliyor…' : 'Otomatik çevir'}
