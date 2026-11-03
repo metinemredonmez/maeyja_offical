@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { api, ApiError } from '@/lib/api.client';
 import type { CheckoutResult } from '@/lib/types';
 
-/** Re-opens the iyzico page for an unpaid order. Guests prove ownership with the checkout email. */
+/** Re-opens the card payment page for an unpaid order. Guests prove ownership with the checkout email. */
 export function RetryPayment({ orderNumber, guest }: { orderNumber: string; guest: boolean }) {
   const t = useTranslations('checkout');
   const tc = useTranslations('common');

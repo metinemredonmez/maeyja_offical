@@ -238,10 +238,15 @@ export class CatalogAdminService {
     if (dto.stock === undefined && dto.delta === undefined) throw new BadRequestException('stock veya delta gerekli');
     const variant = await this.prisma.productVariant.findFirst({ where: { id, deletedAt: null } });
     if (!variant) throw new NotFoundException('Varyant bulunamadı');
-    const next = dto.stock ?? variant.stock + (dto.delta ?? 0);
-    if (next < 0) throw new BadRequestException('Stok negatif olamaz');
-    const updated = await this.prisma.productVariant.update({ where: { id }, data: { stock: next } });
-    if (variant.stock <= 0 && next > 0) void this.notifyRestock(id);
+    // BUS-02: a relative change is applied in the database, so a sale during the edit isn't overwritten.
+    const delta = dto.delta ?? 0;
+    const res =
+      dto.stock !== undefined
+        ? await this.prisma.productVariant.updateMany({ where: { id, deletedAt: null }, data: { stock: dto.stock } })
+        : await this.prisma.productVariant.updateMany({ where: { id, deletedAt: null, stock: { gte: -delta } }, data: { stock: { increment: delta } } });
+    if (res.count === 0) throw new BadRequestException('Stok negatif olamaz');
+    const updated = await this.prisma.productVariant.findUniqueOrThrow({ where: { id } });
+    if (variant.stock <= 0 && updated.stock > 0) void this.notifyRestock(id);
     return updated;
   }
 

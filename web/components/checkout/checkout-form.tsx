@@ -38,7 +38,7 @@ const schema = z
     companyName: z.string().max(160).optional().or(z.literal('')),
     taxOffice: z.string().max(80).optional().or(z.literal('')),
     taxNumber: z.string().regex(/^\d{10,11}$/).optional().or(z.literal('')),
-    paymentMethod: z.enum(['IYZICO', 'BANK_TRANSFER']),
+    paymentMethod: z.enum(['STRIPE', 'BANK_TRANSFER']),
     customerNote: z.string().max(500).optional().or(z.literal('')),
     acceptTerms: z.literal(true),
     saveAddress: z.boolean().optional(),
@@ -71,7 +71,7 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
       shippingAddressId: addresses.find((a) => a.isDefault)?.id ?? addresses[0]?.id,
       billingSameAsShipping: true,
       invoiceType: 'INDIVIDUAL',
-      paymentMethod: 'IYZICO',
+      paymentMethod: 'STRIPE',
       saveAddress: Boolean(user),
       country: 'TR',
     } as Partial<Form>,
@@ -111,7 +111,7 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
       if (cart) savePendingPurchase(result.order.orderNumber, cart.total, lines);
       invalidate(); // the API emptied the cart
       if (result.payment?.paymentPageUrl) {
-        window.location.assign(result.payment.paymentPageUrl); // iyzico hosted page (3-D Secure)
+        window.location.assign(result.payment.paymentPageUrl); // Stripe-hosted payment page
         return;
       }
       if (result.payment?.provider === 'BANK_TRANSFER') {
@@ -217,9 +217,9 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
         </Section>
 
         <Section title={t('payment')}>
-          <label className={`flex cursor-pointer flex-col gap-1 border p-4 ${paymentMethod === 'IYZICO' ? 'border-ink' : 'border-line'}`}>
+          <label className={`flex cursor-pointer flex-col gap-1 border p-4 ${paymentMethod === 'STRIPE' ? 'border-ink' : 'border-line'}`}>
             <span className="flex items-center gap-3 text-sm">
-              <input type="radio" value="IYZICO" {...register('paymentMethod')} className="accent-ink" />
+              <input type="radio" value="STRIPE" {...register('paymentMethod')} className="accent-ink" />
               {t('card')}
             </span>
             <span className="pl-7 text-xs text-muted">{t('cardHint')}</span>

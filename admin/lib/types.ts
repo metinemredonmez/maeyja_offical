@@ -4,7 +4,7 @@ import type { Translations } from '@/lib/i18n';
 export type UserRole = 'CUSTOMER' | 'EDITOR' | 'ADMIN' | 'SUPER_ADMIN';
 export type ProductStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 export type OrderStatus = 'PENDING_PAYMENT' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
-export type PaymentProvider = 'IYZICO' | 'BANK_TRANSFER';
+export type PaymentProvider = 'STRIPE' | 'IYZICO' | 'BANK_TRANSFER';
 export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED';
 export type CouponType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
 export type ReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'REFUNDED';

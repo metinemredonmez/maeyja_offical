@@ -174,7 +174,7 @@ export interface Order {
   taxTotal: number;
   total: number;
   couponCode: string | null;
-  paymentProvider: 'IYZICO' | 'BANK_TRANSFER';
+  paymentProvider: 'STRIPE' | 'IYZICO' | 'BANK_TRANSFER';
   shippingAddress: Record<string, string>;
   billingAddress: Record<string, string>;
   carrier: string | null;
@@ -283,7 +283,7 @@ export interface Faq {
 export interface CheckoutResult {
   order: { id: string; orderNumber: string; status: OrderStatus; email: string; total: number; paymentProvider: string };
   payment: null | {
-    provider: 'IYZICO' | 'BANK_TRANSFER';
+    provider: 'STRIPE' | 'IYZICO' | 'BANK_TRANSFER';
     paymentPageUrl?: string;
     checkoutFormContent?: string;
     token?: string;

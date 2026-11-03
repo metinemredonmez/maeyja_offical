@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PaymentProvider } from '@prisma/client';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CheckoutService } from './checkout.service';
 import { OrderLifecycleService } from './order-lifecycle.service';
 
 /**
@@ -18,10 +19,14 @@ export class OrdersJobs {
   constructor(
     private readonly prisma: PrismaService,
     private readonly lifecycle: OrderLifecycleService,
+    private readonly checkout: CheckoutService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
-  /** Cancels unpaid orders and returns their reserved stock. */
+  /**
+   * Cancels unpaid orders and returns their reserved stock. Card orders are only cancelled once the
+   * provider has confirmed nothing was paid (ARC-05); a payment page opened recently keeps its order.
+   */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async expireUnpaidOrders() {
     if (this.running) return;
@@ -33,25 +38,37 @@ export class OrdersJobs {
         where: {
           status: 'PENDING_PAYMENT',
           OR: [
-            { paymentProvider: PaymentProvider.IYZICO, createdAt: { lt: cardCutoff } },
+            {
+              paymentProvider: { in: [PaymentProvider.STRIPE, PaymentProvider.IYZICO] },
+              createdAt: { lt: cardCutoff },
+              payments: { none: { createdAt: { gte: cardCutoff } } },
+            },
             { paymentProvider: PaymentProvider.BANK_TRANSFER, createdAt: { lt: bankCutoff } },
           ],
         },
         select: { id: true, status: true, orderNumber: true, paymentProvider: true },
+        orderBy: { createdAt: 'asc' },
         take: 200,
       });
+      const down = new Set<PaymentProvider>();
+      let expired = 0;
       for (const order of stale) {
+        if (down.has(order.paymentProvider)) continue;
         try {
+          if (order.paymentProvider !== PaymentProvider.BANK_TRANSFER && !(await this.checkout.readyToExpire(order.id))) continue;
           await this.prisma.$transaction(async (tx) => {
             await this.lifecycle.transition(tx, order, 'CANCELLED', { note: 'Ödeme süresi doldu (otomatik)' });
             await this.lifecycle.releaseStock(tx, order.id);
           });
+          expired++;
           if (order.paymentProvider === PaymentProvider.BANK_TRANSFER) void this.lifecycle.notify(order.id, 'cancelled');
         } catch (e) {
+          // Provider didn't answer: never cancel blind, try its orders again next round.
+          if (e instanceof ServiceUnavailableException) down.add(order.paymentProvider);
           this.logger.warn(`could not expire ${order.orderNumber}: ${(e as Error).message}`);
         }
       }
-      if (stale.length) this.logger.log(`expired ${stale.length} unpaid order(s)`);
+      if (expired) this.logger.log(`expired ${expired} unpaid order(s)`);
     } finally {
       this.running = false;
     }

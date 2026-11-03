@@ -100,7 +100,7 @@ export function OrderDetail({ order, guestEmail }: { order: Order; guestEmail?: 
         </div>
         <div>
           <h3 className="label mb-3 text-muted">{t('paymentMethod')}</h3>
-          <p>{order.paymentProvider === 'IYZICO' ? tco('card') : tco('bankTransfer')}</p>
+          <p>{order.paymentProvider === 'BANK_TRANSFER' ? tco('bankTransfer') : tco('card')}</p>
         </div>
       </section>
 

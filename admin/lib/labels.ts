@@ -61,6 +61,7 @@ export const PUSH_STATUS: Record<PushStatus, { label: string; tone: Tone }> = {
 };
 
 export const PAYMENT_PROVIDER: Record<PaymentProvider, string> = {
+  STRIPE: 'Stripe (kart)',
   IYZICO: 'iyzico (kart)',
   BANK_TRANSFER: 'Havale / EFT',
 };

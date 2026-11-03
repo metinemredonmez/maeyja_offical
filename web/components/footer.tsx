@@ -59,7 +59,7 @@ export function Footer({ instagram }: { instagram: string }) {
             </li>
           ))}
         </ul>
-        <span>{t('securePayment')} · Visa · Mastercard · Troy</span>
+        <span>{t('securePayment')} · Visa · Mastercard</span>
       </div>
     </footer>
   );

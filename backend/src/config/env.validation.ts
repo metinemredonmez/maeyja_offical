@@ -41,6 +41,12 @@ export const envSchema = Joi.object({
   MAIL_REPLY_TO: Joi.string().email().allow('').default(''),
   ADMIN_NOTIFY_EMAIL: Joi.string().allow('').default(''),
 
+  // Card payments: Stripe now; iyzico stays wired for later (switch with CARD_PROVIDER=IYZICO).
+  CARD_PROVIDER: Joi.string().valid('STRIPE', 'IYZICO').default('STRIPE'),
+  // Prefer a restricted key (rk_…): Checkout Sessions, Coupons, Refunds write · PaymentIntents, Charges read.
+  STRIPE_SECRET_KEY: Joi.string().pattern(/^(sk|rk)_(test|live)_\w+$/).allow('').default(''),
+  STRIPE_WEBHOOK_SECRET: Joi.string().pattern(/^whsec_\w+$/).allow('').default(''),
+
   IYZICO_API_KEY: Joi.string().allow('').default(''),
   IYZICO_SECRET_KEY: Joi.string().allow('').default(''),
   IYZICO_BASE_URL: Joi.string().uri().default('https://sandbox-api.iyzipay.com'),
@@ -111,6 +117,9 @@ export interface Env {
   MAIL_FROM: string;
   MAIL_REPLY_TO: string;
   ADMIN_NOTIFY_EMAIL: string;
+  CARD_PROVIDER: 'STRIPE' | 'IYZICO';
+  STRIPE_SECRET_KEY: string;
+  STRIPE_WEBHOOK_SECRET: string;
   IYZICO_API_KEY: string;
   IYZICO_SECRET_KEY: string;
   IYZICO_BASE_URL: string;

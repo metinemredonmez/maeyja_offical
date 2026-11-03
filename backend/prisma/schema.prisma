@@ -44,6 +44,7 @@ enum OrderStatus {
 enum PaymentProvider {
   IYZICO
   BANK_TRANSFER
+  STRIPE
 }
 
 enum PaymentStatus {

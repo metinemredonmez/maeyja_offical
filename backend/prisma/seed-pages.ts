@@ -84,7 +84,7 @@ ${SELLER}
 <h2>3. Ürünün temel nitelikleri ve fiyatı</h2>
 <p>Ürünün adı, rengi, adedi ve vergiler dâhil satış fiyatı sipariş özetinde ve ödeme sayfasında gösterilir. Türkiye içi kargo ücretsizdir; ek bir teslimat masrafı alınmaz.</p>
 <h2>4. Ödeme</h2>
-<p>Ödeme, iyzico güvenli ödeme altyapısı aracılığıyla kredi kartı/banka kartı ile ya da sipariş sırasında belirtilen hesaba havale/EFT ile yapılabilir. Kart bilgileri satıcı tarafından görülmez ve saklanmaz.</p>
+<p>Ödeme, Stripe güvenli ödeme altyapısı aracılığıyla kredi kartı/banka kartı ile ya da sipariş sırasında belirtilen hesaba havale/EFT ile yapılabilir. Kart bilgileri satıcı tarafından görülmez ve saklanmaz.</p>
 <h2>5. Teslimat</h2>
 <p>Ürün, ödemenin onaylanmasından sonra en geç 30 gün içinde, genellikle 1–3 iş günü içinde kargoya verilerek alıcının bildirdiği adrese teslim edilir.</p>
 <h2>6. Cayma hakkı</h2>
@@ -126,7 +126,7 @@ ${SELLER}
 <h2>İşlenen kişisel veriler</h2>
 <ul>
 <li><strong>Kimlik ve iletişim:</strong> ad, soyad, e-posta, telefon, teslimat ve fatura adresi.</li>
-<li><strong>Müşteri işlem:</strong> sipariş, ödeme durumu, iade ve talep kayıtları. Kart bilgileri ödeme kuruluşu iyzico tarafından işlenir; MAEYJA tarafından görülmez ve saklanmaz.</li>
+<li><strong>Müşteri işlem:</strong> sipariş, ödeme durumu, iade ve talep kayıtları. Kart bilgileri ödeme kuruluşu Stripe tarafından işlenir; MAEYJA tarafından görülmez ve saklanmaz.</li>
 <li><strong>İşlem güvenliği:</strong> IP adresi, oturum ve giriş kayıtları.</li>
 <li><strong>Pazarlama:</strong> bülten aboneliği için verdiğiniz e-posta adresi ve dil tercihi.</li>
 </ul>
@@ -138,7 +138,7 @@ ${SELLER}
 <li>Bülten ve kampanya e-postalarının gönderilmesi (m. 5/1: açık rıza; dilediğiniz an e-postadaki bağlantıyla vazgeçebilirsiniz).</li>
 </ul>
 <h2>Aktarım</h2>
-<p>Kişisel verileriniz yalnızca yukarıdaki amaçlar için gerekli olduğu ölçüde; kargo firmalarına (teslimat), ödeme kuruluşu iyzico'ya (ödeme), barındırma ve e-posta hizmeti sağlayıcılarına (sitenin ve bildirim e-postalarının çalışması) ve talep hâlinde yetkili kamu kurum ve kuruluşlarına aktarılır.</p>
+<p>Kişisel verileriniz yalnızca yukarıdaki amaçlar için gerekli olduğu ölçüde; kargo firmalarına (teslimat), ödeme kuruluşu Stripe'a (ödeme; yurt dışında yerleşik hizmet sağlayıcı), barındırma ve e-posta hizmeti sağlayıcılarına (sitenin ve bildirim e-postalarının çalışması) ve talep hâlinde yetkili kamu kurum ve kuruluşlarına aktarılır.</p>
 <p>E-posta gönderim altyapısı ve mobil bildirim hizmeti gibi bazı hizmet sağlayıcılarımızın sunucuları yurt dışında bulunabilir; bu aktarımlar KVKK'nın 9. maddesine uygun olarak gerçekleştirilir.</p>
 <h2>Sanal deneme (Üzerimde gör)</h2>
 <p>“Üzerimde gör” özelliğini kullanırsanız yüklediğiniz fotoğraf, yalnızca seçtiğiniz çantanın sizin üzerinizde gösterildiği görseli oluşturmak için açık rızanızla (KVKK m. 5/1 ve m. 9) yurt dışındaki yapay zekâ hizmet sağlayıcımıza (Google) iletilir. Fotoğraf ve oluşan görsel sunucularımızda kalıcı olarak saklanmaz; görsel en geç 10 dakika sonra silinir. Bu özelliği yalnızca 18 yaşından büyük kullanıcılar, yalnızca kendi fotoğraflarıyla kullanabilir. Rızanızı vermemeniz sitenin diğer bölümlerini kullanmanıza engel değildir.</p>
@@ -151,7 +151,7 @@ ${SELLER}
   privacy: `${UPDATED}
 <h2>Gizlilik</h2>
 <p>MAEYJA olarak kişisel verilerinizi yalnızca siparişlerinizi tamamlamak, size hizmet vermek ve izin verdiyseniz sizi yeni koleksiyonlardan haberdar etmek için kullanırız. Nasıl işlendiğini <a href="/kvkk">KVKK Aydınlatma Metni</a>'nde ayrıntılı olarak bulabilirsiniz.</p>
-<p>Ödemeler iyzico güvenli ödeme altyapısıyla alınır; kart bilgileriniz bize ulaşmaz. Site trafiği şifreli (HTTPS) bağlantı üzerinden taşınır, hesap şifreleri geri döndürülemez biçimde saklanır.</p>
+<p>Ödemeler Stripe güvenli ödeme altyapısıyla alınır; kart bilgileriniz bize ulaşmaz. Site trafiği şifreli (HTTPS) bağlantı üzerinden taşınır, hesap şifreleri geri döndürülemez biçimde saklanır.</p>
 <h2>Çerezler</h2>
 <p>Çerezler, siteyi ziyaret ettiğinizde tarayıcınıza kaydedilen küçük dosyalardır. maeyja.com şu anda yalnızca sitenin çalışması için gerekli çerezleri ve tercihlerinizi hatırlayan kayıtları kullanır:</p>
 <ul>

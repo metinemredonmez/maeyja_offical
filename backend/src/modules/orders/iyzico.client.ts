@@ -1,6 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac, randomBytes } from 'crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { Env } from '../../config/env.validation';
 
 export interface IyzicoAddress {
@@ -75,7 +75,14 @@ export interface CheckoutFormResult extends IyzicoBase {
   cardAssociation?: string;
   fraudStatus?: number;
   token?: string;
+  signature?: string;
 }
+
+/** Prices as iyzico signs them: no trailing zeros ("50.00" → "50", "10.50" → "10.5"). */
+const signedPrice = (v?: number | string) => {
+  const s = v === undefined ? '' : String(v);
+  return s.includes('.') ? s.replace(/0+$/, '').replace(/\.$/, '') : s;
+};
 
 /**
  * Thin iyzico REST client using the IYZWSv2 scheme:
@@ -99,6 +106,20 @@ export class IyzicoClient {
 
   retrieveCheckoutForm(token: string, conversationId: string, locale: 'tr' | 'en' = 'tr') {
     return this.post<CheckoutFormResult>('/payment/iyzipos/checkoutform/auth/ecom/detail', { locale, conversationId, token });
+  }
+
+  /**
+   * EXT-04: iyzico signs the checkout form result (docs.iyzico.com → "Response Signature Validation"):
+   * hex HMAC-SHA256 with the secret key over paymentStatus:paymentId:currency:basketId:conversationId:paidPrice:price:token.
+   */
+  checkoutFormSignatureValid(r: CheckoutFormResult) {
+    if (!r.signature) return false;
+    const data = [r.paymentStatus, r.paymentId, r.currency, r.basketId, r.conversationId, signedPrice(r.paidPrice), signedPrice(r.price), r.token]
+      .map((f) => f ?? '')
+      .join(':');
+    const expected = Buffer.from(createHmac('sha256', this.config.get('IYZICO_SECRET_KEY', { infer: true })).update(data).digest('hex'));
+    const given = Buffer.from(r.signature.toLowerCase());
+    return expected.length === given.length && timingSafeEqual(expected, given);
   }
 
   /** Full cancel — only works before the day's settlement; afterwards refund from the iyzico panel. */

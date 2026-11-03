@@ -15,7 +15,7 @@ import {
   UpdateOrderStatusDto,
   UpdateReturnDto,
 } from './dto/orders.dto';
-import { IyzicoClient } from './iyzico.client';
+import { CheckoutService, PAYMENT_REVIEW } from './checkout.service';
 import { OrderLifecycleService, TRANSITIONS } from './order-lifecycle.service';
 
 const RETURN_WINDOW_DAYS = 14; // cayma hakkı (Mesafeli Sözleşmeler Yönetmeliği)
@@ -57,7 +57,7 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly lifecycle: OrderLifecycleService,
     private readonly settings: SettingsService,
-    private readonly iyzico: IyzicoClient,
+    private readonly checkout: CheckoutService,
     private readonly mail: MailService,
   ) {}
 
@@ -179,17 +179,20 @@ export class OrdersService {
     this.lifecycle.assertTransition(order.status, dto.status);
     if (dto.status === 'SHIPPED') throw new BadRequestException('Kargoya vermek için kargo bilgisiyle /ship kullanın');
 
-    // Optional provider-side cancel for card payments (works until the day's settlement).
+    const card = order.paymentProvider !== 'BANK_TRANSFER';
+    // An unpaid card order may have been paid a moment ago: ask the provider (and close open Stripe pages) first.
+    if (dto.status === 'CANCELLED' && order.status === 'PENDING_PAYMENT' && card && !(await this.checkout.readyToExpire(order.id, { staff: true }))) {
+      throw new BadRequestException('Bu siparişin ödemesi az önce alındı ya da henüz kesinleşmedi; sayfayı yenileyin');
+    }
+
+    // Optional provider-side refund for card payments (iyzico: only until the day's settlement).
     let providerNote = '';
-    if ((dto.status === 'CANCELLED' || dto.status === 'REFUNDED') && dto.refundOnProvider && order.paymentProvider === 'IYZICO') {
+    if ((dto.status === 'CANCELLED' || dto.status === 'REFUNDED') && dto.refundOnProvider && card) {
       const paid = order.payments.find((p) => p.status === PaymentStatus.SUCCEEDED && p.providerPaymentId);
       if (paid) {
-        const r = await this.iyzico.cancelPayment(paid.providerPaymentId!, ip, paid.id);
-        if (r.status !== 'success') {
-          throw new BadRequestException(`iyzico iptal edilemedi (${r.errorMessage}). Ödemeyi iyzico panelinden iade edip tekrar deneyin.`);
-        }
+        await this.checkout.refundPayment(paid, ip);
         await this.prisma.payment.update({ where: { id: paid.id }, data: { status: PaymentStatus.REFUNDED } });
-        providerNote = ' · iyzico ödemesi iptal edildi';
+        providerNote = paid.provider === 'STRIPE' ? ' · Stripe ödemesi iade edildi' : ' · iyzico ödemesi iptal edildi';
       }
     }
 
@@ -201,6 +204,11 @@ export class OrdersService {
       }
       if (dto.status === 'PAID') {
         await tx.payment.updateMany({ where: { orderId: order.id, status: PaymentStatus.PENDING, provider: 'BANK_TRANSFER' }, data: { status: PaymentStatus.SUCCEEDED } });
+        // Staff checked a card payment under review in the provider's panel and accepted it.
+        await tx.payment.updateMany({
+          where: { orderId: order.id, status: PaymentStatus.PENDING, providerPaymentId: { not: null }, failureReason: { startsWith: PAYMENT_REVIEW } },
+          data: { status: PaymentStatus.SUCCEEDED },
+        });
       }
     });
 

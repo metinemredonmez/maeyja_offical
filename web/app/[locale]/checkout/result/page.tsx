@@ -6,7 +6,7 @@ import { PurchaseEvent } from '@/components/tracking';
 
 export const metadata = { robots: { index: false } };
 
-/** iyzico sends the shopper back here via the API callback: ?order=MY-…&status=success|failed|review */
+/** The payment provider sends the shopper back here via the API: ?order=MY-…&status=success|failed|review */
 export default async function CheckoutResultPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ order?: string; status?: string }> }) {
   const { locale } = await params;
   setRequestLocale(locale);

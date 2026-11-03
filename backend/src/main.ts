@@ -9,11 +9,12 @@ import { AppModule } from './app.module';
 import { Env } from './config/env.validation';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false });
+  // rawBody: the Stripe webhook signature is computed over the exact bytes Stripe sent.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: false, rawBody: true });
   const config = app.get(ConfigService<Env, true>);
   const prefix = config.get('API_PREFIX', { infer: true });
 
-  // Behind nginx: trust X-Forwarded-For so rate limiting and iyzico see the real client IP.
+  // Behind nginx: trust X-Forwarded-For so rate limiting and the payment provider see the real client IP.
   const trustProxy = config.get('TRUST_PROXY', { infer: true });
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
 

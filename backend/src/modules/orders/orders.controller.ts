@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Header, Headers, HttpCode, Param, Patch, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, HttpCode, Param, Patch, Post, Query, RawBodyRequest, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Lang } from '../../common/decorators/lang.decorator';
@@ -60,6 +60,26 @@ export class OrdersController {
   @Post('payments/iyzico/callback')
   async iyzicoCallback(@Body('token') token: string | undefined, @Res() res: Response) {
     res.redirect(302, await this.checkout.handleIyzicoCallback(token));
+  }
+
+  /** Stripe's success_url: the shopper's browser comes back here with the session id. */
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @ApiExcludeEndpoint()
+  @Get('payments/stripe/return')
+  async stripeReturn(@Query('session_id') sessionId: string | undefined, @Res() res: Response) {
+    res.redirect(302, await this.checkout.handleStripeReturn(typeof sessionId === 'string' ? sessionId : undefined));
+  }
+
+  /** Stripe → us, signed (Stripe-Signature over the raw body). Events: checkout.session.*. */
+  @Public()
+  @SkipThrottle()
+  @ApiExcludeEndpoint()
+  @HttpCode(200)
+  @Post('payments/stripe/webhook')
+  async stripeWebhook(@Req() req: RawBodyRequest<Request>, @Headers('stripe-signature') signature: string | undefined) {
+    await this.checkout.handleStripeWebhook(req.rawBody, signature);
+    return { received: true };
   }
 
   @Public()

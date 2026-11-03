@@ -44,7 +44,7 @@ function StatusDialog({ order, target, onClose }: { order: OrderDetail; target: 
   const update = useUpdateOrderStatus(order.id);
   const wasShipped = order.status === 'SHIPPED' || order.status === 'DELIVERED';
   const showRestock = target === 'REFUNDED' && wasShipped;
-  const showProvider = (target === 'CANCELLED' || target === 'REFUNDED') && order.paymentProvider === 'IYZICO';
+  const showProvider = (target === 'CANCELLED' || target === 'REFUNDED') && order.paymentProvider !== 'BANK_TRANSFER';
   const showNotify = target === 'PAID' || target === 'CANCELLED';
   const form = useForm<StatusChangeValues>({ resolver: zodResolver(statusChangeSchema), defaultValues: { status: target, note: '', restock: false, refundOnProvider: false, notifyCustomer: true } });
   const onSubmit = form.handleSubmit(async (raw) => {
@@ -70,7 +70,7 @@ function StatusDialog({ order, target, onClose }: { order: OrderDetail; target: 
             <Textarea id="status-note" rows={3} maxLength={500} {...form.register('note')} />
           </Field>
           {showRestock && <Controller control={form.control} name="restock" render={({ field }) => <SwitchField label="Stoğa geri ekle" description="Ürün geri geldiyse stok adedini artırır" checked={field.value} onCheckedChange={field.onChange} />} />}
-          {showProvider && <Controller control={form.control} name="refundOnProvider" render={({ field }) => <SwitchField label="iyzico’da ödemeyi iptal et" description="Aynı gün içindeki ödemeler iptal edilebilir; sonrası için iyzico panelinden iade yapın" checked={field.value} onCheckedChange={field.onChange} />} />}
+          {showProvider && <Controller control={form.control} name="refundOnProvider" render={({ field }) => <SwitchField {...(order.paymentProvider === 'STRIPE' ? { label: 'Stripe’ta ödemeyi iade et', description: 'Para müşterinin kartına iade edilir (5–10 iş günü)' } : { label: 'iyzico’da ödemeyi iptal et', description: 'Aynı gün içindeki ödemeler iptal edilebilir; sonrası için iyzico panelinden iade yapın' })} checked={field.value} onCheckedChange={field.onChange} />} />}
           {showNotify && <Controller control={form.control} name="notifyCustomer" render={({ field }) => <SwitchField label="Müşteriye e-posta gönder" checked={field.value} onCheckedChange={field.onChange} />} />}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

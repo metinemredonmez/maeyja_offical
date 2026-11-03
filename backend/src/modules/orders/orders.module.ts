@@ -7,11 +7,12 @@ import { AdminOrdersController, OrdersController } from './orders.controller';
 import { PurchaseTrackingService } from './purchase-tracking.service';
 import { OrdersJobs } from './orders.jobs';
 import { OrdersService } from './orders.service';
+import { StripeClient } from './stripe.client';
 
 @Module({
   imports: [CartModule],
   controllers: [OrdersController, AdminOrdersController],
-  providers: [CheckoutService, OrdersService, OrderLifecycleService, PurchaseTrackingService, IyzicoClient, OrdersJobs],
+  providers: [CheckoutService, OrdersService, OrderLifecycleService, PurchaseTrackingService, IyzicoClient, StripeClient, OrdersJobs],
   exports: [OrderLifecycleService],
 })
 export class OrdersModule {}
