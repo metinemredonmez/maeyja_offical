@@ -140,6 +140,19 @@ model User {
   @@index([createdAt])
 }
 
+/// Failed sign-in counters (AUT-02), in the database so a restart or deploy doesn't reset them.
+/// key: "ui:<email>|<ip>", "u:<email>" or "ip:<ip>".
+model LoginAttempt {
+  key         String    @id
+  failures    Int       @default(0)
+  firstAt     DateTime  @default(now())
+  lockedUntil DateTime?
+  locks       Int       @default(0) // each further lock lasts twice as long
+  updatedAt   DateTime  @updatedAt
+
+  @@index([updatedAt])
+}
+
 model RefreshToken {
   id        String    @id @default(cuid())
   userId    String

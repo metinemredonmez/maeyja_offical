@@ -84,22 +84,22 @@ export class AuthService {
 
   async login(dto: LoginDto, meta: ClientMeta, staffOnly = false) {
     const ip = meta.ip ?? 'unknown';
-    this.loginGuard.assertAllowed(dto.email, ip);
+    await this.loginGuard.assertAllowed(dto.email, ip);
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
     // Compare against a dummy hash when the user doesn't exist so timing doesn't leak accounts.
     const ok = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
     if (!user || !ok || user.deletedAt) {
-      this.loginGuard.recordFailure(dto.email, ip);
+      await this.loginGuard.recordFailure(dto.email, ip);
       this.logger.warn(`failed login for ${dto.email} from ${ip}${staffOnly ? ' (admin)' : ''}`);
       throw new UnauthorizedException('E-posta veya şifre hatalı');
     }
     if (!user.isActive) throw new ForbiddenException('Hesabınız askıya alınmış');
     if (staffOnly && !STAFF_ROLES.includes(user.role)) {
-      this.loginGuard.recordFailure(dto.email, ip);
+      await this.loginGuard.recordFailure(dto.email, ip);
       throw new ForbiddenException('Yönetim paneline erişim yetkiniz yok');
     }
 
-    this.loginGuard.recordSuccess(dto.email, ip);
+    await this.loginGuard.recordSuccess(dto.email, ip);
 
     // Staff with TOTP enabled: password alone only buys a 5-minute token for the second step.
     if (user.mfaEnabledAt) {
@@ -126,9 +126,9 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || !user.isActive || user.deletedAt) throw new UnauthorizedException();
     // AUT-02: the account's second-step counter lives in MfaService; only the address is limited here.
-    this.loginGuard.assertIpAllowed(ip);
+    await this.loginGuard.assertIpAllowed(ip);
     if (!(await this.mfa.verify(user, code))) {
-      this.loginGuard.recordIpFailure(ip);
+      await this.loginGuard.recordIpFailure(ip);
       this.logger.warn(`failed mfa for ${user.email} from ${ip}`);
       throw new UnauthorizedException('Doğrulama kodu geçersiz');
     }
