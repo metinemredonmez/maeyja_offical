@@ -18,6 +18,14 @@ import {
 import { CheckoutService, PAYMENT_REVIEW } from './checkout.service';
 import { OrderLifecycleService, TRANSITIONS } from './order-lifecycle.service';
 
+/** "12345678901" → "•••••••8901". */
+const lastFour = (v: unknown) => (typeof v === 'string' && v.length > 4 ? `${'•'.repeat(v.length - 4)}${v.slice(-4)}` : v);
+const maskIds = (address: Prisma.JsonValue | undefined) => {
+  if (!address || typeof address !== 'object' || Array.isArray(address)) return address;
+  const a = address as Record<string, unknown>;
+  return { ...a, ...(a.identityNumber ? { identityNumber: lastFour(a.identityNumber) } : {}), ...(a.taxNumber ? { taxNumber: lastFour(a.taxNumber) } : {}) } as Prisma.JsonValue;
+};
+
 const RETURN_WINDOW_DAYS = 14; // cayma hakkı (Mesafeli Sözleşmeler Yönetmeliği)
 
 const customerOrderSelect = {
@@ -109,13 +117,19 @@ export class OrdersService {
     return created;
   }
 
-  private async withPaymentInfo<T extends { paymentProvider: PaymentProvider; status: OrderStatus }>(order: T) {
+  /**
+   * What a customer (signed in or with order number + e-mail) gets back. API-02: national ID and tax numbers show
+   * only their last four digits — whoever saw a shipping label could otherwise read them.
+   */
+  private async withPaymentInfo<T extends { paymentProvider: PaymentProvider; status: OrderStatus; billingAddress?: Prisma.JsonValue }>(order: T) {
+    const masked = { ...order, billingAddress: maskIds(order.billingAddress) };
     if (order.paymentProvider === PaymentProvider.BANK_TRANSFER && order.status === 'PENDING_PAYMENT') {
       const bt = await this.settings.get('bankTransfer');
-      return { ...order, bankTransfer: { bankName: bt.bankName, accountName: bt.accountName, iban: bt.iban, note: bt.note } };
+      return { ...masked, bankTransfer: { bankName: bt.bankName, accountName: bt.accountName, iban: bt.iban, note: bt.note } };
     }
-    return order;
+    return masked;
   }
+
 
   // ─────────────────────────── admin ───────────────────────────
 

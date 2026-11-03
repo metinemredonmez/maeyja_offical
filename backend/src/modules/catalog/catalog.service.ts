@@ -25,6 +25,9 @@ export const effectivePrice = (variant: { price: Prisma.Decimal | null }, produc
 
 const PRODUCT_ORDER: Prisma.ProductOrderByWithRelationInput[] = [{ sortOrder: 'asc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }];
 
+/** Categories and collections as the storefront links them. */
+const pickNamed = (x: { id: string; slug: string; name: string }) => ({ id: x.id, slug: x.slug, name: x.name });
+
 @Injectable()
 export class CatalogService {
   private numbers: { at: number; byId: Map<string, number> } | null = null;
@@ -125,8 +128,31 @@ export class CatalogService {
     });
     if (!p) throw new NotFoundException('Ürün bulunamadı');
 
-    const { collections, category, images, variants, ...rest } = p;
-    const localized = localize(rest, lang);
+    const { collections, category, images, variants } = p;
+    // API-02: the storefront's fields only — not whatever columns the table grows (status, sort order, timestamps…).
+    const localized = localize(
+      {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        subtitle: p.subtitle,
+        description: p.description,
+        aiSummary: p.aiSummary,
+        story: p.story,
+        material: p.material,
+        care: p.care,
+        dimensions: p.dimensions,
+        madeIn: p.madeIn,
+        sizeGuide: p.sizeGuide,
+        seoTitle: p.seoTitle,
+        seoDescription: p.seoDescription,
+        isFeatured: p.isFeatured,
+        publishedAt: p.publishedAt,
+        updatedAt: p.updatedAt,
+        translations: p.translations,
+      },
+      lang,
+    );
     const variantViews = variants.map((v) => ({
       id: v.id,
       sku: v.sku,
@@ -153,8 +179,8 @@ export class CatalogService {
       basePrice: toNumber(p.basePrice),
       compareAtPrice: p.compareAtPrice ? toNumber(p.compareAtPrice) : null,
       priceRange: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : null,
-      category: category ? localize(category, lang) : null,
-      collections: collections.map((c) => localize(c.collection, lang)),
+      category: category ? pickNamed(localize(category, lang)) : null,
+      collections: collections.map((c) => pickNamed(localize(c.collection, lang))),
       images: images.map(({ color, ...img }) => ({ ...img, alt: this.imageAlt(localized.name, color, lang), colorSlug: color?.slug ?? null })),
       variants: variantViews,
       colors: this.uniqueColors(variants, lang),
