@@ -23,6 +23,7 @@
     "db:seed:demo": "ts-node prisma/seed-demo.ts",
     "user:test": "ts-node prisma/test-user.ts",
     "mfa:reset": "ts-node prisma/mfa-reset.ts",
+    "text:stripe": "ts-node prisma/payment-provider-text.ts",
     "translate:missing": "ts-node prisma/translate-missing.ts"
   },
   "prisma": {
