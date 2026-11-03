@@ -11,6 +11,17 @@ import { PrismaService } from '../../prisma/prisma.service';
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
 const VIDEO_TYPES = ['video/mp4', 'video/webm'];
 const WIDTHS = [400, 800, 1600, 2400];
+/** FIL-01: what the bytes must be, whatever the browser called the file (sharp's names; AVIF reads as heif). */
+const IMAGE_FORMATS = ['jpeg', 'png', 'webp', 'heif'];
+/** FIL-02: decompression bombs are refused before decoding (about 8000 × 8000), and no resize may run away. */
+const MAX_INPUT_PIXELS = 64_000_000;
+const SHARP_TIMEOUT = { seconds: 30 };
+
+/** FIL-01: MP4 has "ftyp" at byte 4, WebM starts with the EBML magic 1A 45 DF A3. */
+export function videoMatches(mimetype: string, buf: Buffer) {
+  if (mimetype === 'video/mp4') return buf.length > 12 && buf.subarray(4, 8).toString('latin1') === 'ftyp';
+  return buf.length > 4 && buf.readUInt32BE(0) === 0x1a45dfa3;
+}
 
 @Injectable()
 export class MediaService {
@@ -33,6 +44,7 @@ export class MediaService {
     const id = randomBytes(8).toString('hex');
 
     if (VIDEO_TYPES.includes(file.mimetype)) {
+      if (!videoMatches(file.mimetype, file.buffer)) throw new BadRequestException('Dosya bir MP4/WebM videosu değil');
       const ext = file.mimetype === 'video/webm' ? 'webm' : 'mp4';
       const key = `${folder}/${id}.${ext}`;
       await this.write(key, file.buffer);
@@ -44,8 +56,12 @@ export class MediaService {
     if (!IMAGE_TYPES.includes(file.mimetype)) throw new BadRequestException('Desteklenen türler: JPG, PNG, WebP, AVIF, MP4, WebM');
 
     // Re-encoding strips EXIF (incl. GPS) and normalises orientation.
-    const image = sharp(file.buffer, { failOn: 'error' }).rotate();
-    const meta = await image.metadata();
+    const image = sharp(file.buffer, { failOn: 'error', limitInputPixels: MAX_INPUT_PIXELS }).rotate().timeout(SHARP_TIMEOUT);
+    const meta = await image.metadata().catch(() => {
+      throw new BadRequestException('Görsel okunamadı ya da çok büyük (en fazla yaklaşık 8000 × 8000 piksel)');
+    });
+    // An SVG, GIF or TIFF renamed to .jpg is refused here: only the formats we expect are decoded.
+    if (!meta.format || !IMAGE_FORMATS.includes(meta.format)) throw new BadRequestException('Desteklenen türler: JPG, PNG, WebP, AVIF');
     if (!meta.width || !meta.height) throw new BadRequestException('Görsel okunamadı');
 
     const renditions: Record<string, string> = {};
