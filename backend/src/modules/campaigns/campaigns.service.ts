@@ -145,7 +145,13 @@ export class CampaignsService {
           take: BATCH,
         });
         if (!batch.length) break;
+        const consented = await this.stillConsented(campaign.audience, batch.map((r) => r.email));
         for (const r of batch) {
+          // BUS-05: whoever unsubscribed after the audience was frozen is skipped, not mailed.
+          if (!consented.has(r.email)) {
+            await this.prisma.emailCampaignRecipient.update({ where: { id: r.id }, data: { status: CampaignRecipientStatus.SKIPPED, error: 'Abonelikten çıktı' } });
+            continue;
+          }
           // RES-01: past the day's total the campaign waits; the minute job carries on tomorrow.
           if (!(await this.usage.mailToday('newsletter'))) {
             this.logger.warn(`campaign ${id} paused: daily e-mail limit reached`);
@@ -222,6 +228,21 @@ export class CampaignsService {
       }
     }
     return [...out].map(([email, l]) => ({ email, locale: l }));
+  }
+
+  /** The same consent rule as `resolveAudience`, checked again right before sending. */
+  private async stillConsented(audience: CampaignAudience, emails: string[]) {
+    const [subs, users] = await Promise.all([
+      this.prisma.newsletterSubscriber.findMany({ where: { email: { in: emails } }, select: { email: true, unsubscribedAt: true } }),
+      audience === CampaignAudience.SUBSCRIBERS
+        ? []
+        : this.prisma.user.findMany({ where: { email: { in: emails }, role: UserRole.CUSTOMER, marketingOptIn: true, isActive: true, deletedAt: null }, select: { email: true } }),
+    ]);
+    const unsubscribed = new Set(subs.filter((s) => s.unsubscribedAt).map((s) => s.email));
+    const ok = new Set<string>();
+    if (audience !== CampaignAudience.CUSTOMERS) for (const s of subs) if (!s.unsubscribedAt) ok.add(s.email);
+    for (const u of users) if (!unsubscribed.has(u.email)) ok.add(u.email);
+    return ok;
   }
 
   private async render(campaign: EmailCampaign, recipient: Pick<EmailCampaignRecipient, 'id' | 'locale'>) {

@@ -252,20 +252,26 @@ export class CatalogAdminService {
     return updated;
   }
 
-  /** Emails everyone waiting on this variant, once. */
+  /** Emails everyone waiting on this variant, once (BUS-05: each alert is claimed before its e-mail goes out). */
   async notifyRestock(variantId: string) {
     const variant = await this.prisma.productVariant.findUnique({ where: { id: variantId }, include: { product: true, color: true } });
     if (!variant) return;
     const alerts = await this.prisma.stockAlert.findMany({ where: { variantId, notifiedAt: null }, take: 500 });
     const web = this.config.get('WEB_URL', { infer: true });
     const label = [variant.product.name, variant.color?.name, variant.size].filter(Boolean).join(' — ');
+    let sent = 0;
     for (const alert of alerts) {
+      // A second restock run (two stock edits in a row) finds the alert already taken.
+      const claimed = await this.prisma.stockAlert.updateMany({ where: { id: alert.id, notifiedAt: null }, data: { notifiedAt: new Date() } });
+      if (claimed.count === 0) continue;
       // RES-01: an address over its quota keeps waiting for the next restock; past the day's total, the rest do.
-      if (!(await this.usage.mailToAddress('restock', alert.email))) continue;
-      await this.mail.send(alert.email, templates.stockAlert(mailLocale(alert.locale), label, `${web}${storefrontPath(alert.locale, `/products/${variant.product.slug}`)}`));
-      await this.prisma.stockAlert.update({ where: { id: alert.id }, data: { notifiedAt: new Date() } });
+      const ok =
+        (await this.usage.mailToAddress('restock', alert.email)) &&
+        (await this.mail.send(alert.email, templates.stockAlert(mailLocale(alert.locale), label, `${web}${storefrontPath(alert.locale, `/products/${variant.product.slug}`)}`)));
+      if (ok) sent++;
+      else await this.prisma.stockAlert.update({ where: { id: alert.id }, data: { notifiedAt: null } });
     }
-    if (alerts.length) this.logger.log(`restock: notified ${alerts.length} for ${variant.sku}`);
+    if (sent) this.logger.log(`restock: notified ${sent} for ${variant.sku}`);
   }
 
   // ─────────────────────────── images ───────────────────────────
