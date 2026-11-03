@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentProvider, PaymentStatus, Prisma, ReturnStatus } from '@prisma/client';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
@@ -17,6 +17,7 @@ import {
 } from './dto/orders.dto';
 import { CheckoutService, PAYMENT_REVIEW } from './checkout.service';
 import { OrderLifecycleService, TRANSITIONS } from './order-lifecycle.service';
+import { canMoveReturn } from './return-status';
 
 /** "12345678901" → "•••••••8901". */
 const lastFour = (v: unknown) => (typeof v === 'string' && v.length > 4 ? `${'•'.repeat(v.length - 4)}${v.slice(-4)}` : v);
@@ -328,10 +329,16 @@ export class OrdersService {
   async updateReturn(id: string, dto: UpdateReturnDto) {
     const rr = await this.prisma.returnRequest.findUnique({ where: { id }, include: { order: true } });
     if (!rr) throw new NotFoundException('İade talebi bulunamadı');
-    const updated = await this.prisma.returnRequest.update({
-      where: { id },
+    // Same status: only the note changes and the customer isn't mailed again.
+    if (dto.status === rr.status) return this.prisma.returnRequest.update({ where: { id }, data: { adminNote: dto.adminNote } });
+    if (!canMoveReturn(rr.status, dto.status)) throw new BadRequestException(`İade talebi "${rr.status}" durumundan "${dto.status}" durumuna geçemez`);
+    // Atomic: two admins changing the same request can't both move it.
+    const moved = await this.prisma.returnRequest.updateMany({
+      where: { id, status: rr.status },
       data: { status: dto.status, adminNote: dto.adminNote, ...(dto.status === ReturnStatus.REFUNDED ? { refundedAt: new Date() } : {}) },
     });
+    if (moved.count === 0) throw new ConflictException('İade talebi bu sırada değişti; sayfayı yenileyin');
+    const updated = await this.prisma.returnRequest.findUniqueOrThrow({ where: { id } });
     const labels: Record<ReturnStatus, [string, string]> = {
       REQUESTED: ['Alındı', 'Received'],
       APPROVED: ['Onaylandı — ürünü kargoya verebilirsiniz', 'Approved — please ship the item back'],
