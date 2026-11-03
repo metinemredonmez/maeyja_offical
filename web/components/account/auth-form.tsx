@@ -17,6 +17,8 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: st
   const router = useRouter();
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
+  // Sign-up never signs in by itself (AUT-02): the link in the e-mail opens the account.
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,7 +30,12 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: st
     }
     setBusy(true);
     try {
-      await api.post(`/auth/${mode}`, body);
+      if (mode === 'register') {
+        await api.post('/auth/register', body);
+        setSentTo(String(body.email));
+        return;
+      }
+      await api.post('/auth/login', body);
       await qc.invalidateQueries({ queryKey: ['cart'] }); // guest cart was merged by the proxy
       router.replace(safeNext(next, '/account') as never);
       router.refresh();
@@ -38,6 +45,15 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: st
       setBusy(false);
     }
   };
+
+  if (sentTo) {
+    return (
+      <div className="mx-auto max-w-md px-4 pt-12 md:pt-20">
+        <h1 className="mb-6 font-serif text-5xl font-light leading-none">{t('checkEmailTitle')}</h1>
+        <p className="text-[15px] leading-relaxed text-ink-soft">{t('checkEmailText', { email: sentTo })}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-md px-4 pt-12 md:pt-20">

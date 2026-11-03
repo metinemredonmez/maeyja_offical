@@ -7,7 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogService, VISIBLE_PRODUCT } from '../catalog/catalog.service';
 import { ProductQueryDto } from '../catalog/dto/catalog.dto';
 import { SettingsService } from '../settings/settings.service';
-import { UsageService, visitorKey } from './usage.service';
+import { UsageService, visitorKey } from '../usage/usage.service';
 
 const MODEL = 'claude-opus-5-5';
 const KNOWLEDGE_TTL_MS = 5 * 60 * 1000;

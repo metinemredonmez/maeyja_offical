@@ -142,6 +142,18 @@ export const templates = {
       ? build('E-posta adresinizi doğrulayın', 'E-posta doğrulama', `<p>Hesabınızı doğrulamak için aşağıdaki bağlantıya tıklayın. Bağlantı 48 saat geçerlidir.</p>${button(link, 'Doğrula')}`)
       : build('Verify your email', 'Verify your email', `<p>Click below to verify your account. The link is valid for 48 hours.</p>${button(link, 'Verify')}`, 'en'),
 
+  /** Sign-up: the account opens when this link is clicked (AUT-02). */
+  confirmRegistration: (l: MailLocale, link: string) =>
+    l === 'tr'
+      ? build('MAEYJA hesabınızı açın', 'Hesabınızı açın', `<p>MAEYJA hesabınızı açmak için aşağıdaki bağlantıya tıklayın. Bağlantı 48 saat geçerlidir.</p>${button(link, 'Hesabımı aç')}<p>Bu kaydı siz yapmadıysanız bu e-postayı yok sayın; hesap açılmaz.</p>`)
+      : build('Open your MAEYJA account', 'Open your account', `<p>Click below to open your MAEYJA account. The link is valid for 48 hours.</p>${button(link, 'Open my account')}<p>If you didn't sign up, ignore this email; no account will be opened.</p>`, 'en'),
+
+  /** Someone tried to sign up with an address that already has an account: only its owner hears about it. */
+  accountExists: (l: MailLocale, loginUrl: string, resetUrl: string) =>
+    l === 'tr'
+      ? build('Bu e-postayla zaten bir hesabınız var', 'Zaten bir hesabınız var', `<p>Bu e-posta adresiyle MAEYJA'da yeni bir hesap açılmak istendi, ama adresin zaten bir hesabı var. Mevcut hesabınızla giriş yapabilirsiniz.</p>${button(loginUrl, 'Giriş yap')}<p>Şifrenizi hatırlamıyorsanız <a href="${esc(resetUrl)}">yeni şifre belirleyin</a>. Bu isteği siz yapmadıysanız bu e-postayı yok sayın; hesabınızda bir şey değişmedi.</p>`)
+      : build('You already have an account', 'You already have an account', `<p>Someone tried to open a new MAEYJA account with this email address, but it already has one. You can sign in with your existing account.</p>${button(loginUrl, 'Sign in')}<p>Forgot your password? <a href="${esc(resetUrl)}">Set a new one</a>. If this wasn't you, ignore this email; nothing changed on your account.</p>`, 'en'),
+
   passwordReset: (l: MailLocale, link: string) =>
     l === 'tr'
       ? build('Şifre sıfırlama', 'Şifrenizi sıfırlayın', `<p>Şifre sıfırlama talebi aldık. Bağlantı 1 saat geçerlidir. Talebi siz yapmadıysanız bu e-postayı yok sayın.</p>${button(link, 'Yeni şifre belirle')}`)

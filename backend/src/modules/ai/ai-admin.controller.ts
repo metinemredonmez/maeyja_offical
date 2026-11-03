@@ -4,7 +4,7 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsObject, IsOptional, IsString,
 import { Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { LOCALES, type Locale } from '../../common/utils/i18n.util';
 import { AiService } from './ai.service';
-import { UsageService } from './usage.service';
+import { UsageService } from '../usage/usage.service';
 
 class TranslateDto {
   /** Turkish base texts keyed by field name, e.g. `{ title: '…', body: '<p>…</p>' }`. */

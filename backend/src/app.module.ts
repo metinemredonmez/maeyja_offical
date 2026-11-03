@@ -28,6 +28,7 @@ import { OrdersModule } from './modules/orders/orders.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
+import { UsageModule } from './modules/usage/usage.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { UsersModule } from './modules/users/users.module';
     PrismaModule,
     SettingsModule,
     NotificationsModule,
+    UsageModule,
     HealthModule,
     AuthModule,
     UsersModule,

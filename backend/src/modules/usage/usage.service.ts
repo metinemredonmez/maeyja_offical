@@ -18,7 +18,7 @@ export function visitorKey(ip: string): string {
 }
 
 /**
- * Quotas for the paid AI features (RES-01), counted in Postgres so a restart or deploy doesn't hand out a fresh
+ * Quotas (RES-01: the paid AI features, e-mails per address), counted in Postgres so a restart or deploy doesn't hand out a fresh
  * budget. Each call counts one use; it answers false once the limit of its window is passed.
  */
 @Injectable()

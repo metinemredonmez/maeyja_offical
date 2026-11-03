@@ -8,7 +8,7 @@ import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { VISIBLE_PRODUCT } from '../catalog/catalog.service';
 import { SettingsService } from '../settings/settings.service';
-import { UsageService, visitorKey } from './usage.service';
+import { UsageService, visitorKey } from '../usage/usage.service';
 
 const MODEL = 'gemini-3-pro-image';
 const RESULT_TTL_MS = 10 * 60 * 1000;

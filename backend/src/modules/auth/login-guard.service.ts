@@ -49,11 +49,13 @@ export class LoginGuardService {
     await this.prisma.loginAttempt.deleteMany({ where: { key: `ui:${email}|${ip}` } });
   }
 
-  /** Old counters go; the lock history of a key is forgotten after two quiet days. */
+  /** Old counters go (a key's lock history is forgotten after two quiet days), and so do expired sign-ups. */
   @Cron(CronExpression.EVERY_HOUR)
   async sweep() {
     const quiet = new Date(Date.now() - 2 * 86400_000);
     await this.prisma.loginAttempt.deleteMany({ where: { updatedAt: { lt: quiet }, OR: [{ lockedUntil: null }, { lockedUntil: { lt: new Date() } }] } });
+    // Sign-ups whose link was never clicked.
+    await this.prisma.pendingRegistration.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   }
 
   private async assert(keys: string[]) {

@@ -8,7 +8,7 @@ import { COOKIE, cookieOptions } from '@/lib/cookies';
 const API_URL = (process.env.API_URL ?? 'http://127.0.0.1:4000/api').replace(/\/$/, '');
 const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'content-length', 'host', 'cookie']);
 /** Routes whose JSON carries tokens: they are moved into cookies and stripped from the body. */
-const AUTH_ROUTES = new Set(['auth/login', 'auth/register', 'auth/refresh', 'auth/logout', 'auth/change-password']);
+const AUTH_ROUTES = new Set(['auth/login', 'auth/register', 'auth/refresh', 'auth/logout', 'auth/change-password', 'auth/verify-email']);
 /** Only the storefront's own API surface is proxied — never admin/*, never the admin login. */
 const ALLOW: [RegExp, string[]][] = [
   [/^auth\/(login|register|logout|forgot-password|reset-password|verify-email|resend-verification|change-password)$/, ['POST']],
@@ -79,8 +79,8 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const cartToken = upstream.headers.get('x-cart-token');
   if (cartToken) res.cookies.set(COOKIE.cart, cartToken, cookieOptions.cart);
 
-  // Login/register: persist tokens, merge the guest cart into the account, hide tokens from JS.
-  if ((target === 'auth/login' || target === 'auth/register' || target === 'auth/change-password') && upstream.ok) {
+  // Login, or the sign-up link opening the account: persist tokens, merge the guest cart, hide tokens from JS.
+  if ((target === 'auth/login' || target === 'auth/register' || target === 'auth/verify-email' || target === 'auth/change-password') && upstream.ok) {
     const tokens = (res as NextResponse & { __tokens?: Tokens }).__tokens;
     if (tokens) {
       setTokens(res, tokens);

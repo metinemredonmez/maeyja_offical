@@ -7,7 +7,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { ADMIN_ROLES, Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { LOCALES } from '../../common/utils/i18n.util';
 import { AiToolsService } from './ai-tools.service';
-import { UsageService } from './usage.service';
+import { UsageService } from '../usage/usage.service';
 
 class AltDto {
   @IsOptional() @IsBoolean() overwrite?: boolean;

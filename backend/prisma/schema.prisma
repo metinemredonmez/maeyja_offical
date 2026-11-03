@@ -140,6 +140,20 @@ model User {
   @@index([createdAt])
 }
 
+/// A storefront sign-up waiting for its e-mail link (AUT-02). The account and its password only come into being when
+/// the mailbox owner clicks, so nobody can open (or claim in advance) an account for someone else's address.
+model PendingRegistration {
+  id        String   @id @default(cuid())
+  email     String
+  tokenHash String   @unique
+  data      Json // first and last name, phone, password hash, marketing consent, locale
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
 /// Use counters for the paid AI features (RES-01): per visitor, per hour and per day, kept across restarts.
 model UsageCounter {
   key       String   @id

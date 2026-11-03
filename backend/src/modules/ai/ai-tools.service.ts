@@ -11,7 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { button, emailShell, esc, mailLocale, textOf } from '../notifications/mail.templates';
 import { SettingsService } from '../settings/settings.service';
-import { UsageService, visitorKey } from './usage.service';
+import { UsageService, visitorKey } from '../usage/usage.service';
 
 const MODEL = 'claude-opus-5-5';
 /** A shopper's (or a bot's) new searches per hour, and how many answers stay cached. */

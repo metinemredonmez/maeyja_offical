@@ -37,8 +37,8 @@ export class AuthController {
   @Public()
   @Throttle(STRICT)
   @Post('register')
-  register(@Body() dto: RegisterDto, @ClientIp() ip: string, @Req() req: Request) {
-    return this.auth.register(dto, { ip, userAgent: req.headers['user-agent'] });
+  register(@Body() dto: RegisterDto) {
+    return this.auth.register(dto);
   }
 
   @Public()
@@ -142,8 +142,8 @@ export class AuthController {
   @Public()
   @HttpCode(200)
   @Post('verify-email')
-  verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.auth.verifyEmail(dto.token);
+  verifyEmail(@Body() dto: VerifyEmailDto, @ClientIp() ip: string, @Req() req: Request) {
+    return this.auth.verifyEmail(dto.token, { ip, userAgent: req.headers['user-agent'] });
   }
 
   @ApiBearerAuth()
