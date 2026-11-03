@@ -12,25 +12,48 @@ export const PREVIEW_HEADER = 'x-mj-preview';
 
 type Contact = { email?: string; phone?: string; instagram?: string };
 type State = { enabled: boolean; preview: boolean; contact?: Contact };
-const cache = new Map<string, { at: number; state: State }>();
 
-export async function maintenanceState(preview: string | undefined): Promise<State> {
-  const key = preview ?? '';
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < TTL) return hit.state;
-  let state: State = { enabled: false, preview: false };
+/** The shop-wide answer (on/off, contact), shared by every visitor. */
+let shared: { at: number; enabled: boolean; contact?: Contact } | null = null;
+/** Preview tokens already checked, newest last; a flood of made-up tokens only pushes out other made-up ones. */
+const previews = new Map<string, { at: number; ok: boolean }>();
+const PREVIEWS_KEPT = 100;
+
+async function ask(preview?: string): Promise<State | null> {
   try {
     const res = await fetch(`${API_URL}/settings/maintenance${preview ? `?preview=${encodeURIComponent(preview)}` : ''}`, { cache: 'no-store', signal: AbortSignal.timeout(1500) });
-    if (res.ok) {
-      const body = (await res.json()) as { data?: State } & State;
-      state = body.data ?? body;
-    }
+    if (!res.ok) return null;
+    const body = (await res.json()) as { data?: State } & State;
+    return body.data ?? body;
   } catch {
-    // API down: keep the shop open rather than closing it by mistake.
+    return null;
   }
-  if (cache.size > 50) cache.clear();
-  cache.set(key, { at: Date.now(), state });
-  return state;
+}
+
+/**
+ * Whether the shop is closed, and whether this visitor's preview token is the staff one. If the API doesn't answer,
+ * the last known state stands (a slow API mustn't open a closed shop); before any answer the shop stays open.
+ */
+export async function maintenanceState(preview: string | undefined): Promise<State> {
+  const now = Date.now();
+  if (!shared || now - shared.at > TTL) {
+    const s = await ask();
+    if (s) shared = { at: now, enabled: s.enabled, contact: s.contact };
+    else if (shared) shared.at = now - TTL + 2_000; // keep the old answer, ask again in two seconds
+  }
+  let ok = false;
+  if (preview) {
+    const hit = previews.get(preview);
+    if (hit && now - hit.at < TTL) ok = hit.ok;
+    else {
+      const s = await ask(preview);
+      ok = s ? s.preview : (hit?.ok ?? false);
+      previews.delete(preview);
+      previews.set(preview, { at: now, ok });
+      if (previews.size > PREVIEWS_KEPT) previews.delete(previews.keys().next().value!);
+    }
+  }
+  return { enabled: shared?.enabled ?? false, preview: ok, contact: shared?.contact };
 }
 
 const TEXT: Record<string, [string, string, string]> = {

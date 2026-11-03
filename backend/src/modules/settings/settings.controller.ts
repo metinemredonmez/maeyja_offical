@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
@@ -30,6 +30,15 @@ export class SettingsController {
   @Get('admin/settings')
   getAll() {
     return this.settings.getAllForAdmin();
+  }
+
+  /** Admin → Ana sayfa önizleme: "anahtarı yenile" (a leaked preview link stops working). */
+  @ApiBearerAuth()
+  @Roles(...ADMIN_ROLES)
+  @HttpCode(200)
+  @Post('admin/settings/maintenance/preview-token')
+  rotatePreviewToken() {
+    return this.settings.rotatePreviewToken();
   }
 
   @ApiBearerAuth()

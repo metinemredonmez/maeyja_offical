@@ -46,13 +46,16 @@ function csp(nonce: string, preview: boolean) {
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Staff preview link from the admin (?preview=…): remember it in a cookie and continue on the clean address.
+  // Staff preview link from the admin (?preview=…): remembered in a cookie only when the API confirms the token,
+  // then the visitor continues on the clean address.
   const previewParam = request.nextUrl.searchParams.get('preview');
   if (previewParam) {
     const url = request.nextUrl.clone();
     url.searchParams.delete('preview');
     const res = NextResponse.redirect(url);
-    res.cookies.set(PREVIEW_COOKIE, previewParam, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 7 * 24 * 3600 });
+    if (previewParam.length <= 100 && (await maintenanceState(previewParam)).preview) {
+      res.cookies.set(PREVIEW_COOKIE, previewParam, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 7 * 24 * 3600 });
+    }
     return res;
   }
   // Maintenance mode (admin top bar): everyone but staff with the preview cookie sees the "back soon" page.

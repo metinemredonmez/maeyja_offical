@@ -32,6 +32,10 @@ export const useConnectStripe = () =>
 export const useDisconnectStripe = () =>
   useApiMutation({ mutationFn: () => api.delete('/admin/payments/stripe'), invalidate: [systemKeys.stripe], success: 'Stripe bağlantısı kaldırıldı' });
 
+/** A new staff preview token; every preview link given out so far stops working. */
+export const useRotatePreviewToken = () =>
+  useApiMutation({ mutationFn: () => api.post('/admin/settings/maintenance/preview-token'), invalidate: [systemKeys.settings], success: 'Önizleme anahtarı yenilendi' });
+
 export const useAuditLogs = (params: { page: number; limit: number; q?: string }) =>
   useQuery({ queryKey: systemKeys.audit(params), queryFn: () => api.get<Paginated<AuditLog>>(`/admin/audit-logs${qs(params)}`), placeholderData: keepPreviousData });
 

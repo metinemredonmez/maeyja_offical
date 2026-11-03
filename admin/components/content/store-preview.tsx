@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ExternalLinkIcon, MonitorIcon, RotateCwIcon, SmartphoneIcon } from 'lucide-react';
+import { ExternalLinkIcon, KeyRoundIcon, MonitorIcon, RotateCwIcon, SmartphoneIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { STORE_URL } from '@/lib/format';
 import { LOCALES, type Locale } from '@/lib/i18n';
-import { useSettings } from '@/lib/queries/system';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
+import { useRotatePreviewToken, useSettings } from '@/lib/queries/system';
 import { cn } from '@/lib/utils';
 
 /** The shop is drawn at a real screen width and scaled down into the panel. */
@@ -22,6 +23,8 @@ export function StorePreview({ version }: { version: string }) {
   const [device, setDevice] = useState<keyof typeof SCREEN>('desktop');
   const [locale, setLocale] = useState<Locale>('tr');
   const [reloads, setReloads] = useState(0);
+  const [rotating, setRotating] = useState(false);
+  const rotate = useRotatePreviewToken();
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -60,6 +63,18 @@ export function StorePreview({ version }: { version: string }) {
         <Button variant="ghost" size="icon-sm" onClick={() => setReloads((n) => n + 1)} aria-label="Yenile">
           <RotateCwIcon />
         </Button>
+        <Button variant="ghost" size="icon-sm" onClick={() => setRotating(true)} aria-label="Önizleme anahtarını yenile" title="Önizleme anahtarını yenile">
+          <KeyRoundIcon />
+        </Button>
+        <ConfirmDialog
+          open={rotating}
+          onOpenChange={setRotating}
+          title="Önizleme anahtarı yenilensin mi?"
+          description="Şimdiye kadar paylaşılan bütün önizleme bağlantıları çalışmaz olur (bakımdayken siteyi görebilmek için). Bu ekran yeni anahtarla devam eder."
+          confirmLabel="Yenile"
+          loading={rotate.isPending}
+          onConfirm={() => rotate.mutateAsync().then(() => setRotating(false))}
+        />
         {src ? (
           <Button variant="ghost" size="icon-sm" render={<a href={src} target="_blank" rel="noopener" />} aria-label="Yeni sekmede aç">
             <ExternalLinkIcon />
@@ -72,6 +87,9 @@ export function StorePreview({ version }: { version: string }) {
             key={`${src}|${version}|${reloads}|${device}`}
             src={src}
             title="Mağaza önizlemesi"
+            // The shop runs in the frame but may not navigate or open windows over the admin.
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            referrerPolicy="no-referrer"
             style={{ width: screen.w, height, transform: `scale(${scale})` }}
             className={cn('absolute top-0 origin-top-left border-0 bg-white', device === 'desktop' ? 'left-0' : 'left-1/2 -translate-x-1/2 origin-top rounded-[28px] shadow-lg')}
           />

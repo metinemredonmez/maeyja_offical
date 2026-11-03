@@ -59,6 +59,15 @@ export class SettingsService {
     return value;
   }
 
+  /** A new staff preview token: every preview link and cookie handed out so far stops working. */
+  async rotatePreviewToken() {
+    const current = await this.get('maintenance');
+    const value = { ...current, previewToken: randomBytes(16).toString('hex') } as Prisma.InputJsonValue;
+    await this.prisma.setting.upsert({ where: { key: 'maintenance' }, create: { key: 'maintenance', value }, update: { value } });
+    this.logger.warn('staff preview token rotated');
+    return { ok: true };
+  }
+
   /**
    * Whether the storefront is closed for maintenance, and whether this visitor carries the staff preview token: it lets
    * them in while closed, and (open or closed) shows the admin's home page preview without the minute-long cache.
