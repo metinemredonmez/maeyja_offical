@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE, cookieOptions } from '@/lib/cookies';
+import { clearTokens, refreshSession, setTokens, type Tokens } from '@/lib/session';
 
 /**
  * BFF proxy: the browser only ever talks to this origin. Tokens live in httpOnly cookies here
@@ -36,7 +37,6 @@ function sameOrigin(req: NextRequest) {
   return originOk && req.headers.get('x-requested-with') === 'mj';
 }
 
-type Tokens = { accessToken?: string; refreshToken?: string };
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +60,8 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   const refresh = req.cookies.get(COOKIE.refresh)?.value;
   let rotated: Tokens | null = null;
   if (upstream.status === 401 && refresh && !AUTH_ROUTES.has(target)) {
-    rotated = await refreshTokens(req, refresh);
+    const renewed = await refreshSession(refresh, req.headers.get('user-agent') ?? '', req.headers.get('x-forwarded-for'));
+    rotated = renewed && renewed !== 'invalid' ? renewed : null;
     if (rotated?.accessToken) {
       access = rotated.accessToken;
       upstream = await forward(req, url, body, access);
@@ -112,21 +113,6 @@ async function forward(req: NextRequest, url: string, body: ArrayBuffer | undefi
   return fetch(url, { method: req.method, headers, body, redirect: 'manual', cache: 'no-store' });
 }
 
-async function refreshTokens(req: NextRequest, refreshToken: string): Promise<Tokens | null> {
-  try {
-    const r = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': req.headers.get('user-agent') ?? '' },
-      body: JSON.stringify({ refreshToken }),
-      cache: 'no-store',
-    });
-    if (!r.ok) return null;
-    const json = (await r.json()) as { data?: Tokens };
-    return json.data ?? null;
-  } catch {
-    return null;
-  }
-}
 
 /** Copies the upstream response; for auth routes strips the tokens out of the JSON body. */
 async function toResponse(upstream: Response, isAuth: boolean) {
@@ -162,14 +148,5 @@ async function logout(req: NextRequest) {
   return res;
 }
 
-function setTokens(res: NextResponse, t: Tokens) {
-  if (t.accessToken) res.cookies.set(COOKIE.access, t.accessToken, cookieOptions.access);
-  if (t.refreshToken) res.cookies.set(COOKIE.refresh, t.refreshToken, cookieOptions.refresh);
-}
-
-function clearTokens(res: NextResponse) {
-  res.cookies.set(COOKIE.access, '', { ...cookieOptions.access, maxAge: 0 });
-  res.cookies.set(COOKIE.refresh, '', { ...cookieOptions.refresh, maxAge: 0 });
-}
 
 export { handler as GET, handler as POST, handler as PUT, handler as PATCH, handler as DELETE };

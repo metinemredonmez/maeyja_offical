@@ -2,6 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
 import { COOKIE } from './lib/cookies';
+import { accessExpiring, clearTokens, refreshSession, setTokens, type Tokens } from './lib/session';
 import { maintenancePage, maintenanceState, PREVIEW_COOKIE, PREVIEW_HEADER } from './lib/maintenance';
 
 const intl = createIntlMiddleware(routing);
@@ -64,13 +65,23 @@ export default async function proxy(request: NextRequest) {
     });
   }
 
+  // The 15-minute access token ran out: renew it here, since pages (server components) can't set cookies themselves.
+  const refresh = request.cookies.get(COOKIE.refresh)?.value;
+  let renewed: Tokens | 'invalid' | null = null;
+  if (refresh && accessExpiring(request.cookies.get(COOKIE.access)?.value)) {
+    renewed = await refreshSession(refresh, request.headers.get('user-agent') ?? '', request.headers.get('x-forwarded-for'));
+  }
+
   // Customer-only pages: bounce to login (keeping the target) when no session cookie at all.
   const path = stripLocale(pathname);
-  if (PROTECTED.some((re) => re.test(path)) && !request.cookies.get(COOKIE.access) && !request.cookies.get(COOKIE.refresh)) {
+  const signedOut = renewed === 'invalid' || (!request.cookies.get(COOKIE.access) && !refresh);
+  if (PROTECTED.some((re) => re.test(path)) && signedOut) {
     const url = request.nextUrl.clone();
     url.pathname = pathname.replace(path, '/account/login');
     url.searchParams.set('next', path);
-    return NextResponse.redirect(url);
+    const res = NextResponse.redirect(url);
+    if (renewed === 'invalid') clearTokens(res);
+    return res;
   }
 
   // Per-request CSP nonce, handed to Next through the request headers.
@@ -82,8 +93,23 @@ export default async function proxy(request: NextRequest) {
   // Pages skip their data cache for a verified preview, so a change saved in the admin shows on the next reload.
   headers.delete(PREVIEW_HEADER);
   if (gate.preview) headers.set(PREVIEW_HEADER, '1');
+  // The page renders with the renewed session (or without the dead one).
+  if (renewed) {
+    const jar = new Map(request.cookies.getAll().map((c) => [c.name, c.value]));
+    jar.delete(COOKIE.legacyRefresh);
+    if (renewed === 'invalid') {
+      jar.delete(COOKIE.access);
+      jar.delete(COOKIE.refresh);
+    } else {
+      if (renewed.accessToken) jar.set(COOKIE.access, renewed.accessToken);
+      if (renewed.refreshToken) jar.set(COOKIE.refresh, renewed.refreshToken);
+    }
+    headers.set('cookie', [...jar].map(([k, v]) => `${k}=${v}`).join('; '));
+  }
 
   const response = intl(new NextRequest(request.url, { headers, method: request.method }));
+  if (renewed === 'invalid') clearTokens(response);
+  else if (renewed) setTokens(response, renewed);
   response.headers.set('Content-Security-Policy', policy);
   if (!gate.preview) response.headers.set('X-Frame-Options', NO_FRAMES['X-Frame-Options']);
   return response;
