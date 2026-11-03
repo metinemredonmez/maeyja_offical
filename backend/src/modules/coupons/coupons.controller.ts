@@ -37,9 +37,16 @@ export class CouponsController {
     return this.prisma.coupon.create({ data: dto });
   }
 
+  /** INP-01: checked against the coupon as it will be, so sending only `value` can't slip past the type's limits. */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
-    this.validate(dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateCouponDto) {
+    const current = await this.prisma.coupon.findUniqueOrThrow({ where: { id } });
+    this.validate({
+      type: dto.type ?? current.type,
+      value: dto.value ?? Number(current.value),
+      startsAt: dto.startsAt === undefined ? current.startsAt : dto.startsAt,
+      endsAt: dto.endsAt === undefined ? current.endsAt : dto.endsAt,
+    });
     return this.prisma.coupon.update({ where: { id }, data: dto });
   }
 

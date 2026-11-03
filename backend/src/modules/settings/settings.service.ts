@@ -1,16 +1,30 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { randomBytes, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailService } from '../notifications/mail.service';
+import { templates } from '../notifications/mail.templates';
 import { SETTING_DEFAULTS, SETTING_KEYS, SettingKey, SettingValue } from './settings.defaults';
+import { cleanSettingPatch, maskSecrets } from './settings.validate';
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(SettingsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService,
+  ) {}
 
   async get<K extends SettingKey>(key: K): Promise<SettingValue<K>> {
     const row = await this.prisma.setting.findUnique({ where: { key } });
     return { ...SETTING_DEFAULTS[key], ...((row?.value as object) ?? {}) } as SettingValue<K>;
+  }
+
+  /** For the admin: like getAll, but secrets only as their last four characters. */
+  async getAllForAdmin() {
+    const all = await this.getAll();
+    return Object.fromEntries(Object.entries(all).map(([k, v]) => [k, maskSecrets(k as SettingKey, v as Record<string, unknown>)])) as typeof all;
   }
 
   async getAll() {
@@ -22,12 +36,23 @@ export class SettingsService {
     return all;
   }
 
-  async update(key: string, patch: Record<string, unknown>) {
+  async update(key: string, patch: Record<string, unknown>, actor?: { email?: string }) {
     if (!SETTING_KEYS.includes(key as SettingKey)) throw new BadRequestException(`Bilinmeyen ayar: ${key}`);
     const current = await this.get(key as SettingKey);
-    // Only accept keys that exist in the defaults; ignore anything else.
-    const allowed = Object.fromEntries(Object.entries(patch).filter(([k]) => k in SETTING_DEFAULTS[key as SettingKey]));
+    // INP-01: known fields only, each with its default's type and range; masked secrets stay as they are.
+    const allowed = cleanSettingPatch(key as SettingKey, patch ?? {});
     const merged = { ...current, ...allowed } as Record<string, unknown>;
+    // The account customers are told to pay into: any change is announced to the shop (payment redirection).
+    const before = current as Record<string, unknown>;
+    if (key === 'bankTransfer' && (merged.iban !== before.iban || merged.accountName !== before.accountName)) {
+      this.logger.warn(`bank account for transfers changed by ${actor?.email ?? 'unknown'}`);
+      void this.mail.sendToAdmin(
+        templates.securityNotice('Havale hesabı değişti', [
+          `Müşterilere gösterilen havale hesabı değiştirildi: ${String(merged.accountName ?? '')} · ${String(merged.iban ?? '')}`,
+          `Değiştiren: ${actor?.email ?? 'bilinmiyor'}`,
+        ]),
+      );
+    }
     if (key === 'maintenance' && !merged.previewToken) merged.previewToken = randomBytes(16).toString('hex');
     const value = merged as Prisma.InputJsonValue;
     await this.prisma.setting.upsert({ where: { key }, create: { key, value }, update: { value } });

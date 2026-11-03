@@ -1,8 +1,11 @@
 import { Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { ADMIN_ROLES, Roles } from '../../common/decorators/roles.decorator';
+import { SettingKey } from './settings.defaults';
 import { SettingsService } from './settings.service';
+import { maskSecrets } from './settings.validate';
 
 @ApiTags('Settings')
 @Controller()
@@ -26,13 +29,13 @@ export class SettingsController {
   @Roles(...ADMIN_ROLES)
   @Get('admin/settings')
   getAll() {
-    return this.settings.getAll();
+    return this.settings.getAllForAdmin();
   }
 
   @ApiBearerAuth()
   @Roles(...ADMIN_ROLES)
   @Put('admin/settings/:key')
-  update(@Param('key') key: string, @Body() body: Record<string, unknown>) {
-    return this.settings.update(key, body);
+  async update(@Param('key') key: string, @Body() body: Record<string, unknown>, @CurrentUser() user: AuthUser) {
+    return maskSecrets(key as SettingKey, (await this.settings.update(key, body, user)) as Record<string, unknown>);
   }
 }

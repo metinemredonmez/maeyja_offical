@@ -88,6 +88,15 @@ export class MailboxService {
   async updateAccount(id: string, dto: UpdateMailAccountDto) {
     const current = await this.findAccount(id);
     const { password, ...rest } = dto;
+    // EXT-05: the saved password only ever goes to the server it was typed for. Pointing the account at another
+    // host, port or login needs the password again, or a panel user could send it to a server of their own.
+    const moved =
+      (dto.imapHost !== undefined && dto.imapHost !== current.imapHost) ||
+      (dto.imapPort !== undefined && dto.imapPort !== current.imapPort) ||
+      (dto.smtpHost !== undefined && dto.smtpHost !== current.smtpHost) ||
+      (dto.smtpPort !== undefined && dto.smtpPort !== current.smtpPort) ||
+      (dto.email !== undefined && dto.email !== current.email);
+    if (moved && !password) throw new BadRequestException('Sunucu, port ya da adres değişince şifreyi yeniden girin');
     const account = await this.prisma.$transaction(async (tx) => {
       if (dto.isDefault) await tx.mailAccount.updateMany({ where: { id: { not: id } }, data: { isDefault: false } });
       return tx.mailAccount.update({

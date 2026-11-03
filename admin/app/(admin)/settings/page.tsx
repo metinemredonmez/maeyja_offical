@@ -151,6 +151,8 @@ function CheckoutTab({ value }: { value: Settings['checkout'] }) {
 }
 
 const STRIPE_KEY = /^(sk|rk)_(test|live)_[A-Za-z0-9]{10,}$/;
+/** How the API shows a saved secret (last four characters only). */
+const MASK = '••••';
 
 /** The only Stripe step left to staff: paste the secret key. The API checks it and sets up the webhook. */
 function StripeTab() {
@@ -185,7 +187,8 @@ function StripeTab() {
               )}
             </div>
             <Field label={st.configured ? 'Yeni gizli anahtar' : 'Gizli anahtar'} htmlFor="stripe-key" error={key && !valid ? { message: 'sk_live_… ya da rk_live_… ile başlamalı' } : undefined}>
-              <Input id="stripe-key" type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_live_…" className="font-mono" />
+              {/* Masked with CSS, not type="password": a password field gets the admin's own saved password filled in. */}
+              <Input id="stripe-key" name="mj-stripe-key" autoComplete="off" spellCheck={false} data-1p-ignore data-lpignore="true" data-form-type="other" value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_live_…" className="font-mono [-webkit-text-security:disc]" />
             </Field>
             <div className="flex flex-wrap justify-end gap-2">
               {st.source === 'admin' && (
@@ -375,7 +378,7 @@ function TrackingTab({ value }: { value: Settings['tracking'] }) {
   const set = (patch: Partial<Settings['tracking']>) => d.setDraft({ ...d.draft, ...patch });
   const invalid = (key: TrackingKey) => {
     const v = String(d.draft[key] ?? '');
-    return v !== '' && !TRACKING_FORMATS[key][0].test(v);
+    return v !== '' && !v.startsWith(MASK) && !TRACKING_FORMATS[key][0].test(v);
   };
   const anyInvalid = (Object.keys(TRACKING_FORMATS) as TrackingKey[]).some(invalid);
   // Whole snippets are pasted as often as bare IDs: keep only the part each field needs.
@@ -391,23 +394,28 @@ function TrackingTab({ value }: { value: Settings['tracking'] }) {
   };
   // Secrets are masked with CSS, not type="password": a password field makes the browser fill in the admin's saved
   // e-mail and password here (and offer to save the token as a password).
-  const text = (key: TrackingKey, label: string, hint: React.ReactNode, placeholder = '', secret = false) => (
-    <Field label={label} htmlFor={`tr-${key}`} hint={hint} error={invalid(key) ? TRACKING_FORMATS[key][1] : undefined}>
-      <Input
-        id={`tr-${key}`}
-        name={`mj-${key}`}
-        autoComplete="off"
-        spellCheck={false}
-        data-1p-ignore
-        data-lpignore="true"
-        data-form-type="other"
-        className={cn('font-mono text-xs', secret && '[-webkit-text-security:disc]')}
-        placeholder={placeholder}
-        value={String(d.draft[key] ?? '')}
-        onChange={(e) => set(clean(key, e.target.value))}
-      />
-    </Field>
-  );
+  // A saved secret comes back only as "••••abcd": the field stays empty, and left empty it keeps the saved one.
+  const text = (key: TrackingKey, label: string, hint: React.ReactNode, placeholder = '', secret = false) => {
+    const saved = secret && String(value[key] ?? '').startsWith(MASK) ? String(value[key]) : '';
+    const shown = String(d.draft[key] ?? '');
+    return (
+      <Field label={label} htmlFor={`tr-${key}`} hint={hint} error={invalid(key) ? TRACKING_FORMATS[key][1] : undefined}>
+        <Input
+          id={`tr-${key}`}
+          name={`mj-${key}`}
+          autoComplete="off"
+          spellCheck={false}
+          data-1p-ignore
+          data-lpignore="true"
+          data-form-type="other"
+          className={cn('font-mono text-xs', secret && '[-webkit-text-security:disc]')}
+          placeholder={saved ? `Kayıtlı ${saved} · değiştirmek için yenisini yapıştırın` : placeholder}
+          value={shown.startsWith(MASK) ? '' : shown}
+          onChange={(e) => set(saved && !e.target.value.trim() ? { [key]: saved } : clean(key, e.target.value))}
+        />
+      </Field>
+    );
+  };
   const events = <Ext href="https://business.facebook.com/events_manager2">Meta Events Manager</Ext>;
   const ga = <Ext href="https://analytics.google.com/analytics/web/#/a/admin">Google Analytics → Yönetici</Ext>;
   return (

@@ -116,6 +116,7 @@ export class PricingService {
         if (c.type === CouponType.PERCENT) {
           discountK = Math.round((subtotalK * Number(c.value)) / 100);
           if (c.maxDiscount) discountK = Math.min(discountK, toKurus(c.maxDiscount));
+          discountK = Math.min(discountK, subtotalK); // never more than the bags themselves
         } else if (c.type === CouponType.FIXED) {
           discountK = Math.min(toKurus(c.value), subtotalK);
         } else {
