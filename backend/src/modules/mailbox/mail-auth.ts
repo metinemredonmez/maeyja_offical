@@ -3,7 +3,7 @@
  * receiving server adds it on top; anything below could come from the sender). The From domain passes when DMARC
  * passed for it, or a passing DKIM signature belongs to it (relaxed alignment: same domain or a subdomain).
  */
-export function senderVerified(headerLines: { key: string; line: string }[], fromAddress: string): boolean {
+export function senderVerified(headerLines: readonly { key: string; line: string }[], fromAddress: string): boolean {
   const top = headerLines.find((h) => h.key.toLowerCase() === 'authentication-results');
   const domain = fromAddress.split('@')[1]?.toLowerCase();
   if (!top || !domain) return false;
