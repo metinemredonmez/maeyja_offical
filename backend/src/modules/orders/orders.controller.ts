@@ -43,8 +43,9 @@ export class OrdersController {
     @Body() dto: CheckoutDto,
     @ClientIp() ip: string,
     @Lang() lang: Locale,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
   ) {
-    return this.checkout.checkout(user ? { userId: user.id } : { guestToken: cartToken }, user, dto, ip, lang);
+    return this.checkout.checkout(user ? { userId: user.id } : { guestToken: cartToken }, user, dto, ip, lang, idempotencyKey);
   }
 
   @Public()

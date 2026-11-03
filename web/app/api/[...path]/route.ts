@@ -19,7 +19,7 @@ const ALLOW: [RegExp, string[]][] = [
   [/^tryon(\/[\w-]+)?$/, ['GET', 'POST']],
 ];
 /** Request headers that may travel to the API. */
-const FORWARD_HEADERS = ['accept', 'accept-language', 'content-type', 'user-agent'];
+const FORWARD_HEADERS = ['accept', 'accept-language', 'content-type', 'user-agent', 'idempotency-key'];
 const SITE_ORIGIN = (() => {
   try {
     return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3001').origin;

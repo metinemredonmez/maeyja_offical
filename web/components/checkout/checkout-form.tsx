@@ -60,6 +60,8 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
   const { invalidate } = useCartMutations();
   const [bank, setBank] = useState<CheckoutResult['payment'] | null>(null);
   const [orderNumber, setOrderNumber] = useState('');
+  // BUS-02: one key per checkout; a retried submit (lost answer, double tap) gets the same order back.
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const ta = useTranslations('auth');
   const guestAllowed = settings?.checkout.guestCheckout ?? true;
   const bankEnabled = settings?.bankTransfer.enabled ?? false;
@@ -102,7 +104,7 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
       attribution: attribution(),
     };
     try {
-      const result = await api.post<CheckoutResult>('/checkout', body, locale);
+      const result = await api.post<CheckoutResult>('/checkout', body, locale, { 'Idempotency-Key': idempotencyKey });
       if (cart) savePendingPurchase(result.order.orderNumber, cart.total, lines);
       invalidate(); // the API emptied the cart
       if (result.payment?.paymentPageUrl) {

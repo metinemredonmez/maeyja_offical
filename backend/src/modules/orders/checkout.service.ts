@@ -73,7 +73,13 @@ export class CheckoutService {
    * the order, so two shoppers can never buy the last bag twice. The cart is emptied; an unpaid
    * order can be paid again via `retryPayment` until the expiry job cancels it.
    */
-  async checkout(owner: CartOwner, user: AuthUser | undefined, dto: CheckoutDto, ip: string, lang: Locale) {
+  async checkout(owner: CartOwner, user: AuthUser | undefined, dto: CheckoutDto, ip: string, lang: Locale, idempotencyKey?: string) {
+    // BUS-02: a retried request (lost answer, double tap) with the same key gets its order back, not a second one.
+    const key = idempotencyKey && /^[A-Za-z0-9-]{16,64}$/.test(idempotencyKey) ? idempotencyKey : undefined;
+    if (key) {
+      const previous = await this.prisma.order.findUnique({ where: { idempotencyKey: key }, include: { items: true } });
+      if (previous) return this.replayCheckout(previous, user, dto, ip);
+    }
     if (!user) {
       const { guestCheckout } = await this.settings.get('checkout');
       if (!guestCheckout) throw new ForbiddenException('Sipariş vermek için giriş yapın');
@@ -153,6 +159,7 @@ export class CheckoutService {
           customerNote: dto.customerNote,
           locale: lang,
           ip,
+          ...(key ? { idempotencyKey: key } : {}),
           ...(dto.attribution ? { attribution: { ...dto.attribution } } : {}),
           items: {
             create: quote.lines.map((l) => ({
@@ -226,16 +233,29 @@ export class CheckoutService {
     return { order: this.summary(order), payment: await this.startPayment(order, ip) };
   }
 
+  /** The same answer the first checkout gave, without a second payment record or payment page. */
+  private async replayCheckout(order: OrderWithItems, user: AuthUser | undefined, dto: CheckoutDto, ip: string) {
+    const same = user ? order.userId === user.id : !order.userId && order.email === dto.email;
+    if (!same) throw new ConflictException('Bu istek anahtarı başka bir siparişe ait');
+    if (order.status === 'PENDING_PAYMENT' && CARD_PROVIDERS.includes(order.paymentProvider)) return this.retryPayment(order.orderNumber, user, order.email, ip);
+    const bank = order.status === 'PENDING_PAYMENT' && order.paymentProvider === PaymentProvider.BANK_TRANSFER;
+    return { order: this.summary(order), payment: bank ? await this.bankDetails(order) : null };
+  }
+
   async startPayment(order: OrderWithItems, ip: string): Promise<PaymentStart> {
     if (order.paymentProvider === PaymentProvider.BANK_TRANSFER) {
       await this.prisma.payment.create({ data: { orderId: order.id, provider: PaymentProvider.BANK_TRANSFER, amount: order.total } });
-      const bt = await this.settings.get('bankTransfer');
-      return {
-        provider: PaymentProvider.BANK_TRANSFER,
-        bankTransfer: { bankName: bt.bankName, accountName: bt.accountName, iban: bt.iban, note: bt.note[order.locale] ?? bt.note.tr ?? '' },
-      };
+      return this.bankDetails(order);
     }
     return order.paymentProvider === PaymentProvider.STRIPE ? this.startStripe(order) : this.startIyzico(order, ip);
+  }
+
+  private async bankDetails(order: Order): Promise<PaymentStart> {
+    const bt = await this.settings.get('bankTransfer');
+    return {
+      provider: PaymentProvider.BANK_TRANSFER,
+      bankTransfer: { bankName: bt.bankName, accountName: bt.accountName, iban: bt.iban, note: bt.note[order.locale] ?? bt.note.tr ?? '' },
+    };
   }
 
   /** Stripe-hosted payment page; lines, shipping and our discount are shown as they are on the order. */

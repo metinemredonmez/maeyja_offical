@@ -504,6 +504,7 @@ model Order {
   trackingUrl     String?
   locale          String          @default("tr")
   ip              String?
+  idempotencyKey  String?         @unique // checkout's Idempotency-Key: a repeated request gets this order back (BUS-02)
   /// Ad attribution from the browser at checkout (only with cookie consent): fbp/fbc, GA client id, user agent;
   /// purchaseSentAt marks the server-side Purchase as sent to Meta/Google.
   attribution     Json?

@@ -124,8 +124,10 @@ export function TranslationsTabs({ form, fields, className, extraBase, kind, onE
     }
     // A short field left empty shows its Turkish text (a product name is the same in every language).
     const turkish = base ? '' : String(form.watch(f.name) ?? '').trim();
+    // The "Turkish is used" hint only while this language's own field is empty.
+    const empty = !String(form.watch(name) ?? '').trim();
     return (
-      <Field key={name} label={f.label} required={base && f.required} error={error} hint={!base && turkish ? (f.hint ?? 'Boşsa Türkçesi kullanılır') : f.hint} htmlFor={id}>
+      <Field key={name} label={f.label} required={base && f.required} error={error} hint={!base && turkish && empty ? (f.hint ?? 'Boşsa Türkçesi kullanılır') : f.hint} htmlFor={id}>
         <Input id={id} maxLength={f.maxLength} placeholder={turkish || placeholder} {...form.register(name)} />
       </Field>
     );
