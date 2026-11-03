@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/auth-cookies';
+import { STORE_URL } from '@/lib/format';
 
 // Next.js 16: `middleware` is now `proxy`. Two jobs: session gate + per-request CSP nonce.
 // Authorization itself lives in the backend (roles); this only decides routing.
@@ -22,6 +23,8 @@ function csp(n: string) {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     "connect-src 'self'",
+    // The home page editor shows the shop beside it.
+    `frame-src ${new URL(STORE_URL).origin}`,
     "frame-ancestors 'none'",
     "form-action 'self'",
     "object-src 'none'",

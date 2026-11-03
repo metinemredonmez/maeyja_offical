@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import { HomeSectionDialog } from '@/components/content/home-section-dialog';
+import { StorePreview } from '@/components/content/store-preview';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { PageHeader } from '@/components/shared/page-header';
 import { Thumb } from '@/components/shared/primitives';
@@ -59,6 +60,8 @@ export default function HomeContentPage() {
   const order = override ?? query.data?.map((s) => s.id) ?? [];
   const [editing, setEditing] = useState<{ section: HomeSection | null; type: HomeSectionType } | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  // Any saved change (content, order, on/off, delete) gives a new version, and the preview reloads.
+  const version = useMemo(() => JSON.stringify(query.data ?? []), [query.data]);
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
@@ -72,7 +75,7 @@ export default function HomeContentPage() {
     <>
       <PageHeader
         title="Ana sayfa"
-        description="Bölümleri sürükleyerek sıralayın; sıralama anında kaydedilir."
+        description="Bölümleri sürükleyerek sıralayın; sıralama anında kaydedilir. Sağda sitenin nasıl göründüğü, bakımdayken de."
         actions={
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button />}>
@@ -89,6 +92,7 @@ export default function HomeContentPage() {
           </DropdownMenu>
         }
       />
+      <div className="xl:grid xl:grid-cols-[minmax(360px,420px)_1fr] xl:items-start xl:gap-5">
       <QueryState query={query}>
         {(sections) => {
           const byId = new Map(sections.map((s) => [s.id, s]));
@@ -113,6 +117,10 @@ export default function HomeContentPage() {
           );
         }}
       </QueryState>
+        <aside className="sticky top-20 hidden h-[calc(100dvh-6.5rem)] xl:block">
+          <StorePreview version={version} />
+        </aside>
+      </div>
       {editing && <HomeSectionDialog section={editing.section} type={editing.type} onClose={() => setEditing(null)} />}
       {confirm.dialog}
     </>

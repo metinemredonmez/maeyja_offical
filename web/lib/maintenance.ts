@@ -7,6 +7,8 @@ const API_URL = (process.env.API_URL ?? 'http://127.0.0.1:4000/api').replace(/\/
 const TTL = 10_000;
 
 export const PREVIEW_COOKIE = 'mj-preview';
+/** Set by the proxy (never taken from the browser) once the preview cookie is checked against the API. */
+export const PREVIEW_HEADER = 'x-mj-preview';
 
 type Contact = { email?: string; phone?: string; instagram?: string };
 type State = { enabled: boolean; preview: boolean; contact?: Contact };

@@ -328,11 +328,15 @@ html:lang(zh) {
     color 300ms,
     border-color 300ms;
 }
+/* Over the hero the bar is see-through with white type. Without a hero on top (photos straight away) it stays
+   see-through but in ink, so the menu and the giant wordmark don't vanish into the cream. */
 .site-header[data-home]:not([data-solid]):not(:has([aria-expanded='true'])) {
   border-color: transparent;
   background: transparent;
-  color: #fff;
   backdrop-filter: none;
+}
+html:has([data-hero]) .site-header[data-home]:not([data-solid]):not(:has([aria-expanded='true'])) {
+  color: #fff;
 }
 .wordmark {
   display: inline-block;

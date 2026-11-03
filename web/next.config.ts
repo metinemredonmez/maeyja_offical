@@ -8,10 +8,10 @@ const imageHosts = (process.env.IMAGE_HOSTS ?? 'localhost')
   .map((h) => h.trim())
   .filter(Boolean);
 
-// CSP is set per request in proxy.ts (nonce). These are the static headers.
+// CSP is set per request in proxy.ts (nonce). These are the static headers; X-Frame-Options is set there too, since
+// a staff preview may be framed by the admin.
 const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
-  { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(self), browsing-topics=()' },
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
@@ -46,7 +46,11 @@ const nextConfig: NextConfig = {
     ]),
   },
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }];
+    return [
+      { source: '/(.*)', headers: securityHeaders },
+      // The BFF API never goes through the proxy.
+      { source: '/api/(.*)', headers: [{ key: 'X-Frame-Options', value: 'DENY' }] },
+    ];
   },
   async redirects() {
     return Object.entries(RENAMED).flatMap(([from, to]) => [

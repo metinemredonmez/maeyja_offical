@@ -18,9 +18,15 @@ export function HeaderShell({ children }: { children: ReactNode }) {
     if (!el || !home) return;
     const logo = el.querySelector<HTMLElement>('[data-wordmark]');
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Over a hero the wordmark shrinks over the first half screen and the bar turns cream once the hero is behind it.
+    // With photos straight away, both happen by the time the first photo reaches the bar, so the ink never lies on it.
+    const hero = Boolean(document.querySelector('[data-hero]'));
+    let shrink = innerHeight * 0.55;
     let frame = 0;
 
     const measure = () => {
+      const photo = hero ? null : document.querySelector('main img, main video');
+      shrink = photo ? Math.max(1, photo.getBoundingClientRect().top + scrollY - el.offsetHeight) : innerHeight * 0.55;
       if (!logo || reduce) return;
       // A masthead, not a wall: about 40% of the width on desktop, more on phones.
       const share = innerWidth < 768 ? 0.7 : 0.42;
@@ -30,8 +36,8 @@ export function HeaderShell({ children }: { children: ReactNode }) {
     };
     const update = () => {
       frame = 0;
-      el.style.setProperty('--p', reduce ? '1' : Math.min(1, scrollY / (innerHeight * 0.55)).toFixed(4));
-      el.toggleAttribute('data-solid', scrollY > innerHeight - el.offsetHeight);
+      el.style.setProperty('--p', reduce ? '1' : Math.min(1, scrollY / shrink).toFixed(4));
+      el.toggleAttribute('data-solid', scrollY > (hero ? innerHeight - el.offsetHeight : shrink));
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(update);

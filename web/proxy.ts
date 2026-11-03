@@ -2,7 +2,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextRequest, NextResponse } from 'next/server';
 import { routing } from './i18n/routing';
 import { COOKIE } from './lib/cookies';
-import { maintenancePage, maintenanceState, PREVIEW_COOKIE } from './lib/maintenance';
+import { maintenancePage, maintenanceState, PREVIEW_COOKIE, PREVIEW_HEADER } from './lib/maintenance';
 
 const intl = createIntlMiddleware(routing);
 
@@ -11,7 +11,17 @@ const PROTECTED = [/^\/account(?!\/(login|register|forgot-password|reset-passwor
 
 const stripLocale = (pathname: string) => pathname.replace(/^\/(tr|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/, '') || '/';
 
-function csp(nonce: string) {
+/** The admin, the only page allowed to show the shop in a frame (its home page preview); maeyja.com → admin.maeyja.com. */
+const ADMIN_ORIGIN = (() => {
+  const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maeyja.com');
+  if (process.env.ADMIN_URL) return new URL(process.env.ADMIN_URL).origin;
+  return site.hostname === 'localhost' ? 'http://localhost:3000' : `${site.protocol}//admin.${site.hostname.replace(/^www\./, '')}`;
+})();
+
+// WEB-04: framing stays forbidden, except for staff carrying a valid preview cookie, and then only inside the admin.
+const NO_FRAMES = { 'X-Frame-Options': 'DENY' };
+
+function csp(nonce: string, preview: boolean) {
   const dev = process.env.NODE_ENV !== 'production';
   return [
     `default-src 'self'`,
@@ -25,7 +35,7 @@ function csp(nonce: string) {
     `connect-src 'self' https://www.facebook.com https://connect.facebook.net https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://www.google.com https://*.doubleclick.net https://www.googleadservices.com${dev ? ' ws:' : ''}`,
     `frame-src https://*.iyzipay.com https://www.iyzico.com https://td.doubleclick.net https://www.googletagmanager.com`,
     `form-action 'self' https://*.iyzipay.com`,
-    `frame-ancestors 'none'`,
+    `frame-ancestors ${preview ? ADMIN_ORIGIN : "'none'"}`,
     `base-uri 'self'`,
     `object-src 'none'`,
     `upgrade-insecure-requests`,
@@ -50,7 +60,7 @@ export default async function proxy(request: NextRequest) {
     const locale = pathname.match(/^\/(tr|ru|nl|de|fr|it|es|ko|ja|zh)(?=\/|$)/)?.[1] ?? 'en';
     return new NextResponse(maintenancePage(locale, gate.contact), {
       status: 503,
-      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '1800' },
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '1800', ...NO_FRAMES },
     });
   }
 
@@ -65,13 +75,17 @@ export default async function proxy(request: NextRequest) {
 
   // Per-request CSP nonce, handed to Next through the request headers.
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-  const policy = csp(nonce);
+  const policy = csp(nonce, gate.preview);
   const headers = new Headers(request.headers);
   headers.set('x-nonce', nonce);
   headers.set('content-security-policy', policy);
+  // Pages skip their data cache for a verified preview, so a change saved in the admin shows on the next reload.
+  headers.delete(PREVIEW_HEADER);
+  if (gate.preview) headers.set(PREVIEW_HEADER, '1');
 
   const response = intl(new NextRequest(request.url, { headers, method: request.method }));
   response.headers.set('Content-Security-Policy', policy);
+  if (!gate.preview) response.headers.set('X-Frame-Options', NO_FRAMES['X-Frame-Options']);
   return response;
 }
 

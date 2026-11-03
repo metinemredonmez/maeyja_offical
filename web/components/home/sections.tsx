@@ -16,6 +16,8 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
   const firstProduct = sections.find((s) => s.type === 'FEATURED_PRODUCTS' && s.products?.length)?.products?.[0];
   return (
     <>
+      {/* No hero on top: room for the giant wordmark, which then stands in ink on the cream above the first photos. */}
+      {sections.length && sections[0].type !== 'HERO' ? <div aria-hidden="true" className="h-14 md:h-[6vw]" /> : null}
       {sections.map((s, i) => {
         switch (s.type) {
           case 'HERO':
@@ -101,7 +103,7 @@ function ArtDirected({ wide, narrow, sizes, priority }: { wide: string; narrow: 
 function Hero({ s, first, product }: { s: HomeSection; first: boolean; product?: Card }) {
   const media = Boolean(s.videoUrl || s.imageUrl);
   return (
-    <section className={`relative flex h-[100svh] min-h-[560px] items-end overflow-hidden bg-stone ${media ? 'text-white' : ''}`}>
+    <section data-hero={first ? '' : undefined} className={`relative flex h-[100svh] min-h-[560px] items-end overflow-hidden bg-stone ${media ? 'text-white' : ''}`}>
       <div className="hero-drift absolute inset-0">
         {/* On screens narrower than the film, keep its right side in view: the model stands there, clear of the product card. */}
         <div className="intro-zoom absolute inset-0 [&_img]:object-right [&_video]:object-right">

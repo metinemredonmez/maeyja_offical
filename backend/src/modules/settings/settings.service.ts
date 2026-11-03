@@ -16,7 +16,10 @@ export class SettingsService {
   async getAll() {
     const rows = await this.prisma.setting.findMany();
     const byKey = new Map(rows.map((r) => [r.key, r.value as object]));
-    return Object.fromEntries(SETTING_KEYS.map((k) => [k, { ...SETTING_DEFAULTS[k], ...(byKey.get(k) ?? {}) }]));
+    const all = Object.fromEntries(SETTING_KEYS.map((k) => [k, { ...SETTING_DEFAULTS[k], ...(byKey.get(k) ?? {}) }])) as { [K in SettingKey]: SettingValue<K> };
+    // The admin's home page preview needs the staff token even while the shop is open: made the first time it is read.
+    if (!all.maintenance.previewToken) all.maintenance = (await this.update('maintenance', {})) as unknown as SettingValue<'maintenance'>;
+    return all;
   }
 
   async update(key: string, patch: Record<string, unknown>) {
@@ -25,19 +28,22 @@ export class SettingsService {
     // Only accept keys that exist in the defaults; ignore anything else.
     const allowed = Object.fromEntries(Object.entries(patch).filter(([k]) => k in SETTING_DEFAULTS[key as SettingKey]));
     const merged = { ...current, ...allowed } as Record<string, unknown>;
-    if (key === 'maintenance' && merged.enabled && !merged.previewToken) merged.previewToken = randomBytes(16).toString('hex');
+    if (key === 'maintenance' && !merged.previewToken) merged.previewToken = randomBytes(16).toString('hex');
     const value = merged as Prisma.InputJsonValue;
     await this.prisma.setting.upsert({ where: { key }, create: { key, value }, update: { value } });
     return value;
   }
 
-  /** Whether the storefront is closed for maintenance, and whether a staff preview token lets this visitor in. */
+  /**
+   * Whether the storefront is closed for maintenance, and whether this visitor carries the staff preview token: it lets
+   * them in while closed, and (open or closed) shows the admin's home page preview without the minute-long cache.
+   */
   async maintenance(preview?: string) {
     const [{ enabled, previewToken }, store] = await Promise.all([this.get('maintenance'), this.get('store')]);
     const a = Buffer.from(preview ?? ''), b = Buffer.from(previewToken);
     return {
       enabled,
-      preview: enabled && b.length > 0 && a.length === b.length && timingSafeEqual(a, b),
+      preview: b.length > 0 && a.length === b.length && timingSafeEqual(a, b),
       // Shown on the maintenance page so customers can still reach the shop.
       contact: { email: store.email, phone: store.phone, instagram: store.instagram },
     };
