@@ -18,6 +18,19 @@ export function visitorKey(ip: string): string {
 }
 
 /**
+ * RES-01: e-mails anyone can make the store send — per address (so one inbox can't be flooded) and in total per
+ * Istanbul day (so a script can't burn the sender's reputation or the SMTP plan).
+ */
+export const MAIL_QUOTAS = {
+  register: { perAddress: 3, windowMs: 3600_000, daily: 300, label: 'Kayıt e-postası' },
+  reset: { perAddress: 3, windowMs: 3600_000, daily: 300, label: 'Şifre sıfırlama e-postası' },
+  verify: { perAddress: 3, windowMs: 3600_000, daily: 300, label: 'Doğrulama e-postası' },
+  newsletter: { perAddress: 2, windowMs: 86400_000, daily: 2000, label: 'Bülten (kampanya) e-postası' },
+  restock: { perAddress: 5, windowMs: 86400_000, daily: 1000, label: 'Stok bildirimi e-postası' },
+} as const;
+export type MailKind = keyof typeof MAIL_QUOTAS;
+
+/**
  * Quotas (RES-01: the paid AI features, e-mails per address), counted in Postgres so a restart or deploy doesn't hand out a fresh
  * budget. Each call counts one use; it answers false once the limit of its window is passed.
  */
@@ -45,6 +58,17 @@ export class UsageService {
     }
     if (count === limit + 1) this.logger.warn(`${feature}: daily limit of ${limit} reached`);
     return count <= limit;
+  }
+
+  /** One e-mail of `kind` to `address`, if both the address's and the day's quota allow it. */
+  async mailToAddress(kind: MailKind, address: string): Promise<boolean> {
+    const q = MAIL_QUOTAS[kind];
+    return (await this.take(`mail:${kind}:${address}`, q.perAddress, q.windowMs)) && (await this.mailToday(kind));
+  }
+
+  /** The day's total for `kind` only (bulk senders check this first and pause until tomorrow). */
+  mailToday(kind: MailKind): Promise<boolean> {
+    return this.takeDaily(`mail:${kind}`, MAIL_QUOTAS[kind].daily, MAIL_QUOTAS[kind].label);
   }
 
   /** RES-01c: the admin's AI buttons share one daily budget (the background translator is not counted). */

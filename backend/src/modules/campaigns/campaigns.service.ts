@@ -10,6 +10,7 @@ import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { SettingsService } from '../settings/settings.service';
+import { MAIL_QUOTAS, UsageService } from '../usage/usage.service';
 import { renderCampaign, unsubscribeSignature, verifyUnsubscribeSignature } from './campaign.mail';
 import { AudienceQueryDto, CampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 
@@ -33,6 +34,7 @@ export class CampaignsService {
     private readonly mail: MailService,
     private readonly settings: SettingsService,
     private readonly config: ConfigService<Env, true>,
+    private readonly usage: UsageService,
   ) {
     this.key = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
   }
@@ -144,6 +146,15 @@ export class CampaignsService {
         });
         if (!batch.length) break;
         for (const r of batch) {
+          // RES-01: past the day's total the campaign waits; the minute job carries on tomorrow.
+          if (!(await this.usage.mailToday('newsletter'))) {
+            this.logger.warn(`campaign ${id} paused: daily e-mail limit reached`);
+            return;
+          }
+          if (!(await this.usage.take(`mail:newsletter:${r.email}`, MAIL_QUOTAS.newsletter.perAddress, MAIL_QUOTAS.newsletter.windowMs))) {
+            await this.prisma.emailCampaignRecipient.update({ where: { id: r.id }, data: { status: CampaignRecipientStatus.SKIPPED, error: 'Bugün bu adrese yeterince e-posta gitti' } });
+            continue;
+          }
           const { content, headers } = await this.render(campaign, r);
           try {
             await this.mail.deliver(r.email, content, headers);

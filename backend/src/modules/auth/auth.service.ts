@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthTokenType, User, UserRole } from '@prisma/client';
@@ -18,7 +18,6 @@ import { MfaService } from './mfa.service';
 
 /** What sign-up always answers (AUT-02): the next step is in the e-mail either way. */
 const CHECK_EMAIL = { ok: true as const, checkEmail: true as const };
-const REGISTER_MAILS_PER_HOUR = 3;
 /** SES-02/04: staff work with short access tokens and must sign in again after a working day. */
 const STAFF_ACCESS_TTL = '5m';
 const STAFF_SESSION_MS = 8 * 3600_000;
@@ -72,13 +71,13 @@ export class AuthService {
    * AUT-02: the answer (and its timing) is the same whether or not the address already has an account, so the form
    * can't be used to find out who shops here. Nothing is created yet: the account, with this password, opens when
    * the link in the e-mail is clicked (`verifyEmail`), so only the mailbox owner can open one for an address. The
-   * owner of an existing account gets an e-mail saying so instead. At most a few e-mails per address an hour.
+   * owner of an existing account gets an e-mail saying so instead. E-mails are capped per address and per day (RES-01).
    */
   async register(dto: RegisterDto) {
     const passwordHash = await hashPassword(dto.password);
     const locale = dto.locale ?? 'tr';
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!(await this.usage.take(`mail:register:${dto.email}`, REGISTER_MAILS_PER_HOUR, 3600_000))) return CHECK_EMAIL;
+    if (!(await this.usage.mailToAddress('register', dto.email))) return CHECK_EMAIL;
 
     if (existing) {
       if (existing.isActive && !existing.deletedAt) {
@@ -242,8 +241,8 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
-    // Same response either way — don't reveal which emails have accounts.
-    if (user && user.isActive && !user.deletedAt) {
+    // Same response either way — don't reveal which emails have accounts, or that the quota stopped the e-mail.
+    if (user && user.isActive && !user.deletedAt && (await this.usage.mailToAddress('reset', user.email))) {
       const token = await this.createAuthToken(user.id, AuthTokenType.PASSWORD_RESET, RESET_TTL_MS);
       const isStaff = user.role !== UserRole.CUSTOMER;
       // Staff reset in the admin; customers on the storefront's account page, in their own language.
@@ -360,6 +359,9 @@ export class AuthService {
   }
 
   private async sendVerification(user: User) {
+    if (!(await this.usage.mailToAddress('verify', user.email))) {
+      throw new HttpException('Çok fazla doğrulama e-postası istendi; biraz sonra tekrar deneyin', HttpStatus.TOO_MANY_REQUESTS);
+    }
     const token = await this.createAuthToken(user.id, AuthTokenType.EMAIL_VERIFY, VERIFY_TTL_MS);
     await this.mail.send(user.email, templates.verifyEmail(mailLocale(user.locale), this.webUrl(user.locale, `/verify-email?token=${token}`)));
   }

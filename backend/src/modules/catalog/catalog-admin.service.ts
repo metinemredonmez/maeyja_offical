@@ -8,6 +8,7 @@ import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { mailLocale, templates } from '../notifications/mail.templates';
+import { UsageService } from '../usage/usage.service';
 import {
   AdminProductQueryDto,
   CategoryDto,
@@ -38,6 +39,7 @@ export class CatalogAdminService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly config: ConfigService<Env, true>,
+    private readonly usage: UsageService,
   ) {}
 
   // ─────────────────────────── products ───────────────────────────
@@ -258,6 +260,8 @@ export class CatalogAdminService {
     const web = this.config.get('WEB_URL', { infer: true });
     const label = [variant.product.name, variant.color?.name, variant.size].filter(Boolean).join(' — ');
     for (const alert of alerts) {
+      // RES-01: an address over its quota keeps waiting for the next restock; past the day's total, the rest do.
+      if (!(await this.usage.mailToAddress('restock', alert.email))) continue;
       await this.mail.send(alert.email, templates.stockAlert(mailLocale(alert.locale), label, `${web}${storefrontPath(alert.locale, `/products/${variant.product.slug}`)}`));
       await this.prisma.stockAlert.update({ where: { id: alert.id }, data: { notifiedAt: new Date() } });
     }
