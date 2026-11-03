@@ -19,6 +19,7 @@ export class ContentController {
   ) {}
 
   @Get('content/home') home(@Lang() lang: Locale) { return this.content.home(lang); }
+  @Get('content/navigation') navigation() { return this.content.navigation(); }
   @Get('content/pages/:slug') page(@Param('slug') slug: string, @Lang() lang: Locale) { return this.content.page(slug, lang); }
   @Get('content/journal') journal(@Query() q: PaginationQueryDto, @Lang() lang: Locale) { return this.content.journal(q, lang); }
   @Get('content/journal/:slug') journalPost(@Param('slug') slug: string, @Lang() lang: Locale) { return this.content.journalPost(slug, lang); }

@@ -8,7 +8,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import { Toaster } from 'sonner';
 import { LOCALES, routing } from '@/i18n/routing';
 import { apiGet, currentUser } from '@/lib/api.server';
-import type { PublicSettings } from '@/lib/types';
+import { PREVIEW_HEADER } from '@/lib/maintenance';
+import { DEFAULT_NAVIGATION } from '@/lib/navigation';
+import type { Navigation, ProductList, PublicSettings, Stockist } from '@/lib/types';
 import { cn } from '@/lib/format';
 import { Providers } from '@/components/providers';
 import { Header } from '@/components/header';
@@ -54,12 +56,20 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
 
-  const nonce = (await headers()).get('x-nonce') ?? undefined;
-  const [settings, user] = await Promise.all([
+  const head = await headers();
+  const nonce = head.get('x-nonce') ?? undefined;
+  // The admin's preview sees header and footer changes at once; everyone else gets the minute-long cache.
+  const preview = head.get(PREVIEW_HEADER) === '1';
+  const [settings, user, products, stockists, nav] = await Promise.all([
     // Short revalidate: colour and announcement changes in the admin show within a minute.
     apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null),
     currentUser(),
+    // The Bags and Stores menus.
+    apiGet<ProductList>('/catalog/products?limit=24', { locale, revalidate: 300 }).catch(() => null),
+    apiGet<Stockist[]>('/content/stockists', { revalidate: 300 }).catch(() => []),
+    apiGet<Navigation>('/content/navigation', { revalidate: preview ? undefined : 60 }).catch(() => DEFAULT_NAVIGATION),
   ]);
+  const models = (products?.items ?? []).map(({ slug, name, number }) => ({ slug, name, number }));
 
   return (
     <html
@@ -71,9 +81,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
       <body className="flex min-h-screen flex-col">
         <NextIntlClientProvider>
           <Providers nonce={nonce}>
-            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} />
+            <Header announcement={settings?.store.announcement?.[locale] || settings?.store.announcement?.tr || null} user={user} models={models} stockists={stockists} contactEmail={settings?.store.email || null} nav={nav.header} />
             <main className="flex-1">{children}</main>
-            <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} />
+            <Footer instagram={settings?.store.instagram ?? 'https://www.instagram.com/maeyja_official/'} nav={nav.footer} />
             <CartDrawer />
             <NewsletterPopup />
             <Tracking

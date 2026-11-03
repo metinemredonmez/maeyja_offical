@@ -679,3 +679,32 @@ export interface AuthSession {
   ip: string | null;
   current: boolean;
 }
+
+/** Content → Üst menü ve alt bilgi. `key` is a storefront message used in every language left empty in `label`/`title`. */
+export type NavKind = 'bags' | 'expertise' | 'stores' | 'link';
+export interface NavHeaderItem {
+  id: string;
+  kind: NavKind;
+  label: Record<string, string>;
+  key: string;
+  href: string;
+  side: 'left' | 'right';
+  visible: boolean;
+}
+/** `href` empty: plain text; `#cookies`: the cookie settings button. */
+export interface NavFooterLink {
+  label: Record<string, string>;
+  key: string;
+  href: string;
+}
+export interface NavFooterColumn {
+  id: string;
+  title: Record<string, string>;
+  key: string;
+  links: NavFooterLink[];
+  visible: boolean;
+}
+export interface Navigation {
+  header: { items: NavHeaderItem[]; languages: boolean; account: boolean };
+  footer: { columns: NavFooterColumn[]; newsletter: boolean; instagram: boolean; languages: boolean; payments: boolean };
+}

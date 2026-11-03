@@ -10,6 +10,7 @@ import { ProductQueryDto } from '../catalog/dto/catalog.dto';
 import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
 import { ContactDto, JournalPostDto, SubscribeDto, UpdateJournalPostDto } from './dto/content.dto';
+import { cleanNavigation, Navigation, NAVIGATION_DEFAULTS, NAVIGATION_KEY } from './navigation';
 
 @Injectable()
 export class ContentService {
@@ -18,6 +19,24 @@ export class ContentService {
     private readonly catalog: CatalogService,
     private readonly mail: MailService,
   ) {}
+
+  /** The storefront's header and footer (Admin → Üst menü ve alt bilgi); the defaults until it is first saved. */
+  async navigation(): Promise<Navigation> {
+    const row = await this.prisma.setting.findUnique({ where: { key: NAVIGATION_KEY } });
+    return (row?.value as Navigation | undefined) ?? NAVIGATION_DEFAULTS;
+  }
+
+  async saveNavigation(body: unknown) {
+    const value = cleanNavigation(body) as unknown as Prisma.InputJsonValue;
+    await this.prisma.setting.upsert({ where: { key: NAVIGATION_KEY }, create: { key: NAVIGATION_KEY, value }, update: { value } });
+    return value;
+  }
+
+  /** "Varsayılana döndür": the header and footer the shop shipped with. */
+  async resetNavigation() {
+    await this.prisma.setting.deleteMany({ where: { key: NAVIGATION_KEY } });
+    return NAVIGATION_DEFAULTS;
+  }
 
   /** Everything the homepage needs in one request, with product/press/stockist blocks resolved. */
   async home(lang: Locale) {

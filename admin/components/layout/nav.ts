@@ -6,6 +6,7 @@ import {
   FileTextIcon,
   HelpCircleIcon,
   HomeIcon,
+  PanelsTopLeftIcon,
   ImageIcon,
   InboxIcon,
   LayersIcon,
@@ -64,6 +65,7 @@ export const NAV: NavGroup[] = [
     label: 'İçerik',
     items: [
       { href: '/content/home', label: 'Ana sayfa', icon: HomeIcon, roles: STAFF },
+      { href: '/content/navigation', label: 'Üst menü ve alt bilgi', icon: PanelsTopLeftIcon, roles: STAFF },
       { href: '/content/pages', label: 'Sayfalar', icon: FileTextIcon, roles: STAFF },
       { href: '/content/journal', label: 'Journal', icon: BookOpenIcon, roles: STAFF },
       { href: '/content/press', label: 'Basın', icon: NewspaperIcon, roles: STAFF },

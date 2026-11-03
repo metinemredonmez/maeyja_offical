@@ -290,3 +290,31 @@ export interface CheckoutResult {
     bankTransfer?: { bankName: string; accountName: string; iban: string; note: string };
   };
 }
+
+/** Admin → Üst menü ve alt bilgi. `key` is a message used in every language left empty in `label`/`title`. */
+export interface NavHeaderItem {
+  id: string;
+  kind: 'bags' | 'expertise' | 'stores' | 'link';
+  label: Record<string, string>;
+  key: string;
+  href: string;
+  side: 'left' | 'right';
+  visible: boolean;
+}
+/** `href` empty: plain text; `#cookies`: the cookie settings button. */
+export interface NavFooterLink {
+  label: Record<string, string>;
+  key: string;
+  href: string;
+}
+export interface NavFooterColumn {
+  id: string;
+  title: Record<string, string>;
+  key: string;
+  links: NavFooterLink[];
+  visible: boolean;
+}
+export interface Navigation {
+  header: { items: NavHeaderItem[]; languages: boolean; account: boolean };
+  footer: { columns: NavFooterColumn[]; newsletter: boolean; instagram: boolean; languages: boolean; payments: boolean };
+}

@@ -3,7 +3,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api, qs } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
-import type { ContentStatus, Faq, HomeSection, JournalPost, Page, Paginated, PressItem, Stockist } from '@/lib/types';
+import type { ContentStatus, Faq, HomeSection, JournalPost, Navigation, Page, Paginated, PressItem, Stockist } from '@/lib/types';
 
 export const contentKeys = {
   home: ['home-sections'] as const,
@@ -15,6 +15,7 @@ export const contentKeys = {
   press: ['press'] as const,
   stockists: ['stockists'] as const,
   faq: ['faq'] as const,
+  navigation: ['navigation'] as const,
 };
 
 // ───────────── home sections ─────────────
@@ -29,6 +30,13 @@ export const useDeleteHomeSection = () =>
   useApiMutation<{ ok: true }, string>({ mutationFn: (id) => api.delete(`/admin/home-sections/${id}`), invalidate: [contentKeys.home], success: 'Bölüm silindi' });
 export const useReorderHomeSections = () =>
   useApiMutation<HomeSection[], string[]>({ mutationFn: (ids) => api.put('/admin/home-sections/order', { ids }), invalidate: [contentKeys.home], success: 'Sıralama kaydedildi' });
+
+// ───────────── header and footer ─────────────
+export const useNavigation = () => useQuery({ queryKey: contentKeys.navigation, queryFn: () => api.get<Navigation>('/admin/navigation') });
+export const useSaveNavigation = () =>
+  useApiMutation<Navigation, Navigation>({ mutationFn: (body) => api.put('/admin/navigation', body), invalidate: [contentKeys.navigation], success: 'Menüler kaydedildi' });
+export const useResetNavigation = () =>
+  useApiMutation<Navigation, void>({ mutationFn: () => api.delete('/admin/navigation'), invalidate: [contentKeys.navigation], success: 'Varsayılan menülere dönüldü' });
 
 // ───────────── pages ─────────────
 export type PageInput = { slug: string; title: string; body: string; status?: ContentStatus; translations?: Record<string, Record<string, string>>; seoTitle?: string; seoDescription?: string; aiSummary?: string };

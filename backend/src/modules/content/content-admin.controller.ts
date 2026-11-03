@@ -57,6 +57,11 @@ export class ContentAdminController {
     return this.listSections();
   }
 
+  // header and footer
+  @Get('navigation') getNavigation() { return this.content.navigation(); }
+  @Put('navigation') saveNavigation(@Body() body: Record<string, unknown>) { return this.content.saveNavigation(body); }
+  @Delete('navigation') resetNavigation() { return this.content.resetNavigation(); }
+
   // pages
   @Get('pages') listPages() { return this.prisma.page.findMany({ orderBy: { slug: 'asc' }, omit: { body: true } }); }
   @Get('pages/:id') getPage(@Param('id') id: string) { return this.prisma.page.findUniqueOrThrow({ where: { id } }); }
