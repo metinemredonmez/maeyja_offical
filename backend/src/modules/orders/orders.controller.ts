@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Headers, HttpCode, Param, Patch, Post, Query, RawBodyRequest, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Headers, HttpCode, Param, Patch, Post, Put, Query, RawBodyRequest, Req, Res } from '@nestjs/common';
 import { ApiBearerAuth, ApiExcludeEndpoint, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
@@ -20,8 +20,10 @@ import {
   ReturnRequestDto,
   ShipOrderDto,
   UpdateOrderStatusDto,
+  StripeKeyDto,
   UpdateReturnDto,
 } from './dto/orders.dto';
+import { StripeClient } from './stripe.client';
 import { OrdersService } from './orders.service';
 
 @ApiTags('Checkout & Orders')
@@ -157,5 +159,31 @@ export class AdminOrdersController {
   @Patch('returns/:id')
   updateReturn(@Param('id') id: string, @Body() dto: UpdateReturnDto) {
     return this.orders.updateReturn(id, dto);
+  }
+}
+
+/** Admin → Ayarlar → Kartla ödeme: the Stripe key is pasted here; the webhook is set up with it. */
+@ApiTags('Admin · Payments')
+@ApiBearerAuth()
+@Roles(...ADMIN_ROLES)
+@Controller('admin/payments/stripe')
+export class AdminPaymentsController {
+  constructor(private readonly stripe: StripeClient) {}
+
+  @Get()
+  status() {
+    return this.stripe.status();
+  }
+
+  // Audit log keeps the change; `secretKey` is redacted there like every *secret* field.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Put()
+  connect(@Body() dto: StripeKeyDto, @CurrentUser() user: AuthUser) {
+    return this.stripe.connect(dto.secretKey, user.id);
+  }
+
+  @Delete()
+  disconnect() {
+    return this.stripe.disconnect();
   }
 }

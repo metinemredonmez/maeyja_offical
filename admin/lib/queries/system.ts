@@ -3,11 +3,12 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api, qs } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
-import type { AuditLog, Dashboard, Paginated, SettingKey, Settings } from '@/lib/types';
+import type { AuditLog, Dashboard, Paginated, SettingKey, Settings, StripeStatus } from '@/lib/types';
 
 export const systemKeys = {
   dashboard: ['dashboard'] as const,
   settings: ['settings'] as const,
+  stripe: ['payments', 'stripe'] as const,
   audit: (p: { page: number; limit: number; q?: string }) => ['audit-logs', p] as const,
 };
 
@@ -20,6 +21,16 @@ export const useSaveSetting = () =>
     invalidate: [systemKeys.settings],
     success: 'Ayarlar kaydedildi',
   });
+
+export const useStripeStatus = () => useQuery({ queryKey: systemKeys.stripe, queryFn: () => api.get<StripeStatus>('/admin/payments/stripe') });
+export const useConnectStripe = () =>
+  useApiMutation<StripeStatus, string>({
+    mutationFn: (secretKey) => api.put<StripeStatus>('/admin/payments/stripe', { secretKey }),
+    invalidate: [systemKeys.stripe],
+    success: (s) => (s.webhook ? 'Stripe bağlandı, webhook kuruldu' : 'Stripe anahtarı kaydedildi'),
+  });
+export const useDisconnectStripe = () =>
+  useApiMutation({ mutationFn: () => api.delete('/admin/payments/stripe'), invalidate: [systemKeys.stripe], success: 'Stripe bağlantısı kaldırıldı' });
 
 export const useAuditLogs = (params: { page: number; limit: number; q?: string }) =>
   useQuery({ queryKey: systemKeys.audit(params), queryFn: () => api.get<Paginated<AuditLog>>(`/admin/audit-logs${qs(params)}`), placeholderData: keepPreviousData });

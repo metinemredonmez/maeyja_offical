@@ -6,16 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { Field, SubmitButton, SwitchField } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
-import { Section } from '@/components/shared/primitives';
+import { DateTime, Section } from '@/components/shared/primitives';
 import { QueryState } from '@/components/shared/query-state';
-import { useSaveSetting, useSettings } from '@/lib/queries/system';
+import { useConnectStripe, useDisconnectStripe, useSaveSetting, useSettings, useStripeStatus } from '@/lib/queries/system';
 import { cn } from '@/lib/utils';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
 /** Maintenance has no tab: it is the one-click button in the top bar. */
-const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance' | 'aiStudio' | 'cartReminder'>, string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', productPage: 'Ürün sayfası rengi', tracking: 'İzleme ve görünürlük' };
+const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance' | 'aiStudio' | 'cartReminder'> | 'stripe', string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', stripe: 'Kartla ödeme', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', productPage: 'Ürün sayfası rengi', tracking: 'İzleme ve görünürlük' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {
@@ -145,6 +146,70 @@ function CheckoutTab({ value }: { value: Settings['checkout'] }) {
         </Field>
       </div>
       <SaveBar dirty={d.dirty} saving={d.saving} onSave={d.save} onReset={() => d.setDraft(value)} />
+    </Section>
+  );
+}
+
+const STRIPE_KEY = /^(sk|rk)_(test|live)_[A-Za-z0-9]{10,}$/;
+
+/** The only Stripe step left to staff: paste the secret key. The API checks it and sets up the webhook. */
+function StripeTab() {
+  const query = useStripeStatus();
+  const connect = useConnectStripe();
+  const disconnect = useDisconnectStripe();
+  const [key, setKey] = useState('');
+  const [confirming, setConfirming] = useState(false);
+  const valid = STRIPE_KEY.test(key.trim());
+  return (
+    <Section
+      title="Kartla ödeme (Stripe)"
+      description="Stripe panelinde Developers → API keys bölümündeki gizli anahtarı (sk_live_…) yapıştırıp kaydedin. Anahtar Stripe'a sorularak doğrulanır, webhook kendiliğinden kurulur."
+    >
+      <QueryState query={query}>
+        {(st) => (
+          <div className="grid gap-4 sm:max-w-lg">
+            <div className="rounded-lg border p-3 text-sm">
+              {st.configured ? (
+                <>
+                  <p className="font-medium">
+                    Bağlı · {st.mode === 'live' ? 'Canlı mod' : 'Test modu'} · <span className="font-mono">{st.keyHint}</span>
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {st.webhook ? 'Webhook kurulu.' : 'Webhook yok: ödemeler yalnız müşteri siteye dönünce işlenir.'}
+                    {st.source === 'env' ? ' Anahtar sunucu ayarından (.env) geliyor.' : st.savedAt ? <> Kaydedildi: <DateTime value={st.savedAt} /></> : null}
+                  </p>
+                  {st.mode === 'test' && <p className="mt-2 text-xs text-amber-700">Test modunda gerçek para çekilmez. Siteyi açmadan önce canlı anahtarı girin.</p>}
+                </>
+              ) : (
+                <p className="text-muted-foreground">Bağlı değil: mağazada kartla ödeme kapalı.</p>
+              )}
+            </div>
+            <Field label={st.configured ? 'Yeni gizli anahtar' : 'Gizli anahtar'} htmlFor="stripe-key" error={key && !valid ? { message: 'sk_live_… ya da rk_live_… ile başlamalı' } : undefined}>
+              <Input id="stripe-key" type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} placeholder="sk_live_…" className="font-mono" />
+            </Field>
+            <div className="flex flex-wrap justify-end gap-2">
+              {st.source === 'admin' && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(true)}>
+                  Bağlantıyı kaldır
+                </Button>
+              )}
+              <SubmitButton type="button" loading={connect.isPending} disabled={!valid} onClick={() => connect.mutate(key.trim(), { onSuccess: () => setKey('') })}>
+                Kaydet ve bağla
+              </SubmitButton>
+            </div>
+            <ConfirmDialog
+              open={confirming}
+              onOpenChange={setConfirming}
+              title="Stripe bağlantısı kaldırılsın mı?"
+              description="Kayıtlı anahtar silinir ve webhook kaldırılır. Sunucuda .env anahtarı yoksa mağazada kartla ödeme kapanır."
+              confirmLabel="Kaldır"
+              destructive
+              loading={disconnect.isPending}
+              onConfirm={() => disconnect.mutateAsync().then(() => setConfirming(false))}
+            />
+          </div>
+        )}
+      </QueryState>
     </Section>
   );
 }
@@ -426,6 +491,9 @@ export default function SettingsPage() {
             </TabsContent>
             <TabsContent value="checkout">
               <CheckoutTab key={JSON.stringify(s.checkout)} value={s.checkout} />
+            </TabsContent>
+            <TabsContent value="stripe">
+              <StripeTab />
             </TabsContent>
             <TabsContent value="bankTransfer">
               <BankTransferTab key={JSON.stringify(s.bankTransfer)} value={s.bankTransfer} />

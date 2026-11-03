@@ -655,3 +655,13 @@ export interface MailSyncResult {
   fetched: number;
   errors: { email: string; error: string }[];
 }
+
+/** Admin → Ayarlar → Kartla ödeme. The key itself never comes back, only its hint. */
+export interface StripeStatus {
+  configured: boolean;
+  source: 'admin' | 'env' | null;
+  mode: 'test' | 'live' | null;
+  keyHint: string | null;
+  webhook: boolean;
+  savedAt: string | null;
+}

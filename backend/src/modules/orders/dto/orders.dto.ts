@@ -158,3 +158,7 @@ export class UpdateReturnDto {
   @IsEnum(ReturnStatus) status: ReturnStatus;
   @IsOptional() @IsString() @MaxLength(1000) adminNote?: string;
 }
+
+export class StripeKeyDto {
+  @IsString() @Matches(/^\s*(sk|rk)_(test|live)_[A-Za-z0-9]{10,}\s*$/, { message: 'Bu bir Stripe gizli anahtarı değil (sk_live_… ile başlar)' }) @MaxLength(300) secretKey: string;
+}

@@ -5,34 +5,26 @@ iyzico kodu duruyor ama kapalı; ileride `CARD_PROVIDER=IYZICO` ile açılabilir
 
 > Stripe, Türkiye'de kurulu şirketlere hesap açmıyor. Hesap, Stripe'ın desteklediği bir ülkedeki şirketle açılmalı.
 
-## 1. Stripe panelinde (dashboard.stripe.com)
+## 1. Tek adım: anahtarı admin'e yapıştır
 
-1. **Önce sandbox'ta dene.** Developers → Sandboxes kısmından bir test ortamı aç; aşağıdaki adımlar orada da aynı.
-2. **Kısıtlı anahtar (restricted key, `rk_…`).** Developers → API keys → Create restricted key. Yalnız şu izinleri ver:
-   - Checkout Sessions: **Write**
-   - Coupons: **Write** (kuponlu siparişte indirim satırı için)
-   - Refunds: **Write** (admin'den iade için)
-   - PaymentIntents: **Read**, Charges: **Read**
-3. **Webhook.** Developers → Webhooks → Add endpoint:
-   - URL: `https://api.maeyja.com/api/payments/stripe/webhook`
-   - Olaylar: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`
-   - Oluşunca "Signing secret" (`whsec_…`) değerini kopyala.
-4. **Önerilen:**
-   - Settings → Payments → Adaptive Pricing: yurtdışı müşteri kendi para biriminde öder; tutarlar bizde TL olarak kontrol edilir.
-   - Radar: varsayılan kurallar yeter. Radar "manual review" derse sipariş admin'de **incelemede** görünür.
-   - Hesapta 2 adımlı doğrulama: SMS değil, passkey ya da authenticator uygulaması.
+1. Stripe panelinde **Developers → API keys** bölümünden gizli anahtarı (`sk_live_…`) kopyala. Önce denemek istersen test anahtarı (`sk_test_…`) da olur.
+2. Admin'de **Ayarlar → Kartla ödeme** sekmesine yapıştır ve **Kaydet ve bağla**'ya bas.
 
-## 2. Sunucuda (`/var/www/maeyja/backend/.env`)
+Gerisini sistem yapar:
+- Anahtar Stripe'a sorularak doğrulanır.
+- Webhook (`https://api.maeyja.com/api/payments/stripe/webhook`) kendiliğinden kurulur.
+- Anahtar ve webhook anahtarı veritabanında şifreli saklanır.
+- Ekranda yalnızca son 4 hane görünür.
 
-```
-CARD_PROVIDER=STRIPE
-STRIPE_SECRET_KEY=rk_live_…
-STRIPE_WEBHOOK_SECRET=whsec_…
-```
+Ek bilgiler:
+- Test anahtarıyla gelen ödemeler sipariş geçmişinde "TEST modu, gerçek para yok" diye yazılır. Siteyi açmadan önce canlı anahtara geç.
+- Kısıtlı anahtar (`rk_…`) kullanılacaksa şu izinler gerekir: Checkout Sessions, Coupons, Refunds ve **Webhook Endpoints** için Write; PaymentIntents ve Charges için Read.
+- Stripe hesabında 2 adımlı doğrulama açık olsun; SMS değil, passkey ya da authenticator uygulaması.
+- İstersen Settings → Payments → **Adaptive Pricing** aç: yurtdışı müşteri kendi para biriminde öder, tutarlar bizde TL olarak kontrol edilir.
 
-- Prod'da `STRIPE_SECRET_KEY` girilip `STRIPE_WEBHOOK_SECRET` girilmezse API açılmaz. Bu bilerek böyle: müşteri sekmeyi kapatırsa ödemeyi webhook işler.
-- Test anahtarıyla (`rk_test_…`) gelen ödemeler sipariş geçmişinde "TEST modu, gerçek para yok" diye yazılır. Siteyi açmadan önce canlı anahtara geç.
-- Sonra `make ship T=backend`. Yeni migration (`STRIPE` ödeme türü) deploy sırasında kendiliğinden uygulanır.
+## 2. Alternatif: sunucu `.env`
+
+Admin'de anahtar yoksa `backend/.env` içindeki `STRIPE_SECRET_KEY` ve `STRIPE_WEBHOOK_SECRET` kullanılır. Bu durumda webhook'u Stripe panelinden elle kurmak gerekir. Prod'da `STRIPE_SECRET_KEY` girilip webhook anahtarı girilmezse API açılmaz.
 
 ## 3. Nasıl çalışıyor
 
