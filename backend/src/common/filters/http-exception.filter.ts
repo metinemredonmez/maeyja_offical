@@ -1,10 +1,13 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Request, Response } from 'express';
+import { AuditService, requestId } from '../audit/audit.service';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger('Exception');
+
+  constructor(@Optional() private readonly audit?: AuditService) {}
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
@@ -32,13 +35,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       };
       if (map[exception.code]) {
         [status, message] = map[exception.code];
-        this.logger.warn(`${req.method} ${req.originalUrl} -> ${status} ${exception.code} ${JSON.stringify(exception.meta ?? {})}`);
+        this.logger.warn(`${req.method} ${req.originalUrl} -> ${status} [${requestId(req)}] ${exception.code} ${JSON.stringify(exception.meta ?? {})}`);
       }
     }
 
+    // LOG-01: a refused admin request (role, MFA, ownership) is a security event, whether a guard or the handler said no.
+    if (status === HttpStatus.FORBIDDEN && req.originalUrl?.includes('/admin/')) this.audit?.record(req, { outcome: 'denied', status });
+
     if (status >= 500) {
       this.logger.error(
-        `${req.method} ${req.originalUrl} -> ${status}`,
+        `${req.method} ${req.originalUrl} -> ${status} [${requestId(req)}]`,
         exception instanceof Error ? exception.stack : JSON.stringify(exception),
       );
     }
@@ -48,6 +54,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode: status,
       message,
       ...(code ? { code } : {}),
+      ...(requestId(req) ? { requestId: requestId(req) } : {}),
       path: req.originalUrl,
       timestamp: new Date().toISOString(),
     });

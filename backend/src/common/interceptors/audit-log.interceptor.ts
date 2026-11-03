@@ -1,43 +1,26 @@
-import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
+import { CallHandler, ExecutionContext, HttpException, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { PrismaService } from '../../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
-const SENSITIVE = /password|token|secret|apiKey/i;
-
-function redact(body: unknown): unknown {
-  if (!body || typeof body !== 'object') return body;
-  return Object.fromEntries(
-    Object.entries(body as Record<string, unknown>).map(([k, v]) => [k, SENSITIVE.test(k) ? '***' : v]),
-  );
-}
-
-/** Records every successful write made through /admin routes. */
+/** Records every write made through /admin routes, every admin export, and the ones that failed (LOG-01). */
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
-  private readonly logger = new Logger(AuditLogInterceptor.name);
-
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly audit: AuditService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest();
-    const isAdminWrite = req.method !== 'GET' && req.originalUrl?.includes('/admin/');
-    if (!isAdminWrite) return next.handle();
+    const admin = req.originalUrl?.includes('/admin/');
+    const isExport = req.method === 'GET' && /export/i.test(req.originalUrl ?? '');
+    if (!admin || (req.method === 'GET' && !isExport)) return next.handle();
 
     return next.handle().pipe(
-      tap((result: unknown) => {
-        const [, entity, entityId] = (req.route?.path as string | undefined)?.match(/admin\/([^/]+)(?:\/:([^/]+))?/) ?? [];
-        this.prisma.auditLog
-          .create({
-            data: {
-              actorId: req.user?.id,
-              action: `${req.method} ${req.route?.path ?? req.originalUrl}`,
-              entity,
-              entityId: entityId ? req.params?.[entityId] : ((result as { id?: string } | undefined)?.id ?? null),
-              meta: req.body && Object.keys(req.body).length ? (redact(req.body) as object) : undefined,
-              ip: req.ip,
-            },
-          })
-          .catch((e) => this.logger.warn(`audit log failed: ${e.message}`));
+      tap({
+        next: (result: unknown) => this.audit.record(req, { outcome: 'ok', entityId: (result as { id?: string } | undefined)?.id }),
+        error: (e: unknown) => {
+          const status = e instanceof HttpException ? e.getStatus() : 500;
+          // Refusals (403) are recorded by the exception filter, which also sees the ones a guard made.
+          if (status !== 403) this.audit.record(req, { outcome: 'failed', status });
+        },
       }),
     );
   }

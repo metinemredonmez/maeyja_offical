@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { resolve } from 'path';
 import { AppModule } from './app.module';
+import { requestIdMiddleware } from './common/audit/audit.service';
 import { Env } from './config/env.validation';
 
 async function bootstrap() {
@@ -20,6 +21,7 @@ async function bootstrap() {
   const trustProxy = config.get('TRUST_PROXY', { infer: true }) || (isProd ? 1 : 0);
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
 
+  app.use(requestIdMiddleware);
   app.setGlobalPrefix(prefix, { exclude: ['health'] });
   const swagger = !isProd || config.get('SWAGGER_ENABLED', { infer: true });
   app.use(
