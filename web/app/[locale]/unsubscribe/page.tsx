@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { Unsubscribe } from '@/components/newsletter/unsubscribe';
+import { ForgetQuery } from '@/components/forget-query';
 
 export const metadata = { robots: { index: false } };
 
@@ -7,5 +8,10 @@ export default async function UnsubscribePage({ params, searchParams }: { params
   const { locale } = await params;
   setRequestLocale(locale);
   const { r = '', t = '' } = await searchParams;
-  return <Unsubscribe r={r} t={t} />;
+  return (
+    <>
+      <ForgetQuery />
+      <Unsubscribe r={r} t={t} />
+    </>
+  );
 }

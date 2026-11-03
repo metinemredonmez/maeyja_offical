@@ -3,23 +3,31 @@
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { Link, usePathname } from '@/i18n/navigation';
-import { CONSENT_EVENT, firePendingPurchase, getConsent, loadPixels, setConsent, trackPageView, type TrackingIds } from '@/lib/tracking';
+import { CONSENT_EVENT, firePendingPurchase, getConsent, loadPixels, QUIET_PAGES, setConsent, trackPageView, type TrackingIds } from '@/lib/tracking';
 
 const OPEN_EVENT = 'mj-consent-open';
 
 /**
  * Cookie consent + ad pixels. The banner only appears when a pixel is set up in the admin; the pixels load after
  * "Accept", and every page view is counted from then on. "Cookie preferences" in the footer reopens it.
+ * CLI-01: on the quiet pages (checkout, account, token links) nothing loads; arriving there from a page that had
+ * loaded them reloads once, so no third-party script stays on the page.
  */
 export function Tracking({ ids }: { ids: TrackingIds }) {
   const t = useTranslations('consent');
   const pathname = usePathname();
+  const quiet = QUIET_PAGES.test(pathname);
   const active = Boolean(ids.metaPixelId || ids.ga4Id || ids.googleAdsId);
   const [ask, setAsk] = useState(false);
   const [granted, setGranted] = useState(false);
 
   useEffect(() => {
     if (!active) return;
+    if (quiet) {
+      setAsk(false);
+      if (window.__mjIds) location.reload();
+      return;
+    }
     const apply = () => {
       const c = getConsent();
       setAsk(c === null);
@@ -36,11 +44,11 @@ export function Tracking({ ids }: { ids: TrackingIds }) {
       removeEventListener(CONSENT_EVENT, apply);
       removeEventListener(OPEN_EVENT, reopen);
     };
-  }, [active, ids]);
+  }, [active, ids, quiet]);
 
   useEffect(() => {
-    if (granted) trackPageView();
-  }, [granted, pathname]);
+    if (granted && !quiet) trackPageView();
+  }, [granted, pathname, quiet]);
 
   if (!active || !ask) return null;
   return (

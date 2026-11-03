@@ -7,7 +7,7 @@ export type TrackingIds = { metaPixelId: string; ga4Id: string; googleAdsId: str
 export type TrackItem = { id: string; name: string; price: number; quantity: number; variant?: string | null };
 type Consent = 'granted' | 'denied';
 
-type Fbq = ((...args: unknown[]) => void) & { callMethod?: (...args: unknown[]) => void; queue: unknown[][]; push: unknown; loaded: boolean; version: string };
+type Fbq = ((...args: unknown[]) => void) & { callMethod?: (...args: unknown[]) => void; queue: unknown[][]; push: unknown; loaded: boolean; version: string; disablePushState?: boolean };
 declare global {
   interface Window {
     fbq?: Fbq;
@@ -63,6 +63,8 @@ export function loadPixels(ids: TrackingIds) {
     fbq.loaded = true;
     fbq.version = '2.0';
     fbq.queue = [];
+    // No automatic PageView (with the full address) on every route change; ours sends the path only.
+    fbq.disablePushState = true;
     window.fbq = window._fbq = fbq;
     addScript('https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', ids.metaPixelId);
@@ -83,9 +85,14 @@ export function loadPixels(ids: TrackingIds) {
   waiting.splice(0).forEach((send) => send());
 }
 
+/** Pages where no ad script runs (CLI-01): tokens in the address, account and address data. The paid-order page
+ * (/checkout/result) is not one of them, so the browser Purchase still reaches the ad platforms. */
+export const QUIET_PAGES = /^\/(account|checkout(?!\/result)|verify-email|unsubscribe|order-status)(\/|$)/;
+
 export function trackPageView() {
   window.fbq?.('track', 'PageView');
-  window.gtag?.('event', 'page_view', { page_location: location.href, page_title: document.title });
+  // The path only: query strings can carry search words, order numbers or tokens.
+  window.gtag?.('event', 'page_view', { page_location: location.origin + location.pathname, page_title: document.title });
 }
 
 const META_NAMES = { view_item: 'ViewContent', add_to_cart: 'AddToCart', begin_checkout: 'InitiateCheckout', purchase: 'Purchase' } as const;
@@ -134,6 +141,12 @@ export function attribution() {
     gaClientId: ga && ga.length >= 4 ? `${ga[2]}.${ga[3]}` : undefined,
     userAgent: navigator.userAgent.slice(0, 400),
   };
+}
+
+/** InitiateCheckout is sent on the way in: the checkout page itself loads no ad scripts. */
+export function trackBeginCheckout(cart: { total: number; lines: { sku: string; productName: string; colorName?: string | null; unitPrice: number; quantity: number }[] }) {
+  if (!cart.lines.length) return;
+  track('begin_checkout', { value: cart.total, items: cart.lines.map((l) => ({ id: l.sku, name: l.productName, variant: l.colorName, price: l.unitPrice, quantity: l.quantity })) });
 }
 
 /** Card payments leave the site for 3-D Secure; the Purchase is fired when the shopper comes back paid. */

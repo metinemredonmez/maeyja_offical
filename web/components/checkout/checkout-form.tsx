@@ -2,14 +2,14 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Link, useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api.client';
 import { money } from '@/lib/format';
-import { attribution, savePendingPurchase, track, type TrackItem } from '@/lib/tracking';
+import { attribution, savePendingPurchase, type TrackItem } from '@/lib/tracking';
 import type { Address, CheckoutResult, PublicSettings, User } from '@/lib/types';
 import { useCart, useCartMutations } from '@/components/cart/use-cart';
 
@@ -82,13 +82,8 @@ export function CheckoutForm({ user, addresses, settings }: { user: User | null;
   const invoiceType = watch('invoiceType');
   const paymentMethod = watch('paymentMethod');
 
-  // Ad pixels: the start of checkout, once the bag has loaded.
+  // Ad pixels: the start of checkout is sent from the bag (this page loads no ad scripts); the purchase from the result page.
   const lines: TrackItem[] = (cart?.lines ?? []).map((l) => ({ id: l.sku, name: l.productName, variant: l.colorName, price: l.unitPrice, quantity: l.quantity }));
-  const hasCart = Boolean(cart?.lines.length);
-  useEffect(() => {
-    if (hasCart) track('begin_checkout', { value: cart!.total, items: lines });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, when the bag is there
-  }, [hasCart]);
 
   const onSubmit = async (v: Form) => {
     const body = {

@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api.client';
 import { money } from '@/lib/format';
 import { CartLines } from '@/components/cart/cart-lines';
 import { useCart, useCartMutations } from '@/components/cart/use-cart';
+import { trackBeginCheckout } from '@/lib/tracking';
 
 export default function CartPage() {
   const t = useTranslations('cart');
@@ -73,7 +74,7 @@ export default function CartPage() {
               </div>
             </dl>
             {cart.freeShippingRemaining ? <p className="text-xs text-muted">{t('freeShippingRemaining', { amount: money(cart.freeShippingRemaining, locale) })}</p> : null}
-            <Link href="/checkout" className={`btn-primary w-full ${!cart.allAvailable ? 'pointer-events-none opacity-50' : ''}`} aria-disabled={!cart.allAvailable}>
+            <Link href="/checkout" onClick={() => trackBeginCheckout(cart)} className={`btn-primary w-full ${!cart.allAvailable ? 'pointer-events-none opacity-50' : ''}`} aria-disabled={!cart.allAvailable}>
               {t('checkout')}
             </Link>
             <Link href="/products" className="label text-center text-muted hover:text-brand">

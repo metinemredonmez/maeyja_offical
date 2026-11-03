@@ -63,7 +63,11 @@ export function BuyBox({ product, shipping, wishlisted, siblings, tryon = false 
       {
         onSuccess: () => {
           track('add_to_cart', { value: price, items: [{ id: variant.sku, name: product.name, variant: colorName, price, quantity: 1 }] });
-          if (then === 'checkout') return router.push('/checkout');
+          if (then === 'checkout') {
+            // The checkout page loads no ad scripts (CLI-01): its start is counted here.
+            track('begin_checkout', { value: price, items: [{ id: variant.sku, name: product.name, variant: colorName, price, quantity: 1 }] });
+            return router.push('/checkout');
+          }
           toast.success(t('added'));
           openCart();
         },

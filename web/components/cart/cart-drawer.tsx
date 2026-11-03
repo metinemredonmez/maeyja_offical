@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation';
 import { money } from '@/lib/format';
 import { CartLines } from './cart-lines';
 import { useCartUi } from './cart-ui';
+import { trackBeginCheckout } from '@/lib/tracking';
 import { useCart } from './use-cart';
 
 export function CartDrawer() {
@@ -59,7 +60,14 @@ export function CartDrawer() {
                 <span>{t('subtotal')}</span>
                 <span>{money(cart.subtotal, locale)}</span>
               </div>
-              <Link href="/checkout" onClick={closeCart} className="btn-primary w-full">
+              <Link
+                href="/checkout"
+                onClick={() => {
+                  trackBeginCheckout(cart);
+                  closeCart();
+                }}
+                className="btn-primary w-full"
+              >
                 {t('checkout')}
               </Link>
               <Link href="/cart" onClick={closeCart} className="label mt-4 block text-center text-muted hover:text-brand">
