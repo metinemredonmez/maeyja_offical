@@ -6,10 +6,14 @@ import { paginate, skipTake } from '../../common/dto/pagination.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { publicUser } from '../auth/auth.service';
 import { AddressDto, AdminUpdateUserDto, AdminUserQueryDto, CreateStaffDto, UpdateAddressDto, UpdateProfileDto } from './dto/users.dto';
+import { SessionStateService } from '../session/session-state.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sessions: SessionStateService,
+  ) {}
 
   // ─────────── self-service ───────────
 
@@ -151,8 +155,8 @@ export class UsersService {
     }
     const user = await this.prisma.user.update({ where: { id }, data: dto });
     if (dto.isActive === false || dto.role !== undefined) {
-      // Force re-login so new permissions apply immediately after the access token expires.
-      await this.prisma.refreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
+      // SES-02: new permissions apply at once — every session (and access token) of the account ends.
+      await this.sessions.endAll(id);
     }
     return { ...publicUser(user), isActive: user.isActive };
   }

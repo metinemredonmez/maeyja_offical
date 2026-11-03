@@ -3,9 +3,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, hardNavigate } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
-import type { AuthUser, MfaSetup, MfaStatus } from '@/lib/types';
+import type { AuthSession, AuthUser, MfaSetup, MfaStatus } from '@/lib/types';
 
-export const authKeys = { me: ['auth', 'me'] as const, mfa: ['auth', 'mfa'] as const };
+export const authKeys = { me: ['auth', 'me'] as const, mfa: ['auth', 'mfa'] as const, sessions: ['auth', 'sessions'] as const };
 
 export function useMe(initialData?: AuthUser | null) {
   return useQuery({
@@ -51,3 +51,11 @@ export const useMfaBackupCodes = () =>
     invalidate: [authKeys.mfa],
     success: 'Yedek kodlar yenilendi — eski kodlar artık geçersiz',
   });
+
+// ───────────── open sessions (SES-04) ─────────────
+export const useSessions = () => useQuery({ queryKey: authKeys.sessions, queryFn: () => api.get<AuthSession[]>('/auth/sessions') });
+export const useRevokeSession = () =>
+  useApiMutation<unknown, string>({ mutationFn: (id) => api.delete(`/auth/sessions/${encodeURIComponent(id)}`), invalidate: [authKeys.sessions], success: 'Oturum kapatıldı' });
+/** Every device, this one included: back to the login page. */
+export const useLogoutAll = () =>
+  useApiMutation({ mutationFn: () => api.post('/auth/logout-all'), success: false, onSuccess: () => hardNavigate('/login') });

@@ -13,17 +13,67 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Field, FormError, SubmitButton, onInvalid } from '@/components/shared/form';
 import { PageHeader } from '@/components/shared/page-header';
-import { KeyValue, Section } from '@/components/shared/primitives';
+import { DateTime, KeyValue, Section } from '@/components/shared/primitives';
 import { QueryState } from '@/components/shared/query-state';
 import { ToneBadge } from '@/components/shared/status-badge';
 import { USER_ROLE } from '@/lib/labels';
 import { fullName } from '@/lib/format';
-import { useLogout, useMe, useMfaBackupCodes, useMfaDisable, useMfaEnable, useMfaSetup, useMfaStatus } from '@/lib/queries/auth';
+import { useLogout, useLogoutAll, useMe, useMfaBackupCodes, useMfaDisable, useMfaEnable, useMfaSetup, useMfaStatus, useRevokeSession, useSessions } from '@/lib/queries/auth';
 import { useChangePassword } from '@/lib/queries/system';
 import { changePasswordSchema, mfaDisableSchema, mfaVerifySchema, type ChangePasswordValues, type MfaDisableValues, type MfaVerifyValues } from '@/lib/schemas/auth';
 import type { MfaSetup } from '@/lib/types';
 
 // ───────────── password ─────────────
+/** "Chrome on macOS" from a user agent, enough to recognise a device. */
+function deviceName(ua: string | null) {
+  if (!ua) return 'Bilinmeyen cihaz';
+  const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Tarayıcı';
+  const os = /iPhone|iPad/.test(ua) ? 'iOS' : /Android/.test(ua) ? 'Android' : /Mac OS X/.test(ua) ? 'macOS' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : '';
+  return os ? `${browser} · ${os}` : browser;
+}
+
+/** SES-04: where this account is signed in; any of them (or all) can be closed from here. */
+function SessionsCard() {
+  const query = useSessions();
+  const revoke = useRevokeSession();
+  const logoutAll = useLogoutAll();
+  return (
+    <Section
+      title="Açık oturumlar"
+      description="Bu hesabın giriş yapılmış olduğu cihazlar. Tanımadığınız bir oturumu kapatın ve şifrenizi değiştirin."
+      actions={
+        <Button type="button" variant="outline" size="sm" disabled={logoutAll.isPending} onClick={() => logoutAll.mutate()}>
+          Her yerden çık
+        </Button>
+      }
+    >
+      <QueryState query={query}>
+        {(rows) => (
+          <ul className="divide-y">
+            {rows.map((s) => (
+              <li key={s.id ?? s.startedAt} className="flex items-center justify-between gap-3 py-2.5 text-sm">
+                <div>
+                  <p className="font-medium">
+                    {deviceName(s.device)} {s.current && <span className="ml-1 text-xs text-emerald-700">· bu cihaz</span>}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {s.ip ?? 'IP yok'} · son etkinlik <DateTime value={s.lastActiveAt} mode="relative" /> · giriş <DateTime value={s.startedAt} />
+                  </p>
+                </div>
+                {!s.current && s.id && (
+                  <Button type="button" variant="ghost" size="sm" disabled={revoke.isPending} onClick={() => revoke.mutate(s.id!)}>
+                    Kapat
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </QueryState>
+    </Section>
+  );
+}
+
 function PasswordCard() {
   const change = useChangePassword();
   const form = useForm<ChangePasswordValues>({ resolver: zodResolver(changePasswordSchema), defaultValues: { currentPassword: '', newPassword: '', confirm: '' } });
@@ -332,6 +382,7 @@ function ProfileInner() {
         <div className="space-y-5">
           <MfaCard mandatory={mandatory} />
           <PasswordCard />
+          <SessionsCard />
         </div>
       </div>
     </>

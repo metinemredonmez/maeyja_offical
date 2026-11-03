@@ -53,6 +53,19 @@ function redirectToLogin() {
   hardNavigate(`/login?next=${encodeURIComponent(next)}&expired=1`);
 }
 
+/**
+ * SES-05: one renewal at a time for the whole tab. After a while idle, every query on the page gets a 401 at once;
+ * they all wait for the same /auth/refresh instead of racing each other (a refresh token works once).
+ */
+let renewing: Promise<boolean | 'race'> | null = null;
+function renewSession() {
+  renewing ??= fetch('/api/auth/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'x-requested-with': 'mj' } })
+    .then((r) => (r.ok ? true : r.status === 409 ? ('race' as const) : false))
+    .catch(() => false)
+    .finally(() => setTimeout(() => (renewing = null), 1_000));
+  return renewing;
+}
+
 async function request<T>(method: string, path: string, body?: unknown, opts: Options = {}): Promise<T> {
   // `X-Requested-With: mj` is the CSRF marker the BFF proxy requires on every non-GET request.
   const headers: Record<string, string> = { accept: 'application/json', 'x-requested-with': 'mj' };
@@ -71,13 +84,13 @@ async function request<T>(method: string, path: string, body?: unknown, opts: Op
     throw new ApiError('Ağ hatası — bağlantınızı kontrol edin', 0);
   }
 
+  // 409: another tab renewed the session a moment ago — its cookies are already ours, try once more.
+  if ((res.status === 401 || res.status === 409) && opts.retry !== false) {
+    const renewed = res.status === 409 ? 'race' : await renewSession();
+    if (renewed === 'race') await new Promise((r) => setTimeout(r, 800));
+    if (renewed) return request<T>(method, path, body, { ...opts, retry: false });
+  }
   if (res.status === 401) {
-    if (opts.retry !== false) {
-      const refreshed = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'same-origin', headers: { 'x-requested-with': 'mj' } })
-        .then((r) => r.ok)
-        .catch(() => false);
-      if (refreshed) return request<T>(method, path, body, { ...opts, retry: false });
-    }
     redirectToLogin();
     throw new ApiError('Oturum süresi doldu', 401);
   }

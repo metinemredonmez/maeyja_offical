@@ -29,6 +29,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { UsageModule } from './modules/usage/usage.module';
+import { SessionModule } from './modules/session/session.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { UsageModule } from './modules/usage/usage.module';
     SettingsModule,
     NotificationsModule,
     UsageModule,
+    SessionModule,
     HealthModule,
     AuthModule,
     UsersModule,

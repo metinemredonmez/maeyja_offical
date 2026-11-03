@@ -7,6 +7,8 @@ export interface AuthUser {
   role: UserRole;
   /** true when the session was opened with a second factor */
   mfa?: boolean;
+  /** The sign-in (refresh token family) this request belongs to. */
+  family?: string;
 }
 
 export const CurrentUser = createParamDecorator(

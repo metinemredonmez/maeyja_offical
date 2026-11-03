@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -65,6 +65,26 @@ export class AuthController {
   @Post('login/mfa')
   loginMfa(@Body() dto: MfaLoginDto, @ClientIp() ip: string, @Req() req: Request) {
     return this.auth.loginMfa(dto.mfaToken, dto.code, { ip, userAgent: req.headers['user-agent'] });
+  }
+
+  /** SES-04: every device of this account signs out (customers and staff). */
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @Post('logout-all')
+  logoutAll(@CurrentUser() user: AuthUser) {
+    return this.auth.logoutAll(user.id);
+  }
+
+  @ApiBearerAuth()
+  @Get('sessions')
+  sessions(@CurrentUser() user: AuthUser) {
+    return this.auth.listSessions(user.id, user.family);
+  }
+
+  @ApiBearerAuth()
+  @Delete('sessions/:id')
+  revokeSession(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.auth.revokeSession(user.id, id);
   }
 
   @ApiBearerAuth()

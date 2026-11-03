@@ -123,6 +123,7 @@ model User {
   mfaFailures     Int       @default(0) // wrong second-factor codes since the last right one (AUT-02)
   mfaLockedUntil  DateTime?
   mfaLastStep     Int? // last TOTP time step accepted; the same code can't be used twice
+  sessionVersion  Int       @default(0) // SES-02: raised when every session must end (role, password, MFA, sign out everywhere)
   deletedAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -177,18 +178,25 @@ model LoginAttempt {
 }
 
 model RefreshToken {
-  id        String    @id @default(cuid())
-  userId    String
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  userAgent String?
-  ip        String?
-  createdAt DateTime  @default(now())
+  id              String    @id @default(cuid())
+  userId          String
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  userAgent       String?
+  ip              String?
+  /// One sign-in and all its rotations (SES-05): a stolen token ends this session, not every device.
+  familyId        String?
+  /// When that sign-in happened: sessions have an absolute lifetime (staff 8 h, customers 30 days).
+  familyStartedAt DateTime?
+  /// The sign-in passed the second factor.
+  mfa             Boolean   @default(false)
+  createdAt       DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
 }
 
 model AuthToken {

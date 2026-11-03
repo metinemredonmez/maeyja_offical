@@ -12,7 +12,7 @@ const HOP_BY_HOP = new Set(['connection', 'keep-alive', 'transfer-encoding', 'co
 const AUTH_ROUTES = new Set(['auth/login', 'auth/register', 'auth/refresh', 'auth/logout', 'auth/change-password', 'auth/verify-email']);
 /** Only the storefront's own API surface is proxied — never admin/*, never the admin login. */
 const ALLOW: [RegExp, string[]][] = [
-  [/^auth\/(login|register|logout|forgot-password|reset-password|verify-email|resend-verification|change-password)$/, ['POST']],
+  [/^auth\/(login|register|logout|logout-all|forgot-password|reset-password|verify-email|resend-verification|change-password)$/, ['POST']],
   [/^auth\/me$/, ['GET']],
   [/^(catalog|content|settings\/public|cart|checkout|orders|me|newsletter|contact|devices)(\/[\w.-]+)*$/, ['GET', 'POST', 'PUT', 'PATCH', 'DELETE']],
   [/^assistant\/chat$/, ['POST']],
@@ -69,6 +69,8 @@ async function handler(req: NextRequest, ctx: { params: Promise<{ path: string[]
   }
 
   const res = await toResponse(upstream, AUTH_ROUTES.has(target));
+  // Signed out everywhere (SES-04): this browser's cookies go too.
+  if (target === 'auth/logout-all' && upstream.ok) clearTokens(res);
 
   if (rotated) {
     setTokens(res, rotated);

@@ -27,7 +27,7 @@ const SITE_ORIGIN = (() => {
 
 type Ctx = { params: Promise<{ path: string[] }> };
 
-const AUTH_ALLOW = /^auth\/(admin\/login|login\/mfa|refresh|logout|me|change-password|forgot-password|reset-password|mfa|mfa\/(setup|enable|disable|backup-codes))$/;
+const AUTH_ALLOW = /^auth\/(admin\/login|login\/mfa|refresh|logout|logout-all|me|change-password|forgot-password|reset-password|mfa|mfa\/(setup|enable|disable|backup-codes)|sessions|sessions\/[\w-]+)$/;
 
 /** Auth actions whose success body carries a session → cookies. */
 const TOKEN_ENDPOINTS = new Set(['admin/login', 'login/mfa', 'change-password']);
@@ -70,19 +70,33 @@ function csrfOk(req: NextRequest) {
   return site === null || site === 'same-origin';
 }
 
-async function refreshTokens(req: NextRequest, refreshToken: string) {
-  try {
-    const headers = upstreamHeaders(req);
-    headers.set('content-type', 'application/json');
-    const r = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers, body: JSON.stringify({ refreshToken }), cache: 'no-store' });
-    if (!r.ok) return null;
-    const body = (await r.json()) as { success?: boolean; data?: SessionPayload };
-    const data = body?.data;
-    if (!data?.accessToken || !data?.refreshToken) return null;
-    return data;
-  } catch {
-    return null;
-  }
+/**
+ * SES-05: a refresh token works once. Requests renewing at the same moment share one call (kept a few seconds for
+ * those still holding the old cookie); 'race' = another tab renewed just now (API 409): keep the cookies, retry.
+ */
+const inflight = new Map<string, Promise<SessionPayload | 'race' | null>>();
+
+function refreshTokens(req: NextRequest, refreshToken: string) {
+  const running = inflight.get(refreshToken);
+  if (running) return running;
+  const call = (async () => {
+    try {
+      const headers = upstreamHeaders(req);
+      headers.set('content-type', 'application/json');
+      const r = await fetch(`${API_URL}/auth/refresh`, { method: 'POST', headers, body: JSON.stringify({ refreshToken }), cache: 'no-store' });
+      if (r.status === 409) return 'race' as const;
+      if (!r.ok) return null;
+      const body = (await r.json()) as { success?: boolean; data?: SessionPayload };
+      const data = body?.data;
+      if (!data?.accessToken || !data?.refreshToken) return null;
+      return data;
+    } catch {
+      return null;
+    }
+  })();
+  inflight.set(refreshToken, call);
+  void call.finally(() => setTimeout(() => inflight.delete(refreshToken), 10_000));
+  return call;
 }
 
 function passthrough(upstream: Response, body: BodyInit | null) {
@@ -123,6 +137,7 @@ async function handler(req: NextRequest, ctx: Ctx) {
       return res;
     }
     const tokens = await refreshTokens(req, refreshToken);
+    if (tokens === 'race') return json(409, 'Oturum az önce yenilendi');
     if (!tokens) {
       const res = json(401, 'Oturum süresi doldu');
       clearAuthCookies(res);
@@ -130,6 +145,15 @@ async function handler(req: NextRequest, ctx: Ctx) {
     }
     const res = NextResponse.json({ success: true, data: { user: tokens.user ?? null } });
     setAuthCookies(res, tokens);
+    return res;
+  }
+
+  // ── auth/logout-all: every device of this account (SES-04), then this one's cookies ──
+  if (isAuth && authAction === 'logout-all') {
+    const r = await fetch(`${API_URL}/auth/logout-all`, { method: 'POST', headers: upstreamHeaders(req, accessToken), cache: 'no-store' }).catch(() => null);
+    if (!r?.ok) return json(r?.status ?? 502, 'Oturumlar kapatılamadı');
+    const res = NextResponse.json({ success: true, data: { ok: true } });
+    clearAuthCookies(res);
     return res;
   }
 
@@ -173,6 +197,8 @@ async function handler(req: NextRequest, ctx: Ctx) {
   if (upstream.status === 401 && !(isAuth && (authAction === 'admin/login' || authAction === 'login/mfa'))) {
     if (refreshToken) {
       const tokens = await refreshTokens(req, refreshToken);
+      // Another tab renewed a moment ago: its cookies are the live ones; the client retries.
+      if (tokens === 'race') return json(409, 'Oturum az önce yenilendi');
       if (!tokens) {
         const res = json(401, 'Oturum süresi doldu');
         clearAuthCookies(res);

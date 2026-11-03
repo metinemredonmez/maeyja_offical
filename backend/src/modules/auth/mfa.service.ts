@@ -11,6 +11,7 @@ import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
+import { SessionStateService } from '../session/session-state.service';
 
 const ISSUER = 'MAEYJA Admin';
 const BACKUP_CODES = 8;
@@ -39,6 +40,7 @@ export class MfaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly sessions: SessionStateService,
     config: ConfigService<Env, true>,
   ) {
     this.key = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
@@ -85,9 +87,9 @@ export class MfaService {
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { mfaEnabledAt: new Date(), mfaBackupCodes: codes.map(hashCode), mfaFailures: 0, mfaLockedUntil: null } }),
       this.prisma.authToken.updateMany({ where: { userId, type: AuthTokenType.MFA_ENROLL, usedAt: null }, data: { usedAt: new Date() } }),
-      // Other sessions were opened without a second factor — close them.
-      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
+    // Every session was opened without a second factor — they all end now (access tokens too).
+    await this.sessions.endAll(userId);
     this.logger.log(`mfa enabled for ${user.email}`);
     this.notify(user, 'İki adımlı doğrulama açıldı', ['Hesabınıza bir doğrulama uygulaması bağlandı. Diğer bütün oturumlar kapatıldı.']);
     return { backupCodes: codes };
@@ -102,10 +104,8 @@ export class MfaService {
       await this.recordFailure(user, 'kapatma');
       throw new BadRequestException('Kod geçersiz');
     }
-    await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: userId }, data: { mfaSecret: null, mfaEnabledAt: null, mfaBackupCodes: [], mfaFailures: 0, mfaLockedUntil: null, mfaLastStep: null } }),
-      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
-    ]);
+    await this.prisma.user.update({ where: { id: userId }, data: { mfaSecret: null, mfaEnabledAt: null, mfaBackupCodes: [], mfaFailures: 0, mfaLockedUntil: null, mfaLastStep: null } });
+    await this.sessions.endAll(userId);
     this.logger.warn(`mfa disabled for ${user.email}`);
     this.notify(user, 'İki adımlı doğrulama kapatıldı', ['Hesabınızdaki doğrulama uygulaması kaldırıldı ve bütün oturumlar kapatıldı.']);
     return { ok: true };

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthTokenType, User, UserRole } from '@prisma/client';
@@ -10,6 +10,7 @@ import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { mailLocale, templates } from '../notifications/mail.templates';
+import { SessionStateService } from '../session/session-state.service';
 import { UsageService } from '../usage/usage.service';
 import { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 import { LoginGuardService } from './login-guard.service';
@@ -19,6 +20,18 @@ const BCRYPT_ROUNDS = 12;
 /** What sign-up always answers (AUT-02): the next step is in the e-mail either way. */
 const CHECK_EMAIL = { ok: true as const, checkEmail: true as const };
 const REGISTER_MAILS_PER_HOUR = 3;
+/** SES-02/04: staff work with short access tokens and must sign in again after a working day. */
+const STAFF_ACCESS_TTL = '5m';
+const STAFF_SESSION_MS = 8 * 3600_000;
+/** SES-05: the same refresh token again within this window is a parallel renewal, not a stolen copy. */
+const REUSE_GRACE_MS = 10_000;
+
+/** A sign-in and its rotations: kept on every refresh token of that sign-in. */
+interface Family {
+  id: string;
+  startedAt: Date;
+  mfa: boolean;
+}
 const VERIFY_TTL_MS = 48 * 3600_000;
 const RESET_TTL_MS = 3600_000;
 // Real hash so bcrypt.compare costs the same whether or not the account exists.
@@ -55,6 +68,7 @@ export class AuthService {
     private readonly loginGuard: LoginGuardService,
     private readonly mfa: MfaService,
     private readonly usage: UsageService,
+    private readonly sessions: SessionStateService,
   ) {}
 
   /**
@@ -137,10 +151,14 @@ export class AuthService {
     }
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     this.logger.log(`admin login (mfa): ${user.email} from ${ip}`);
-    return this.issueSession(user, meta);
+    return this.issueSession(user, meta, this.newFamily(true));
   }
 
-  /** Rotating refresh tokens; presenting an already-revoked token revokes the whole family (theft signal). */
+  /**
+   * Rotating refresh tokens. A revoked token coming back is a theft signal and ends that sign-in (its family) — unless
+   * it is a parallel renewal of a few seconds ago, which only gets a 409 (SES-05). Sessions also end at an absolute
+   * age: staff after 8 hours, customers after the refresh lifetime.
+   */
   async refresh(refreshToken: string, meta: ClientMeta) {
     const record = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: hashToken(refreshToken) },
@@ -148,17 +166,65 @@ export class AuthService {
     });
     if (!record) throw new UnauthorizedException('Oturum geçersiz');
     if (record.revokedAt) {
-      await this.prisma.refreshToken.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } });
+      // A parallel renewal: this token was rotated a moment ago and its successor is alive. A session ended on purpose
+      // (sign out, theft, password change) has no live successor and gets the plain 401 below.
+      const recent = Date.now() - record.revokedAt.getTime() < REUSE_GRACE_MS;
+      const successor = recent && record.familyId ? await this.prisma.refreshToken.count({ where: { familyId: record.familyId, revokedAt: null, createdAt: { gte: record.revokedAt } } }) : 0;
+      if (successor) throw new ConflictException('Oturum az önce yenilendi');
+      await this.prisma.refreshToken.updateMany({
+        where: record.familyId ? { familyId: record.familyId, revokedAt: null } : { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      });
       this.logger.warn(`refresh token reuse detected for user ${record.userId}`);
       throw new UnauthorizedException('Oturum geçersiz');
     }
     if (record.expiresAt < new Date() || !record.user.isActive || record.user.deletedAt) {
       throw new UnauthorizedException('Oturum süresi doldu');
     }
+    const startedAt = record.familyStartedAt ?? record.createdAt;
+    if (Date.now() - startedAt.getTime() > this.sessionMaxMs(record.user)) throw new UnauthorizedException('Oturum süresi doldu, tekrar giriş yapın');
     // Atomic: two parallel refreshes with the same token can't both succeed.
     const claimed = await this.prisma.refreshToken.updateMany({ where: { id: record.id, revokedAt: null }, data: { revokedAt: new Date() } });
-    if (claimed.count === 0) throw new UnauthorizedException('Oturum geçersiz');
-    return this.issueSession(record.user, meta);
+    if (claimed.count === 0) throw new ConflictException('Oturum az önce yenilendi');
+    return this.issueSession(record.user, meta, { id: record.familyId ?? generateToken(12), startedAt, mfa: record.mfa });
+  }
+
+  /** "Sign out everywhere": every refresh token and every issued access token of the account (SES-04). */
+  async logoutAll(userId: string) {
+    await this.sessions.endAll(userId);
+    return { ok: true };
+  }
+
+  /** Open sign-ins of the account, newest first; `current` is the one asking. */
+  async listSessions(userId: string, currentFamily: string | undefined) {
+    const live = await this.prisma.refreshToken.findMany({
+      where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+      select: { familyId: true, familyStartedAt: true, createdAt: true, userAgent: true, ip: true },
+    });
+    const seen = new Set<string>();
+    return live
+      .filter((t) => {
+        const key = t.familyId ?? t.createdAt.toISOString();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map((t) => ({
+        id: t.familyId,
+        startedAt: t.familyStartedAt ?? t.createdAt,
+        lastActiveAt: t.createdAt,
+        device: t.userAgent ?? null,
+        // Enough to recognise a network, not to locate a person.
+        ip: t.ip ? t.ip.replace(/\.\d+$/, '.x').replace(/(:[0-9a-f]*){1,4}$/i, ':…') : null,
+        current: Boolean(t.familyId && t.familyId === currentFamily),
+      }));
+  }
+
+  async revokeSession(userId: string, familyId: string) {
+    const ended = await this.prisma.refreshToken.updateMany({ where: { userId, familyId, revokedAt: null }, data: { revokedAt: new Date() } });
+    if (ended.count === 0) throw new NotFoundException('Oturum bulunamadı');
+    return { ok: true };
   }
 
   async logout(refreshToken: string) {
@@ -192,10 +258,10 @@ export class AuthService {
     const record = await this.consumeAuthToken(dto.token, AuthTokenType.PASSWORD_RESET);
     const [user] = await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS) } }),
-      this.prisma.refreshToken.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
       // The link came to the mailbox, so the address is proven too.
       this.prisma.user.updateMany({ where: { id: record.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
     ]);
+    await this.sessions.endAll(record.userId);
     if (user.role !== UserRole.CUSTOMER) this.mfa.notify(user, 'Şifre sıfırlandı', ['Hesabınızın şifresi e-postadaki bağlantıyla yenilendi ve bütün oturumlar kapatıldı.']);
     return { ok: true };
   }
@@ -251,28 +317,44 @@ export class AuthService {
     if (!user.passwordHash || !(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
       throw new BadRequestException('Mevcut şifre hatalı');
     }
-    const [updated] = await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) } }),
-      this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
-    ]);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) } });
+    await this.sessions.endAll(userId);
+    const updated = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     this.logger.log(`password changed for ${user.email}`);
     if (user.role !== UserRole.CUSTOMER) this.mfa.notify(user, 'Şifre değiştirildi', ['Hesabınızın şifresi değiştirildi; diğer oturumlar kapatıldı.']);
-    return { ok: true, ...(await this.issueSession(updated, meta)) };
+    // This device carries on; it proved the password just now (and its second factor at sign-in).
+    return { ok: true, ...(await this.issueSession(updated, meta, this.newFamily(Boolean(updated.mfaEnabledAt)))) };
   }
 
   // ─────────────────────────── helpers ───────────────────────────
 
-  private async issueSession(user: User, meta: ClientMeta) {
-    const accessToken = await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role, mfa: Boolean(user.mfaEnabledAt), typ: 'access' });
+  private newFamily(mfa = false): Family {
+    return { id: generateToken(12), startedAt: new Date(), mfa };
+  }
+
+  private sessionMaxMs(user: Pick<User, 'role'>) {
+    return user.role === UserRole.CUSTOMER ? this.config.get('JWT_REFRESH_TTL_DAYS', { infer: true }) * 86400_000 : STAFF_SESSION_MS;
+  }
+
+  /** `mfa` and `sv` say what this session proved and which sessionVersion it belongs to (SES-02). */
+  private async issueSession(user: User, meta: ClientMeta, family: Family = this.newFamily()) {
+    const staff = user.role !== UserRole.CUSTOMER;
+    const claims = { sub: user.id, email: user.email, role: user.role, mfa: family.mfa, sv: user.sessionVersion, fam: family.id, typ: 'access' };
+    const accessToken = await this.jwt.signAsync(claims, staff ? { expiresIn: STAFF_ACCESS_TTL } : {});
     const refreshToken = generateToken(48);
     const days = this.config.get('JWT_REFRESH_TTL_DAYS', { infer: true });
+    // Never beyond the sign-in's absolute end.
+    const expiresAt = new Date(Math.min(Date.now() + days * 86400_000, family.startedAt.getTime() + this.sessionMaxMs(user)));
     await this.prisma.refreshToken.create({
       data: {
         userId: user.id,
         tokenHash: hashToken(refreshToken),
-        expiresAt: new Date(Date.now() + days * 86400_000),
+        expiresAt,
         ip: meta.ip,
         userAgent: meta.userAgent?.slice(0, 255),
+        familyId: family.id,
+        familyStartedAt: family.startedAt,
+        mfa: family.mfa,
       },
     });
     return { accessToken, refreshToken, user: publicUser(user) };

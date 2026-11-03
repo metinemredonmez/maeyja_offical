@@ -667,3 +667,13 @@ export interface StripeStatus {
   webhook: boolean;
   savedAt: string | null;
 }
+
+/** An open sign-in of the current account (Profil → Açık oturumlar). */
+export interface AuthSession {
+  id: string | null;
+  startedAt: string;
+  lastActiveAt: string;
+  device: string | null;
+  ip: string | null;
+  current: boolean;
+}

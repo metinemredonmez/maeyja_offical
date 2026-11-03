@@ -17,8 +17,9 @@ export function AccountNav() {
     { href: '/account/addresses', label: t('addresses') },
     { href: '/account/wishlist', label: t('wishlist') },
   ];
-  const logout = async () => {
-    await api.post('/auth/logout').catch(() => undefined);
+  // SES-04: "everywhere" also ends sessions on other phones and computers (a lost device, a shared computer).
+  const logout = async (everywhere = false) => {
+    await api.post(everywhere ? '/auth/logout-all' : '/auth/logout').catch(() => undefined);
     qc.clear();
     router.replace('/');
     router.refresh();
@@ -30,8 +31,11 @@ export function AccountNav() {
           {i.label}
         </Link>
       ))}
-      <button type="button" onClick={logout} className="label text-left text-muted hover:text-brand md:mt-6">
+      <button type="button" onClick={() => logout()} className="label text-left text-muted hover:text-brand md:mt-6">
         {ta('logout')}
+      </button>
+      <button type="button" onClick={() => logout(true)} className="label text-left text-muted hover:text-brand">
+        {ta('logoutAll')}
       </button>
     </nav>
   );
