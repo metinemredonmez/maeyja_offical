@@ -11,6 +11,7 @@ import { decrypt, encrypt, keyFromEnv } from '../../common/utils/crypto.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailAccountDto, MailQueryDto, SendMailDto, UpdateMailAccountDto } from './dto/mailbox.dto';
+import { senderVerified } from './mail-auth';
 import { sanitizeMailHtml, snippetOf } from './mail-html';
 
 type Address = { name: string | null; address: string };
@@ -194,6 +195,7 @@ export class MailboxService {
       inReplyTo: m.inReplyTo,
       status: m.status as 'SENT' | 'FAILED' | null,
       error: m.error,
+      senderVerified: m.senderVerified,
     };
   }
 
@@ -376,6 +378,7 @@ export class MailboxService {
         html,
         snippet: snippetOf(parsed.text, html),
         hasAttachments: attachments.length > 0,
+        senderVerified: senderVerified(parsed.headerLines, from.address),
         isRead: seen,
         date: parsed.date ?? (internalDate ? new Date(internalDate) : new Date()),
         attachments: attachments.length ? { create: attachments } : undefined,

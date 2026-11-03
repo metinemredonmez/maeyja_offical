@@ -642,6 +642,8 @@ export interface MailMessage extends MailMessageSummary {
   html: string | null;
   text: string | null;
   attachments: MailAttachmentMeta[];
+  /** Inbound: DMARC/DKIM vouched for the From address; the AI draft only uses orders when true. */
+  senderVerified: boolean;
   messageId: string | null;
   inReplyTo: string | null;
   status: 'SENT' | 'FAILED' | null;

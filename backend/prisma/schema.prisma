@@ -923,6 +923,7 @@ model MailMessage {
   html           String?       @db.Text // sanitised on import
   snippet        String
   hasAttachments Boolean       @default(false)
+  senderVerified Boolean       @default(false) // inbound: DMARC/DKIM passed for the From domain (AI-01)
   isRead         Boolean       @default(false)
   status         String? // outbound: SENT | FAILED
   error          String?

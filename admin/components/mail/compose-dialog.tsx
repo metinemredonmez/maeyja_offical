@@ -57,6 +57,9 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
     }
   };
   const { mode, original } = request;
+  // AI-01: a Reply-To (or an edit) can send the answer, orders and all, to someone other than the real sender.
+  const sender = original?.direction === 'INBOUND' ? original.from.address.toLowerCase() : null;
+  const strangers = replying && sender ? splitAddresses(form.watch('to') ?? '').filter((a) => a.toLowerCase() !== sender) : [];
   const lostAttachments = mode === 'forward' && (original?.attachments.length ?? 0) > 0;
 
   const close = () => {
@@ -119,6 +122,12 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
           <Field label="Kime" error={errors.to} htmlFor="to" required hint="Birden fazla adresi virgül veya boşlukla ayırın">
             <Input id="to" autoComplete="off" placeholder="ornek@alan.com, diger@alan.com" {...form.register('to')} />
           </Field>
+          {strangers.length > 0 && (
+            <p className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              <InfoIcon className="mt-0.5 size-3.5 shrink-0" />
+              Dikkat: “Kime” e-postayı yazan adresten ({sender}) farklı: {strangers.join(', ')}. Sipariş ya da kişisel bilgi paylaşmadan önce alıcıyı kontrol edin.
+            </p>
+          )}
           <Field label="Bilgi" error={errors.cc} htmlFor="cc">
             <Input id="cc" autoComplete="off" {...form.register('cc')} />
           </Field>
@@ -127,7 +136,10 @@ export function ComposeDialog({ request, accounts, onClose }: { request: Compose
           </Field>
           {replying && (
             <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground">
-              <span>Müşterinin dilinde, mağaza bilgileri ve siparişlerine göre bir yanıt taslağı yazılır; siz okuyup düzeltirsiniz.</span>
+              <span>
+                Müşterinin dilinde, mağaza bilgileri ve siparişlerine göre bir yanıt taslağı yazılır; siz okuyup düzeltirsiniz.
+                {original && !original.senderVerified && ' Gönderen doğrulanamadı (DMARC/DKIM yok), bu yüzden taslağa sipariş bilgisi girmez.'}
+              </span>
               <Button type="button" size="sm" onClick={aiReply} disabled={drafting}>
                 <SparklesIcon className="size-3.5" />
                 {drafting ? 'Yazılıyor…' : 'AI ile yanıt yaz'}
