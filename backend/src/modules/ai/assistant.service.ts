@@ -7,10 +7,13 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CatalogService, VISIBLE_PRODUCT } from '../catalog/catalog.service';
 import { ProductQueryDto } from '../catalog/dto/catalog.dto';
 import { SettingsService } from '../settings/settings.service';
+import { UsageService, visitorKey } from './usage.service';
 
 const MODEL = 'claude-opus-5-5';
 const KNOWLEDGE_TTL_MS = 5 * 60 * 1000;
 const PER_VISITOR = { limit: 20, windowMs: 10 * 60 * 1000 };
+/** Store-wide per hour: a bot can't spend the day's budget in minutes. */
+const HOURLY_SHARE = 1 / 8;
 
 const LANGUAGE_NAMES: Record<string, string> = {
   tr: 'Turkish', en: 'English', ru: 'Russian', nl: 'Dutch', de: 'German', fr: 'French', it: 'Italian', es: 'Spanish', ko: 'Korean', ja: 'Japanese', zh: 'Simplified Chinese',
@@ -54,13 +57,12 @@ export class AssistantService {
   private readonly client: Anthropic | null;
   private readonly dailyLimit: number;
   private knowledgeCache: { at: number; text: string } | null = null;
-  private readonly visitors = new Map<string, number[]>();
-  private day = { date: '', count: 0 };
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly catalog: CatalogService,
     private readonly settings: SettingsService,
+    private readonly usage: UsageService,
     config: ConfigService<Env, true>,
   ) {
     const key = config.get('ANTHROPIC_API_KEY', { infer: true });
@@ -71,7 +73,7 @@ export class AssistantService {
   async chat(history: ChatTurn[], lang: Locale, visitor: string) {
     const cfg = await this.settings.get('assistant');
     if (!this.client || !cfg.enabled) throw new ServiceUnavailableException('Asistan şu anda kapalı');
-    this.admit(visitor);
+    await this.admit(visitor);
 
     const knowledge = await this.knowledge();
     const whatsapp = cfg.handoffWhatsapp.replace(/\D/g, '');
@@ -121,18 +123,15 @@ export class AssistantService {
     return { reply: parsed.reply.trim(), products: cards, handoff };
   }
 
-  /** Per-visitor window plus a daily ceiling for the whole store, so a bot can't run up the bill. */
-  private admit(visitor: string) {
-    const now = Date.now();
-    const today = new Date().toISOString().slice(0, 10);
-    if (this.day.date !== today) this.day = { date: today, count: 0 };
-    if (this.day.count >= this.dailyLimit) throw new HttpException('Günlük asistan sınırı doldu', HttpStatus.TOO_MANY_REQUESTS);
-    const recent = (this.visitors.get(visitor) ?? []).filter((t) => now - t < PER_VISITOR.windowMs);
-    if (recent.length >= PER_VISITOR.limit) throw new HttpException('Çok fazla mesaj, biraz sonra tekrar deneyin', HttpStatus.TOO_MANY_REQUESTS);
-    recent.push(now);
-    this.visitors.set(visitor, recent);
-    this.day.count++;
-    if (this.visitors.size > 5000) for (const [k, v] of this.visitors) if (now - v[v.length - 1] > PER_VISITOR.windowMs) this.visitors.delete(k);
+  /** RES-01: per-visitor window, an hourly and a daily ceiling for the whole store, so a bot can't run up the bill. */
+  private async admit(visitor: string) {
+    if (!(await this.usage.take(`chat:v:${visitorKey(visitor)}`, PER_VISITOR.limit, PER_VISITOR.windowMs))) {
+      throw new HttpException('Çok fazla mesaj, biraz sonra tekrar deneyin', HttpStatus.TOO_MANY_REQUESTS);
+    }
+    const hourly = Math.max(20, Math.round(this.dailyLimit * HOURLY_SHARE));
+    if (!(await this.usage.take('chat:hour', hourly, 3600_000)) || !(await this.usage.takeDaily('chat', this.dailyLimit, 'Mağaza asistanı'))) {
+      throw new HttpException('Günlük asistan sınırı doldu', HttpStatus.TOO_MANY_REQUESTS);
+    }
   }
 
   /** Everything the assistant may know, in English (the model answers in any language), rebuilt every few minutes. */

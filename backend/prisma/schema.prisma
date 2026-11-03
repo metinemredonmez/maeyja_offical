@@ -140,6 +140,15 @@ model User {
   @@index([createdAt])
 }
 
+/// Use counters for the paid AI features (RES-01): per visitor, per hour and per day, kept across restarts.
+model UsageCounter {
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
 /// Failed sign-in counters (AUT-02), in the database so a restart or deploy doesn't reset them.
 /// key: "ui:<email>|<ip>", "u:<email>" or "ip:<ip>".
 model LoginAttempt {

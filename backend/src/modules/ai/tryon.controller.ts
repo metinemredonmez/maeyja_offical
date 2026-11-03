@@ -1,9 +1,9 @@
-import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, Req, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, ParseUUIDPipe, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
-import { Request } from 'express';
 import { memoryStorage } from 'multer';
+import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { TryOnService } from './tryon.service';
 
@@ -25,10 +25,10 @@ export class TryOnController {
 
   @Post()
   @UseInterceptors(FileInterceptor('photo', { storage: memoryStorage(), limits: { fileSize: 4 * 1024 * 1024, files: 1 } }))
-  start(@UploadedFile() photo: Express.Multer.File | undefined, @Body() dto: TryOnDto, @Req() req: Request) {
+  // NET-03: the address from `trust proxy` (nginx and the web proxy), never a raw X-Forwarded-For.
+  start(@UploadedFile() photo: Express.Multer.File | undefined, @Body() dto: TryOnDto, @ClientIp() ip: string) {
     if (!photo || !PHOTO_TYPES.includes(photo.mimetype)) throw new BadRequestException('JPEG, PNG ya da WebP fotoğraf yükleyin');
-    const visitor = String(req.headers['x-forwarded-for'] ?? req.ip ?? 'unknown').split(',')[0].trim();
-    return this.tryon.start(photo.buffer, dto.slug, dto.color, visitor);
+    return this.tryon.start(photo.buffer, dto.slug, dto.color, ip);
   }
 
   @Get(':id')

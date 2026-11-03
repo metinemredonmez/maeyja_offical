@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 import { readFile } from 'fs/promises';
@@ -8,10 +8,15 @@ import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { VISIBLE_PRODUCT } from '../catalog/catalog.service';
 import { SettingsService } from '../settings/settings.service';
+import { UsageService, visitorKey } from './usage.service';
 
 const MODEL = 'gemini-3-pro-image';
 const RESULT_TTL_MS = 10 * 60 * 1000;
 const PER_VISITOR = { perHour: 3, perDay: 8 };
+/** Store-wide per hour: a bot can't spend the day's budget in minutes. */
+const HOURLY_SHARE = 1 / 6;
+/** FIL-02: a decompression bomb is refused before it is decoded (about 6300 × 6300). */
+const MAX_INPUT_PIXELS = 40_000_000;
 
 type Job = { status: 'working' | 'done' | 'failed'; image?: Buffer; at: number };
 
@@ -28,12 +33,11 @@ export class TryOnService {
   private readonly uploadDir: string;
   private readonly publicBase: string;
   private readonly jobs = new Map<string, Job>();
-  private readonly visitors = new Map<string, number[]>();
-  private day = { date: '', count: 0 };
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly usage: UsageService,
     config: ConfigService<Env, true>,
   ) {
     this.key = config.get('GEMINI_API_KEY', { infer: true });
@@ -59,10 +63,18 @@ export class TryOnService {
     }
     if (!refs.length) throw new ServiceUnavailableException('Ürün görseli bulunamadı');
 
+    // Counted before the photo is decoded, so refused requests cost nothing.
+    await this.admit(visitor);
     // Re-encoding drops EXIF (location, device) and keeps the request small.
-    const person = await sharp(photo).rotate().resize(1280, 1280, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
+    const person = await sharp(photo, { limitInputPixels: MAX_INPUT_PIXELS })
+      .rotate()
+      .resize(1280, 1280, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 88 })
+      .toBuffer()
+      .catch(() => {
+        throw new BadRequestException('Fotoğraf okunamadı; JPEG, PNG ya da WebP yükleyin');
+      });
 
-    this.admit(visitor);
     const id = randomUUID();
     this.jobs.set(id, { status: 'working', at: Date.now() });
     const colour = ofColour[0]?.color?.name ?? '';
@@ -127,20 +139,16 @@ Keep everything else in image 1 exactly as it is: the person's face, body, skin,
     }
   }
 
-  /** 3 an hour and 8 a day per visitor, plus a daily ceiling for the store (each image is a paid request). */
-  private admit(visitor: string) {
-    const now = Date.now();
-    const today = new Date().toISOString().slice(0, 10);
-    if (this.day.date !== today) {
-      this.day = { date: today, count: 0 };
-      this.visitors.clear();
-    }
-    const mine = this.visitors.get(visitor) ?? [];
-    if (this.day.count >= this.dailyLimit || mine.length >= PER_VISITOR.perDay || mine.filter((t) => now - t < 3_600_000).length >= PER_VISITOR.perHour) {
-      throw new HttpException('Deneme sınırı doldu', HttpStatus.TOO_MANY_REQUESTS);
-    }
-    this.visitors.set(visitor, [...mine, now]);
-    this.day.count++;
+  /** RES-01: 3 an hour and 8 a day per visitor, plus hourly and daily ceilings for the store (each image is a paid request). */
+  private async admit(visitor: string) {
+    const v = visitorKey(visitor);
+    const hourly = Math.max(5, Math.round(this.dailyLimit * HOURLY_SHARE));
+    const ok =
+      (await this.usage.take(`tryon:v:${v}:hour`, PER_VISITOR.perHour, 3600_000)) &&
+      (await this.usage.take(`tryon:v:${v}:day`, PER_VISITOR.perDay, 86400_000)) &&
+      (await this.usage.take('tryon:hour', hourly, 3600_000)) &&
+      (await this.usage.takeDaily('tryon', this.dailyLimit, 'Üzerimde gör'));
+    if (!ok) throw new HttpException('Deneme sınırı doldu', HttpStatus.TOO_MANY_REQUESTS);
   }
 
   private sweep() {

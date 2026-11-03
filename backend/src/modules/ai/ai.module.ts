@@ -10,11 +10,12 @@ import { AssistantController } from './assistant.controller';
 import { AssistantService } from './assistant.service';
 import { TryOnController } from './tryon.controller';
 import { TryOnService } from './tryon.service';
+import { UsageService } from './usage.service';
 
 @Module({
   imports: [CatalogModule],
   controllers: [AiAdminController, AiToolsController, AiSearchController, AiStudioController, AssistantController, TryOnController],
-  providers: [AiService, AiToolsService, AiStudioService, AssistantService, TryOnService],
+  providers: [AiService, AiToolsService, AiStudioService, AssistantService, TryOnService, UsageService],
   exports: [AiService],
 })
 export class AiModule {}

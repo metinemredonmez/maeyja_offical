@@ -37,7 +37,8 @@ export default async function ProductsPage({ params, searchParams }: { params: P
   // answer, the plain word search above stands.
   const q = str(sp.q)?.trim().slice(0, 120);
   if (q) {
-    const ai = await apiGet<{ slugs: string[] }>(`/ai/search?q=${encodeURIComponent(q)}&locale=${locale}`, { locale, revalidate: 3600 }).catch(() => null);
+    // Not cached here: the API caches answers itself and counts each new query against this visitor.
+    const ai = await apiGet<{ slugs: string[] }>(`/ai/search?q=${encodeURIComponent(q)}&locale=${locale}`, { locale }).catch(() => null);
     if (ai?.slugs.length) {
       const all = await apiGet<ProductList>(`/catalog/products?limit=100`, { locale, revalidate: 60 }).catch<ProductList | null>(() => null);
       if (all) {

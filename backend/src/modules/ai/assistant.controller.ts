@@ -1,8 +1,8 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsIn, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
-import { Request } from 'express';
+import { ClientIp } from '../../common/decorators/client-ip.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { LOCALES, resolveLocale } from '../../common/utils/i18n.util';
 import { AssistantService } from './assistant.service';
@@ -25,9 +25,8 @@ export class AssistantController {
   constructor(private readonly assistant: AssistantService) {}
 
   @Post('chat')
-  chat(@Body() dto: ChatDto, @Req() req: Request) {
-    // nginx overwrites X-Forwarded-For with the real client address, and the web proxy passes it on.
-    const visitor = String(req.headers['x-forwarded-for'] ?? req.ip ?? 'unknown').split(',')[0].trim();
-    return this.assistant.chat(dto.messages, resolveLocale(dto.locale), visitor);
+  // NET-03: the address from `trust proxy` (nginx and the web proxy), never a raw X-Forwarded-For.
+  chat(@Body() dto: ChatDto, @ClientIp() ip: string) {
+    return this.assistant.chat(dto.messages, resolveLocale(dto.locale), ip);
   }
 }

@@ -62,6 +62,9 @@ export const envSchema = Joi.object({
   // "Üzerimde gör" (Gemini image editing): key and images per day for the whole store
   GEMINI_API_KEY: Joi.string().allow('').default(''),
   TRYON_DAILY_LIMIT: Joi.number().integer().min(0).default(100),
+  // Plain-language product search on the storefront (each new query is a Claude request) and the admin's AI tools
+  AI_SEARCH_DAILY_LIMIT: Joi.number().integer().min(0).default(500),
+  AI_ADMIN_DAILY_LIMIT: Joi.number().integer().min(0).default(400),
   // Home page "Follow us on Instagram": long-lived token of the shop's Instagram account (Instagram API with Instagram Login)
   INSTAGRAM_ACCESS_TOKEN: Joi.string().allow('').default(''),
 
@@ -130,6 +133,8 @@ export interface Env {
   AI_CHAT_DAILY_LIMIT: number;
   GEMINI_API_KEY: string;
   TRYON_DAILY_LIMIT: number;
+  AI_SEARCH_DAILY_LIMIT: number;
+  AI_ADMIN_DAILY_LIMIT: number;
   INSTAGRAM_ACCESS_TOKEN: string;
   ORDER_PAYMENT_TIMEOUT_MINUTES: number;
   BANK_TRANSFER_TIMEOUT_HOURS: number;

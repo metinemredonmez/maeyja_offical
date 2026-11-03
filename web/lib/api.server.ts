@@ -36,7 +36,16 @@ export async function apiGet<T>(path: string, opts: Options = {}): Promise<T> {
     const cart = jar.get(COOKIE.cart)?.value;
     if (access) h.set('Authorization', `Bearer ${access}`);
     if (cart) h.set('X-Cart-Token', cart);
-    const ip = (await headers()).get('x-forwarded-for');
+  }
+  // NET-03: uncached requests carry the visitor's address (set by nginx), so the API's per-visitor limits see the
+  // visitor and not this server. Cached ones don't: the header would become part of the cache key.
+  if (opts.auth || opts.revalidate === undefined) {
+    let ip: string | null = null;
+    try {
+      ip = (await headers()).get('x-forwarded-for');
+    } catch {
+      // outside a request (build time): nothing to forward
+    }
     if (ip) h.set('X-Forwarded-For', ip);
   }
   const sep = path.includes('?') ? '&' : '?';

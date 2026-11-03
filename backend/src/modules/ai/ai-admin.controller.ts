@@ -4,6 +4,7 @@ import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsObject, IsOptional, IsString,
 import { Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { LOCALES, type Locale } from '../../common/utils/i18n.util';
 import { AiService } from './ai.service';
+import { UsageService } from './usage.service';
 
 class TranslateDto {
   /** Turkish base texts keyed by field name, e.g. `{ title: '…', body: '<p>…</p>' }`. */
@@ -29,16 +30,21 @@ class DraftDto {
 @Roles(...STAFF_ROLES)
 @Controller('admin/ai')
 export class AiAdminController {
-  constructor(private readonly ai: AiService) {}
+  constructor(
+    private readonly ai: AiService,
+    private readonly usage: UsageService,
+  ) {}
 
   @Post('translate')
   async translate(@Body() dto: TranslateDto) {
+    await this.usage.adminTool();
     const fields = Object.fromEntries(Object.entries(dto.fields).filter(([, v]) => typeof v === 'string').map(([k, v]) => [k, v.slice(0, 60_000)]));
     return { translations: await this.ai.translate(fields, dto.kind ?? 'store content', dto.targets) };
   }
 
   @Post('draft')
-  draft(@Body() dto: DraftDto) {
+  async draft(@Body() dto: DraftDto) {
+    await this.usage.adminTool();
     const given = Object.fromEntries(Object.entries(dto.given).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, v.slice(0, 20_000)]));
     return this.ai.draft({ kind: dto.kind, given, want: dto.want, rich: dto.rich ?? [], extras: Boolean(dto.extras) });
   }
