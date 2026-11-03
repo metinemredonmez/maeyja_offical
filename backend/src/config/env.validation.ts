@@ -25,7 +25,8 @@ export const envSchema = Joi.object({
   // base64, 32 bytes (openssl rand -base64 32). Encrypts TOTP secrets at rest; falls back to a key derived from JWT_ACCESS_SECRET.
   APP_ENCRYPTION_KEY: Joi.string().allow('').default(''),
   // When true, EDITOR/ADMIN/SUPER_ADMIN accounts must enable TOTP before using admin endpoints.
-  MFA_REQUIRED_FOR_STAFF: Joi.boolean().default(false),
+  // Staff second factor (AUT-01). Unset: required in production, optional elsewhere; false switches it off.
+  MFA_REQUIRED_FOR_STAFF: Joi.boolean().optional(),
 
   UPLOAD_DIR: Joi.string().default('./uploads'),
   UPLOAD_PUBLIC_URL: Joi.string().uri().required(),
@@ -113,7 +114,7 @@ export interface Env {
   JWT_ACCESS_TTL: string;
   JWT_REFRESH_TTL_DAYS: number;
   APP_ENCRYPTION_KEY: string;
-  MFA_REQUIRED_FOR_STAFF: boolean;
+  MFA_REQUIRED_FOR_STAFF?: boolean;
   UPLOAD_DIR: string;
   UPLOAD_PUBLIC_URL: string;
   UPLOAD_MAX_MB: number;
