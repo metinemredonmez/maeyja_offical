@@ -14,7 +14,7 @@ export function Footer({ instagram }: { instagram: string }) {
   const head = 'label mb-1 text-muted';
   return (
     <footer className="mt-24 border-t border-line px-4 pb-10 pt-16 md:mt-32 md:px-12">
-      <div className="grid gap-12 md:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div className="grid gap-12 md:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-5">
           <p className="text-lg tracking-logo">MAEYJA</p>
           <p className="max-w-xs text-sm leading-relaxed text-muted">{tn('title')}</p>
@@ -29,7 +29,11 @@ export function Footer({ instagram }: { instagram: string }) {
           <span className="text-muted">{t('clothing')}</span>
           <Link href="/care">{t('care')}</Link>
           <Link href="/stockists">{home('stockists')}</Link>
-          <Link href="/about">{t('about')}</Link>
+        </nav>
+        <nav aria-label={nav('expertise')} className={col}>
+          <p className={head}>{nav('expertise')}</p>
+          <Link href="/expertise">{nav('expertise')}</Link>
+          <Link href="/about">{home('ourStory')}</Link>
         </nav>
         <nav aria-label={t('help')} className={col}>
           <p className={head}>{t('help')}</p>
