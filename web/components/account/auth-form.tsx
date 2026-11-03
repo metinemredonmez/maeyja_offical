@@ -8,8 +8,7 @@ import { Link, useRouter } from '@/i18n/navigation';
 import { api, ApiError } from '@/lib/api.client';
 import { Field } from '@/components/contact-form';
 
-/** Only same-site relative paths are honoured as a post-login target (no open redirect). */
-const safeNext = (next?: string) => (next && /^\/(?!\/)/.test(next) ? next : '/account');
+import { safeNext } from '@/lib/safe-next';
 
 export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: string }) {
   const t = useTranslations('auth');
@@ -31,7 +30,7 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: st
     try {
       await api.post(`/auth/${mode}`, body);
       await qc.invalidateQueries({ queryKey: ['cart'] }); // guest cart was merged by the proxy
-      router.replace(safeNext(next) as never);
+      router.replace(safeNext(next, '/account') as never);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : tc('error'));

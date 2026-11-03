@@ -13,12 +13,12 @@ import { api, hardNavigate } from '@/lib/api.client';
 import { loginSchema, mfaVerifySchema, type LoginValues, type MfaVerifyValues } from '@/lib/schemas/auth';
 import type { AuthUser } from '@/lib/types';
 import { homeForRole } from '@/components/layout/nav';
+import { safeNext } from '@/lib/safe-next';
 
 type LoginResponse = { user: AuthUser } | { mfaRequired: true; mfaToken: string };
 
-function safeNext(next: string | null, user: AuthUser | null | undefined) {
-  return next && next.startsWith('/') && !next.startsWith('//') ? next : homeForRole(user?.role);
-}
+/** A3 / open redirect: only a path on the admin itself, else the role's home page. */
+const nextFor = (next: string | null, user: AuthUser | null | undefined) => safeNext(next, homeForRole(user?.role));
 
 /** Second step: TOTP code (or backup code) against the short-lived `mfaToken`. */
 function MfaStep({ mfaToken, next, onBack }: { mfaToken: string; next: string | null; onBack: () => void }) {
@@ -29,7 +29,7 @@ function MfaStep({ mfaToken, next, onBack }: { mfaToken: string; next: string | 
     setError(null);
     try {
       const { user } = await api.post<{ user: AuthUser }>('/auth/login/mfa', { mfaToken, code: values.code }, { retry: false });
-      hardNavigate(safeNext(next, user));
+      hardNavigate(nextFor(next, user));
     } catch (e) {
       setError(e);
     }
@@ -74,7 +74,7 @@ function LoginForm() {
         setMfaToken(res.mfaToken);
         return;
       }
-      hardNavigate(safeNext(next, 'user' in res ? res.user : null));
+      hardNavigate(nextFor(next, 'user' in res ? res.user : null));
     } catch (e) {
       setError(e);
     }

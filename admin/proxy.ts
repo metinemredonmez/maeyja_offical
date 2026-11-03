@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { ACCESS_COOKIE, REFRESH_COOKIE } from '@/lib/auth-cookies';
+import { safeNext } from '@/lib/safe-next';
 import { STORE_URL } from '@/lib/format';
 
 // Next.js 16: `middleware` is now `proxy`. Two jobs: session gate + per-request CSP nonce.
@@ -44,9 +45,7 @@ export function proxy(req: NextRequest) {
   }
 
   if (signedIn && pathname === '/login' && req.nextUrl.searchParams.get('expired') !== '1') {
-    const next = req.nextUrl.searchParams.get('next');
-    const safe = next && next.startsWith('/') && !next.startsWith('//') ? next : '/';
-    return NextResponse.redirect(new URL(safe, req.url));
+    return NextResponse.redirect(new URL(safeNext(req.nextUrl.searchParams.get('next'), '/'), req.url));
   }
 
   // Per-request nonce: Next.js reads it from the request CSP header and stamps its inline scripts.
