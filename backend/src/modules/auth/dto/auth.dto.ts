@@ -135,6 +135,14 @@ export class MfaCodeDto {
   @ApiProperty() @IsString() @MaxLength(16) code: string;
 }
 
+export class MfaEnableDto extends MfaCodeDto {
+  @ApiPropertyOptional({ description: '6-digit code e-mailed by mfa/setup (required when it was sent)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(12)
+  emailCode?: string;
+}
+
 export class MfaDisableDto {
   @ApiProperty() @IsString() @MaxLength(72) password: string;
   @ApiProperty() @IsString() @MaxLength(16) code: string;

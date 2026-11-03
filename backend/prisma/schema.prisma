@@ -23,6 +23,7 @@ enum UserRole {
 enum AuthTokenType {
   EMAIL_VERIFY
   PASSWORD_RESET
+  MFA_ENROLL
 }
 
 enum ProductStatus {
@@ -119,6 +120,9 @@ model User {
   mfaSecret       String? // AES-256-GCM encrypted TOTP secret (staff only)
   mfaEnabledAt    DateTime?
   mfaBackupCodes  String[]  @default([]) // sha256 hashes, single use
+  mfaFailures     Int       @default(0) // wrong second-factor codes since the last right one (AUT-02)
+  mfaLockedUntil  DateTime?
+  mfaLastStep     Int? // last TOTP time step accepted; the same code can't be used twice
   deletedAt       DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

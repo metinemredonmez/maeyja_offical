@@ -99,10 +99,11 @@ export class AuthService {
       throw new ForbiddenException('Yönetim paneline erişim yetkiniz yok');
     }
 
-    this.loginGuard.recordSuccess(dto.email);
+    this.loginGuard.recordSuccess(dto.email, ip);
 
     // Staff with TOTP enabled: password alone only buys a 5-minute token for the second step.
     if (user.mfaEnabledAt) {
+      this.mfa.assertNotLocked(user);
       const mfaToken = await this.jwt.signAsync({ sub: user.id, typ: 'mfa' }, { expiresIn: '5m' });
       return { mfaRequired: true as const, mfaToken };
     }
@@ -124,13 +125,13 @@ export class AuthService {
     if (payload.typ !== 'mfa') throw new UnauthorizedException();
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user || !user.isActive || user.deletedAt) throw new UnauthorizedException();
-    this.loginGuard.assertAllowed(user.email, ip);
+    // AUT-02: the account's second-step counter lives in MfaService; only the address is limited here.
+    this.loginGuard.assertIpAllowed(ip);
     if (!(await this.mfa.verify(user, code))) {
-      this.loginGuard.recordFailure(user.email, ip);
+      this.loginGuard.recordIpFailure(ip);
       this.logger.warn(`failed mfa for ${user.email} from ${ip}`);
       throw new UnauthorizedException('Doğrulama kodu geçersiz');
     }
-    this.loginGuard.recordSuccess(user.email);
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     this.logger.log(`admin login (mfa): ${user.email} from ${ip}`);
     return this.issueSession(user, meta);
@@ -186,10 +187,11 @@ export class AuthService {
 
   async resetPassword(dto: ResetPasswordDto) {
     const record = await this.consumeAuthToken(dto.token, AuthTokenType.PASSWORD_RESET);
-    await this.prisma.$transaction([
+    const [user] = await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS) } }),
       this.prisma.refreshToken.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
+    if (user.role !== UserRole.CUSTOMER) this.mfa.notify(user, 'Şifre sıfırlandı', ['Hesabınızın şifresi e-postadaki bağlantıyla yenilendi ve bütün oturumlar kapatıldı.']);
     return { ok: true };
   }
 
@@ -217,6 +219,7 @@ export class AuthService {
       this.prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ]);
     this.logger.log(`password changed for ${user.email}`);
+    if (user.role !== UserRole.CUSTOMER) this.mfa.notify(user, 'Şifre değiştirildi', ['Hesabınızın şifresi değiştirildi; diğer oturumlar kapatıldı.']);
     return { ok: true, ...(await this.issueSession(updated, meta)) };
   }
 

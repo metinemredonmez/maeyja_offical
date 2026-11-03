@@ -188,4 +188,19 @@ export const templates = {
 
   adminNotice: (subject: string, lines: Record<string, unknown>) =>
     build(subject, subject, Object.entries(lines).map(([k, v]) => `<p><b>${esc(k)}:</b> ${esc(v)}</p>`).join('')),
+
+  /** Staff account events (MFA, password, lockouts): Turkish, the panel's language. */
+  securityNotice: (title: string, lines: string[]) =>
+    build(
+      `Güvenlik: ${title}`,
+      title,
+      `${lines.map((l) => `<p>${esc(l)}</p>`).join('')}<p style="color:${MUTED}">Bu işlemi siz yapmadıysanız hemen şifrenizi değiştirin ve yöneticiye haber verin.</p>`,
+    ),
+
+  mfaEnrollCode: (code: string) =>
+    build(
+      'İki adımlı doğrulama onay kodu',
+      'Onay kodu',
+      `<p>Hesabınıza iki adımlı doğrulama eklemek için bu kodu admin paneline girin. Kod 10 dakika geçerlidir.</p><p style="font-size:28px;letter-spacing:6px;font-weight:bold;color:${INK}">${esc(code)}</p><p>Bu talebi siz yapmadıysanız şifreniz başkasının elinde olabilir: hemen değiştirin.</p>`,
+    ),
 };

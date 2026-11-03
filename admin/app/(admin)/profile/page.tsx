@@ -106,6 +106,9 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
   const logout = useLogout();
   const [data, setData] = useState<MfaSetup | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
+  // The 6 digits e-mailed by setup: a stolen password alone can't bind someone else's phone.
+  const [emailCode, setEmailCode] = useState('');
+  const emailCodeMissing = Boolean(data?.emailCodeSent) && !/^\d{6}$/.test(emailCode.trim());
   const form = useForm<MfaVerifyValues>({ resolver: zodResolver(mfaVerifySchema), defaultValues: { code: '' } });
   const requested = useRef(false);
 
@@ -118,7 +121,7 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
   }, []);
 
   const onSubmit = form.handleSubmit(async (v) => {
-    const r = await enable.mutateAsync({ code: v.code });
+    const r = await enable.mutateAsync({ code: v.code, emailCode: data?.emailCodeSent ? emailCode.trim() : undefined });
     setCodes(r.backupCodes);
   }, onInvalid);
   const copySecret = () => data && navigator.clipboard.writeText(data.secret).then(() => toast.success('Anahtar kopyalandı'));
@@ -160,6 +163,11 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
             ) : (
               <div className="mx-auto size-[200px] animate-pulse rounded-lg bg-muted" aria-busy="true" />
             )}
+            {data?.emailCodeSent && (
+              <Field label="E-postanıza gelen 6 haneli onay kodu" htmlFor="mfa-email-code" required hint="10 dakika geçerli. Gelmediyse istenmeyen e-posta klasörüne bakın.">
+                <Input id="mfa-email-code" inputMode="numeric" autoComplete="off" placeholder="000000" className="font-mono tracking-widest" value={emailCode} onChange={(e) => setEmailCode(e.target.value)} />
+              </Field>
+            )}
             <Field label="Uygulamadaki 6 haneli kod" error={form.formState.errors.code} htmlFor="mfa-code" required>
               <Input id="mfa-code" inputMode="numeric" autoComplete="one-time-code" placeholder="123456" className="font-mono tracking-widest" disabled={!data} {...form.register('code')} />
             </Field>
@@ -167,7 +175,7 @@ function SetupDialog({ onClose }: { onClose: () => void }) {
               <Button type="button" variant="outline" onClick={onClose}>
                 Vazgeç
               </Button>
-              <SubmitButton loading={enable.isPending} disabled={!data}>
+              <SubmitButton loading={enable.isPending} disabled={!data || emailCodeMissing}>
                 <ShieldCheckIcon /> Etkinleştir
               </SubmitButton>
             </DialogFooter>

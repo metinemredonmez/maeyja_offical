@@ -47,6 +47,8 @@ export interface MfaSetup {
   secret: string;
   otpauth: string;
   qrDataUrl: string;
+  /** A confirmation code was e-mailed and must be entered too (false while SMTP isn't set up). */
+  emailCodeSent: boolean;
 }
 
 export interface AdminUserRow extends AuthUser {

@@ -8,12 +8,16 @@ interface Bucket {
 
 const WINDOW_MS = 15 * 60_000;
 const LOCK_MS = 15 * 60_000;
-const MAX_PER_ACCOUNT = 5;
+/** One account from one address: the usual guessing case. */
+const MAX_PER_ACCOUNT_IP = 5;
+/** One account from many addresses (distributed guessing); high enough that one attacker can't lock the owner out. */
+const MAX_PER_ACCOUNT = 50;
 const MAX_PER_IP = 20;
 
 /**
- * Brute-force protection on top of the global rate limit: 5 failed logins for an account
- * (or 20 from one IP) within 15 minutes lock that key for 15 minutes.
+ * Brute-force protection for the password step on top of the global rate limit (AUT-02). Failures are counted per
+ * account+IP, per account and per IP, so someone who only knows an e-mail address can't lock its owner out from
+ * their own network. The second factor keeps its own counter on the account (MfaService).
  * In-memory on purpose — the API runs as a single pm2 fork; move to Redis if it is ever clustered.
  */
 @Injectable()
@@ -27,7 +31,31 @@ export class LoginGuardService {
 
   /** Throws 429 while a key is locked. Call before checking credentials. */
   assertAllowed(email: string, ip: string) {
-    for (const key of [`u:${email}`, `ip:${ip}`]) {
+    this.assert([`ui:${email}|${ip}`, `u:${email}`, `ip:${ip}`]);
+  }
+
+  /** For the second step: only the address is limited here. */
+  assertIpAllowed(ip: string) {
+    this.assert([`ip:${ip}`]);
+  }
+
+  recordFailure(email: string, ip: string) {
+    this.bump(`ui:${email}|${ip}`, MAX_PER_ACCOUNT_IP, `account ${email} from ${ip}`);
+    this.bump(`u:${email}`, MAX_PER_ACCOUNT, `account ${email}`);
+    this.recordIpFailure(ip);
+  }
+
+  recordIpFailure(ip: string) {
+    this.bump(`ip:${ip}`, MAX_PER_IP, `ip ${ip}`);
+  }
+
+  /** The account-wide count is left to expire: a right password elsewhere mustn't reset a distributed attack. */
+  recordSuccess(email: string, ip: string) {
+    this.buckets.delete(`ui:${email}|${ip}`);
+  }
+
+  private assert(keys: string[]) {
+    for (const key of keys) {
       const b = this.buckets.get(key);
       if (b && b.lockedUntil > Date.now()) {
         const retryAfter = Math.ceil((b.lockedUntil - Date.now()) / 1000);
@@ -37,15 +65,6 @@ export class LoginGuardService {
         );
       }
     }
-  }
-
-  recordFailure(email: string, ip: string) {
-    this.bump(`u:${email}`, MAX_PER_ACCOUNT, `account ${email}`);
-    this.bump(`ip:${ip}`, MAX_PER_IP, `ip ${ip}`);
-  }
-
-  recordSuccess(email: string) {
-    this.buckets.delete(`u:${email}`);
   }
 
   private bump(key: string, max: number, label: string) {

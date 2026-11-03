@@ -14,6 +14,7 @@ import {
   ForgotPasswordDto,
   LoginDto,
   MfaCodeDto,
+  MfaEnableDto,
   MfaDisableDto,
   MfaLoginDto,
   RefreshDto,
@@ -75,6 +76,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Roles(...STAFF_ROLES)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } }) // each call e-mails a code
   @Post('mfa/setup')
   mfaSetup(@CurrentUser() user: AuthUser) {
     return this.mfa.setup(user.id);
@@ -82,14 +84,16 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Roles(...STAFF_ROLES)
+  @Throttle(STRICT)
   @HttpCode(200)
   @Post('mfa/enable')
-  mfaEnable(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {
-    return this.mfa.enable(user.id, dto.code);
+  mfaEnable(@CurrentUser() user: AuthUser, @Body() dto: MfaEnableDto) {
+    return this.mfa.enable(user.id, dto.code, dto.emailCode);
   }
 
   @ApiBearerAuth()
   @Roles(...STAFF_ROLES)
+  @Throttle(STRICT)
   @HttpCode(200)
   @Post('mfa/disable')
   mfaDisable(@CurrentUser() user: AuthUser, @Body() dto: MfaDisableDto) {
@@ -98,6 +102,7 @@ export class AuthController {
 
   @ApiBearerAuth()
   @Roles(...STAFF_ROLES)
+  @Throttle(STRICT)
   @HttpCode(200)
   @Post('mfa/backup-codes')
   mfaBackupCodes(@CurrentUser() user: AuthUser, @Body() dto: MfaCodeDto) {

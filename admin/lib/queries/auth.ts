@@ -32,7 +32,7 @@ export const useMfaStatus = () => useQuery({ queryKey: authKeys.mfa, queryFn: ()
 export const useMfaSetup = () => useApiMutation<MfaSetup, void>({ mutationFn: () => api.post('/auth/mfa/setup'), success: false });
 
 export const useMfaEnable = () =>
-  useApiMutation<{ backupCodes: string[] }, { code: string }>({
+  useApiMutation<{ backupCodes: string[] }, { code: string; emailCode?: string }>({
     mutationFn: (body) => api.post('/auth/mfa/enable', body),
     invalidate: [authKeys.mfa, authKeys.me],
     success: 'İki adımlı doğrulama açıldı',
