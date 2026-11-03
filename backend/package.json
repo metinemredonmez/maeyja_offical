@@ -106,6 +106,7 @@
   },
   "overrides": {
     "multer": "$multer",
+    "deepmerge-ts": "^8.0.2",
     "@nestjs/swagger": {
       "js-yaml": "5.4.3"
     }
