@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Public } from '../../common/decorators/public.decorator';
-import { Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
+import { ADMIN_ROLES, Roles, STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { LOCALES } from '../../common/utils/i18n.util';
 import { AiToolsService } from './ai-tools.service';
 
@@ -24,6 +24,8 @@ class CaptionDto {
 export class AiToolsController {
   constructor(private readonly tools: AiToolsService) {}
 
+  // AZ-01: the draft reads the inbox and the sender's orders, which only ADMIN may see.
+  @Roles(...ADMIN_ROLES)
   @Post('reply/:messageId')
   reply(@Param('messageId') id: string) {
     return this.tools.replyDraft(id);
@@ -39,6 +41,8 @@ export class AiToolsController {
     return this.tools.caption(dto);
   }
 
+  // AZ-03: revenue and order counts, like the dashboard.
+  @Roles(...ADMIN_ROLES)
   @Get('weekly')
   weekly(@Query('refresh') refresh?: string) {
     return this.tools.weekly(refresh === '1');
