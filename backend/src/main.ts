@@ -14,12 +14,13 @@ async function bootstrap() {
   const config = app.get(ConfigService<Env, true>);
   const prefix = config.get('API_PREFIX', { infer: true });
 
+  const isProd = config.get('NODE_ENV', { infer: true }) === 'production';
   // Behind nginx: trust X-Forwarded-For so rate limiting and the payment provider see the real client IP.
-  const trustProxy = config.get('TRUST_PROXY', { infer: true });
+  // NET-03: production always sits behind nginx, so a forgotten TRUST_PROXY means one hop, not "every visitor is nginx".
+  const trustProxy = config.get('TRUST_PROXY', { infer: true }) || (isProd ? 1 : 0);
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
 
   app.setGlobalPrefix(prefix, { exclude: ['health'] });
-  const isProd = config.get('NODE_ENV', { infer: true }) === 'production';
   const swagger = !isProd || config.get('SWAGGER_ENABLED', { infer: true });
   app.use(
     helmet({

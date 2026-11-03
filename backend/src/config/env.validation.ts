@@ -89,7 +89,12 @@ export const envSchema = Joi.object({
       UPLOAD_PUBLIC_URL: Joi.string().uri({ scheme: ['https'] }),
       CORS_ORIGINS: Joi.string().pattern(/^(?!.*\*)https:\/\/\S+(,https:\/\/\S+)*$/).message('CORS_ORIGINS prod\'da yalnızca https origin listesi olmalı, * yasak'),
       SWAGGER_ENABLED: Joi.boolean().valid(false).messages({ 'any.only': 'SWAGGER_ENABLED prod\'da true olamaz' }),
-      APP_ENCRYPTION_KEY: Joi.string().base64().min(40).required().messages({ 'any.required': 'APP_ENCRYPTION_KEY prod\'da zorunlu (openssl rand -base64 32)' }),
+      APP_ENCRYPTION_KEY: Joi.string()
+        .base64()
+        .required()
+        // KEY-01: exactly 32 bytes; anything else used to fall back silently to a key derived from the JWT secret.
+        .custom((v: string, h) => (Buffer.from(v, 'base64').length === 32 ? v : h.error('any.invalid')))
+        .messages({ 'any.required': 'APP_ENCRYPTION_KEY prod\'da zorunlu (openssl rand -base64 32)', 'any.invalid': 'APP_ENCRYPTION_KEY 32 bayt olmalı (openssl rand -base64 32)' }),
     }),
   });
 

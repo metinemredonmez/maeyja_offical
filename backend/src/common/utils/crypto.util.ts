@@ -18,11 +18,13 @@ export function decrypt(payload: string, key: Buffer): string {
   return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
 }
 
-/** 32-byte key from APP_ENCRYPTION_KEY (base64) or derived from the JWT secret. */
-export function keyFromEnv(encryptionKey: string, fallbackSecret: string): Buffer {
-  if (encryptionKey) {
-    const k = Buffer.from(encryptionKey, 'base64');
-    if (k.length === 32) return k;
-  }
+/**
+ * 32-byte key from APP_ENCRYPTION_KEY (base64). KEY-01: in production a missing or wrong-length key stops the API
+ * instead of quietly using a key derived from the JWT secret; only development falls back to that.
+ */
+export function keyFromEnv(encryptionKey: string, fallbackSecret: string, production = process.env.NODE_ENV === 'production'): Buffer {
+  const k = encryptionKey ? Buffer.from(encryptionKey, 'base64') : null;
+  if (k?.length === 32) return k;
+  if (production) throw new Error(`APP_ENCRYPTION_KEY must decode to 32 bytes (got ${k?.length ?? 0}); create one with: openssl rand -base64 32`);
   return createHash('sha256').update(`maeyja-enc:${fallbackSecret}`).digest();
 }

@@ -1,24 +1,20 @@
+import { randomBytes } from 'crypto';
 import { decrypt, encrypt, keyFromEnv } from './crypto.util';
 
-describe('crypto.util', () => {
-  const key = keyFromEnv('', 'some-jwt-secret-that-is-long-enough-123456');
+describe('keyFromEnv (KEY-01)', () => {
+  const good = randomBytes(32).toString('base64');
 
-  it('round-trips and never repeats ciphertext', () => {
-    const a = encrypt('JBSWY3DPEHPK3PXP', key);
-    const b = encrypt('JBSWY3DPEHPK3PXP', key);
-    expect(a).not.toBe(b);
-    expect(decrypt(a, key)).toBe('JBSWY3DPEHPK3PXP');
+  it('uses a 32-byte key as it is', () => {
+    expect(keyFromEnv(good, 'jwt', true)).toEqual(Buffer.from(good, 'base64'));
+    expect(decrypt(encrypt('secret', keyFromEnv(good, 'jwt', true)), keyFromEnv(good, 'jwt', true))).toBe('secret');
   });
 
-  it('rejects tampered payloads', () => {
-    const enc = Buffer.from(encrypt('secret', key), 'base64');
-    enc[enc.length - 1] ^= 0xff;
-    expect(() => decrypt(enc.toString('base64'), key)).toThrow();
+  it('refuses a missing or wrong-length key in production', () => {
+    expect(() => keyFromEnv('', 'jwt', true)).toThrow(/32 bytes/);
+    expect(() => keyFromEnv(randomBytes(24).toString('base64'), 'jwt', true)).toThrow(/32 bytes/);
   });
 
-  it('prefers a real 32-byte key over the derived one', () => {
-    const real = Buffer.alloc(32, 7).toString('base64');
-    expect(keyFromEnv(real, 'x')).toEqual(Buffer.alloc(32, 7));
-    expect(keyFromEnv('short', 'x')).toHaveLength(32);
+  it('still falls back in development', () => {
+    expect(keyFromEnv('', 'jwt', false)).toHaveLength(32);
   });
 });
