@@ -21,8 +21,8 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
+import { emailTransform as lower } from '../../../common/utils/email.util';
 
-const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 const PHONE = /^[+\d\s()-]{10,20}$/;
 
 export class CheckoutAddressDto {

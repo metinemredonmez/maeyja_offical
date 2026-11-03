@@ -4,7 +4,8 @@ import { IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString, Length, Matches
 import { UserRole } from '@prisma/client';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
-import { PASSWORD_RULE } from '../../auth/dto/auth.dto';
+import { emailTransform } from '../../../common/utils/email.util';
+import { PASSWORD_MSG, PASSWORD_RULE, IsNotCommonPassword } from '../../auth/dto/auth.dto';
 
 export class UpdateProfileDto {
   @IsOptional() @IsString() @Length(1, 60) firstName?: string;
@@ -43,10 +44,10 @@ export class AdminUpdateUserDto {
 }
 
 export class CreateStaffDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(emailTransform)
   @IsEmail()
   email: string;
-  @IsString() @Matches(PASSWORD_RULE, { message: 'Şifre en az 8 karakter olmalı, harf ve rakam içermelidir' }) password: string;
+  @IsString() @Matches(PASSWORD_RULE, { message: PASSWORD_MSG }) @IsNotCommonPassword() password: string;
   @IsString() @Length(1, 60) firstName: string;
   @IsString() @Length(1, 60) lastName: string;
   @IsEnum(UserRole) role: UserRole;

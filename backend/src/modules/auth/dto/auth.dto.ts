@@ -1,15 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength, registerDecorator } from 'class-validator';
+import { emailTransform as lower } from '../../../common/utils/email.util';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 
-const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
+/** PWD-01/02: one rule everywhere (sign-up, reset, change, staff): 15–128 characters, no composition rules. */
+export const PASSWORD_RULE = /^.{15,128}$/su;
+export const PASSWORD_MSG = 'Şifre en az 15 karakter olmalı';
 
-export const PASSWORD_RULE = /^(?=.*[A-Za-zÇĞİÖŞÜçğıöşü])(?=.*\d).{8,72}$/;
-const PASSWORD_MSG = 'Şifre en az 8 karakter olmalı, harf ve rakam içermelidir';
-
-/** Most common leaked passwords that still satisfy the regex. */
-const COMMON_PASSWORDS = new Set(['password1', 'password123', 'qwerty123', 'abc12345', '12345678a', 'iloveyou1', 'letmein123', 'welcome123', 'admin123', 'admin1234', 'maeyja123', 'passw0rd', 'p@ssw0rd', 'sifre123', 'sifre1234', 'istanbul1', 'galatasaray1', 'fenerbahce1', '123456789a', 'qwertyuiop1']);
+/** PWD-03: common long passwords, a short pattern repeated, or a known word padded with digits and symbols. */
+const COMMON_PASSWORDS = new Set(['123456789012345', '1234567890123456', 'qwertyuiopasdfg', 'qwertyuiopasdfgh', 'qwertyuiopasdfghjkl', '1q2w3e4r5t6y7u8i', 'abcdefghijklmno', 'passwordpassword', 'iloveyouiloveyou', 'qazwsxedcrfvtgb', 'zaq12wsxcde34rfv']);
+const PADDED_WORD = /^(?:maeyja|canan|delettre|password|passw0rd|sifre|şifre|parola|qwerty|admin|istanbul|galatasaray|fenerbahce|besiktas|trabzonspor)[\d\W_]*$/iu;
+const isCommonPassword = (value: string) => {
+  const v = value.toLowerCase();
+  return COMMON_PASSWORDS.has(v) || /^(.{1,5})\1+$/su.test(v) || PADDED_WORD.test(v);
+};
 
 export function IsNotCommonPassword() {
   return (target: object, propertyName: string) => {
@@ -18,7 +23,7 @@ export function IsNotCommonPassword() {
       target: target.constructor,
       propertyName,
       validator: {
-        validate: (value: unknown) => typeof value !== 'string' || !COMMON_PASSWORDS.has(value.toLowerCase()),
+        validate: (value: unknown) => typeof value !== 'string' || !isCommonPassword(value),
         defaultMessage: () => 'Bu şifre çok yaygın; daha güçlü bir şifre seçin',
       },
     });
@@ -75,7 +80,7 @@ export class LoginDto {
 
   @ApiProperty()
   @IsString()
-  @MaxLength(72)
+  @MaxLength(128)
   password: string;
 }
 
@@ -116,7 +121,7 @@ export class VerifyEmailDto {
 export class ChangePasswordDto {
   @ApiProperty()
   @IsString()
-  @MaxLength(72)
+  @MaxLength(128)
   currentPassword: string;
 
   @ApiProperty()
@@ -144,6 +149,6 @@ export class MfaEnableDto extends MfaCodeDto {
 }
 
 export class MfaDisableDto {
-  @ApiProperty() @IsString() @MaxLength(72) password: string;
+  @ApiProperty() @IsString() @MaxLength(128) password: string;
   @ApiProperty() @IsString() @MaxLength(16) code: string;
 }

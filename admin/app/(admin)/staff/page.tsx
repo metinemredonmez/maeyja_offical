@@ -50,7 +50,7 @@ function CreateStaffDialog({ onClose }: { onClose: () => void }) {
             <Field label="E-posta" error={form.formState.errors.email} htmlFor="email" required className="sm:col-span-2">
               <Input id="email" type="email" autoComplete="off" {...form.register('email')} />
             </Field>
-            <Field label="Geçici şifre" error={form.formState.errors.password} htmlFor="password" required hint="En az 8 karakter, harf ve rakam; ilk girişte değiştirmesini isteyin">
+            <Field label="Geçici şifre" error={form.formState.errors.password} htmlFor="password" required hint="En az 15 karakter; ilk girişte değiştirmesini isteyin">
               <Input id="password" type="password" autoComplete="new-password" {...form.register('password')} />
             </Field>
             <Field label="Rol" htmlFor="role" required>

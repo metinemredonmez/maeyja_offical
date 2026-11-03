@@ -75,7 +75,7 @@ export function ProfileForms({ user }: { user: User }) {
         <h2 className="label text-muted">{t('security')}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-2"><span className="label text-muted">{t('currentPassword')}</span><input name="currentPassword" type="password" required autoComplete="current-password" className="field" /></label>
-          <label className="flex flex-col gap-2"><span className="label text-muted">{t('newPassword')}</span><input name="newPassword" type="password" required minLength={8} autoComplete="new-password" className="field" /></label>
+          <label className="flex flex-col gap-2"><span className="label text-muted">{t('newPassword')}</span><input name="newPassword" type="password" required minLength={15} autoComplete="new-password" className="field" /></label>
         </div>
         <button type="submit" disabled={busy === 'password'} className="btn-outline self-start">{t('changePassword')}</button>
       </form>

@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 export const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
-export const PASSWORD_RE = /^(?=.*[A-Za-zÇĞİÖŞÜçğıöşü])(?=.*\d).{8,72}$/;
-export const PASSWORD_MSG = 'Şifre en az 8 karakter olmalı, harf ve rakam içermelidir';
+export const PASSWORD_RE = /^[\s\S]{15,128}$/u;
+export const PASSWORD_MSG = 'Şifre en az 15 karakter olmalı';
 
 export const slugSchema = z.string().regex(SLUG_RE, 'Yalnızca küçük harf, rakam ve tire (örn. signature-bag)');
 export const optionalSlug = z.union([z.literal(''), slugSchema]).optional();

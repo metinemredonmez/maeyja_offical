@@ -1,12 +1,12 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthTokenType, User } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 import { createHash, randomBytes, randomInt, timingSafeEqual } from 'crypto';
 import { authenticator } from 'otplib';
 import * as QRCode from 'qrcode';
 import { STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { decrypt, encrypt, keyFromEnv } from '../../common/utils/crypto.util';
+import { verifyPassword } from '../../common/utils/password.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
@@ -99,7 +99,7 @@ export class MfaService {
   async disable(userId: string, password: string, code: string) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     this.assertNotLocked(user);
-    if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) throw new BadRequestException('Şifre hatalı');
+    if (!(await verifyPassword(user.passwordHash, password)).ok) throw new BadRequestException('Şifre hatalı');
     if (!(await this.check(user, code))) {
       await this.recordFailure(user, 'kapatma');
       throw new BadRequestException('Kod geçersiz');

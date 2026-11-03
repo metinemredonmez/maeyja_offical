@@ -76,7 +76,7 @@ export function PasswordForms({ mode, token = '' }: { mode: 'forgot' | 'reset' |
           ) : (
             <label className="flex flex-col gap-2">
               <span className="label text-muted">{tc('password')}</span>
-              <input name="password" type="password" required minLength={8} autoComplete="new-password" className="field" />
+              <input name="password" type="password" required minLength={15} autoComplete="new-password" className="field" />
               <span className="text-xs text-muted">{t('passwordRule')}</span>
             </label>
           )}

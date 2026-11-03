@@ -3,7 +3,7 @@ import { emailSchema, PASSWORD_MSG, PASSWORD_RE } from '@/lib/schemas/common';
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, 'Şifre gerekli').max(72),
+  password: z.string().min(1, 'Şifre gerekli').max(128),
 });
 export type LoginValues = z.infer<typeof loginSchema>;
 
@@ -20,7 +20,7 @@ export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, 'Mevcut şifre gerekli').max(72),
+    currentPassword: z.string().min(1, 'Mevcut şifre gerekli').max(128),
     newPassword: z.string().regex(PASSWORD_RE, PASSWORD_MSG),
     confirm: z.string(),
   })
@@ -38,7 +38,7 @@ export const mfaVerifySchema = z.object({ code: mfaCodeSchema });
 export type MfaVerifyValues = z.input<typeof mfaVerifySchema>;
 
 export const mfaDisableSchema = z.object({
-  password: z.string().min(1, 'Şifre gerekli').max(72),
+  password: z.string().min(1, 'Şifre gerekli').max(128),
   code: mfaCodeSchema,
 });
 export type MfaDisableValues = z.input<typeof mfaDisableSchema>;

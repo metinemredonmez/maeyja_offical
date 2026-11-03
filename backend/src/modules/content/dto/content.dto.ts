@@ -5,11 +5,11 @@ import { IsBoolean, IsDate, IsEmail, IsEnum, IsIn, IsInt, IsObject, IsOptional, 
 import { NullIsUnset } from '../../../common/dto/null-is-unset';
 import { LOCALES, Locale } from '../../../common/utils/i18n.util';
 import { PaginationQueryDto } from '../../../common/dto/pagination.dto';
+import { emailTransform as lower } from '../../../common/utils/email.util';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Section layouts the storefront knows; which ones apply depends on the section type. */
 export const HOME_LAYOUTS = ['split', 'diptych', 'pair', 'full', 'sideways', 'boutique', 'grid', 'strip'] as const;
-const lower = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value);
 
 export class HomeSectionDto {
   @IsEnum(HomeSectionType) type: HomeSectionType;

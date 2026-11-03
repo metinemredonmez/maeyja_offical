@@ -1,7 +1,7 @@
 /* Idempotent seed: safe to run on every deploy. Run with `npm run db:seed`. Products: `npm run db:seed:catalog`. */
 import 'dotenv/config';
 import { HomeSectionType, Prisma, PrismaClient, UserRole } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import { hashPassword } from '../src/common/utils/password.util';
 import { KVKK_TRYON, PAGE_BODIES } from './seed-pages';
 import { ABOUT_BODY, CATEGORIES, COLORS, FAQS, HOME, PAGES, SIGNATURE_COLLECTION, split, type Translations } from './seed-data';
 
@@ -42,7 +42,7 @@ async function main() {
       where: { email },
       create: {
         email,
-        passwordHash: await bcrypt.hash(password, 12),
+        passwordHash: await hashPassword(password),
         firstName: 'Maeyja',
         lastName: 'Admin',
         role: UserRole.SUPER_ADMIN,

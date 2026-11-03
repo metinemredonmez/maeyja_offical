@@ -1,8 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 import { AuthUser } from '../../common/decorators/current-user.decorator';
 import { paginate, skipTake } from '../../common/dto/pagination.dto';
+import { hashPassword } from '../../common/utils/password.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { publicUser } from '../auth/auth.service';
 import { AddressDto, AdminUpdateUserDto, AdminUserQueryDto, CreateStaffDto, UpdateAddressDto, UpdateProfileDto } from './dto/users.dto';
@@ -165,7 +165,7 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
-        passwordHash: await bcrypt.hash(dto.password, 12),
+        passwordHash: await hashPassword(dto.password),
         firstName: dto.firstName,
         lastName: dto.lastName,
         role: dto.role,

@@ -54,7 +54,7 @@ function ResetForm() {
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       <h1 className="text-base font-semibold">Yeni şifre belirle</h1>
       <FormError error={error} />
-      <Field label="Yeni şifre" error={form.formState.errors.password} htmlFor="password" hint="En az 8 karakter, harf ve rakam" required>
+      <Field label="Yeni şifre" error={form.formState.errors.password} htmlFor="password" hint="En az 15 karakter" required>
         <Input id="password" type="password" autoComplete="new-password" autoFocus {...form.register('password')} />
       </Field>
       <Field label="Yeni şifre (tekrar)" error={form.formState.errors.confirm} htmlFor="confirm" required>

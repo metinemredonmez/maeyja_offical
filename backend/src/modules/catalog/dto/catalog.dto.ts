@@ -1,5 +1,6 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { ProductStatus } from '@prisma/client';
+import { emailTransform } from '../../../common/utils/email.util';
 import { Transform, Type } from 'class-transformer';
 import {
   IsArray,
@@ -43,7 +44,7 @@ export class ProductQueryDto extends PaginationQueryDto {
 
 export class StockAlertDto {
   @IsString() variantId: string;
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value)) @IsEmail() email: string;
+  @Transform(emailTransform) @IsEmail() email: string;
   @IsOptional() @IsIn(LOCALES as readonly string[]) locale?: Locale;
 }
 

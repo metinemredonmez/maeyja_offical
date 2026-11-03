@@ -7,7 +7,7 @@
  */
 import 'dotenv/config';
 import { randomBytes } from 'crypto';
-import * as bcrypt from 'bcryptjs';
+import { hashPassword } from '../src/common/utils/password.util';
 import { PrismaClient, UserRole } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -24,8 +24,8 @@ async function main() {
     return;
   }
 
-  const password = randomBytes(9).toString('base64url'); // 12 characters
-  const passwordHash = await bcrypt.hash(password, 12);
+  const password = randomBytes(12).toString('base64url'); // 16 characters
+  const passwordHash = await hashPassword(password);
   await prisma.user.upsert({
     where: { email },
     update: { passwordHash, emailVerifiedAt: existing?.emailVerifiedAt ?? new Date() },

@@ -88,7 +88,7 @@ function PasswordCard() {
         <Field label="Mevcut şifre" error={form.formState.errors.currentPassword} htmlFor="currentPassword" required>
           <Input id="currentPassword" type="password" autoComplete="current-password" {...form.register('currentPassword')} />
         </Field>
-        <Field label="Yeni şifre" error={form.formState.errors.newPassword} htmlFor="newPassword" required hint="En az 8 karakter, harf ve rakam">
+        <Field label="Yeni şifre" error={form.formState.errors.newPassword} htmlFor="newPassword" required hint="En az 15 karakter">
           <Input id="newPassword" type="password" autoComplete="new-password" {...form.register('newPassword')} />
         </Field>
         <Field label="Yeni şifre (tekrar)" error={form.formState.errors.confirm} htmlFor="confirm" required>

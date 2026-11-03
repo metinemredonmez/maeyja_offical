@@ -2,9 +2,9 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { AuthTokenType, User, UserRole } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
 import { STAFF_ROLES } from '../../common/decorators/roles.decorator';
 import { storefrontPath } from '../../common/utils/i18n.util';
+import { hashPassword, verifyPassword } from '../../common/utils/password.util';
 import { generateToken, hashToken } from '../../common/utils/token.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -16,7 +16,6 @@ import { ChangePasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dt
 import { LoginGuardService } from './login-guard.service';
 import { MfaService } from './mfa.service';
 
-const BCRYPT_ROUNDS = 12;
 /** What sign-up always answers (AUT-02): the next step is in the e-mail either way. */
 const CHECK_EMAIL = { ok: true as const, checkEmail: true as const };
 const REGISTER_MAILS_PER_HOUR = 3;
@@ -34,8 +33,6 @@ interface Family {
 }
 const VERIFY_TTL_MS = 48 * 3600_000;
 const RESET_TTL_MS = 3600_000;
-// Real hash so bcrypt.compare costs the same whether or not the account exists.
-const DUMMY_HASH = bcrypt.hashSync('maeyja-timing-guard', BCRYPT_ROUNDS);
 
 interface ClientMeta {
   ip?: string;
@@ -78,7 +75,7 @@ export class AuthService {
    * owner of an existing account gets an e-mail saying so instead. At most a few e-mails per address an hour.
    */
   async register(dto: RegisterDto) {
-    const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
+    const passwordHash = await hashPassword(dto.password);
     const locale = dto.locale ?? 'tr';
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (!(await this.usage.take(`mail:register:${dto.email}`, REGISTER_MAILS_PER_HOUR, 3600_000))) return CHECK_EMAIL;
@@ -103,8 +100,8 @@ export class AuthService {
     const ip = meta.ip ?? 'unknown';
     await this.loginGuard.assertAllowed(dto.email, ip);
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    // Compare against a dummy hash when the user doesn't exist so timing doesn't leak accounts.
-    const ok = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH);
+    // A missing account is checked against a dummy hash, so timing doesn't leak which addresses exist.
+    const { ok, rehash } = await verifyPassword(user?.passwordHash, dto.password);
     if (!user || !ok || user.deletedAt) {
       await this.loginGuard.recordFailure(dto.email, ip);
       this.logger.warn(`failed login for ${dto.email} from ${ip}${staffOnly ? ' (admin)' : ''}`);
@@ -117,6 +114,8 @@ export class AuthService {
     }
 
     await this.loginGuard.recordSuccess(dto.email, ip);
+    // PWD-04: an old bcrypt hash moves to Argon2id once its password has been proven.
+    if (rehash) await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash: rehash } });
 
     // Staff with TOTP enabled: password alone only buys a 5-minute token for the second step.
     if (user.mfaEnabledAt) {
@@ -257,7 +256,7 @@ export class AuthService {
   async resetPassword(dto: ResetPasswordDto) {
     const record = await this.consumeAuthToken(dto.token, AuthTokenType.PASSWORD_RESET);
     const [user] = await this.prisma.$transaction([
-      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash: await bcrypt.hash(dto.password, BCRYPT_ROUNDS) } }),
+      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash: await hashPassword(dto.password) } }),
       // The link came to the mailbox, so the address is proven too.
       this.prisma.user.updateMany({ where: { id: record.userId, emailVerifiedAt: null }, data: { emailVerifiedAt: new Date() } }),
     ]);
@@ -314,10 +313,10 @@ export class AuthService {
   /** Changing the password closes every other session and hands back a fresh one for this device. */
   async changePassword(userId: string, dto: ChangePasswordDto, meta: ClientMeta) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
-    if (!user.passwordHash || !(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
+    if (!(await verifyPassword(user.passwordHash, dto.currentPassword)).ok) {
       throw new BadRequestException('Mevcut şifre hatalı');
     }
-    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS) } });
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await hashPassword(dto.newPassword) } });
     await this.sessions.endAll(userId);
     const updated = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     this.logger.log(`password changed for ${user.email}`);

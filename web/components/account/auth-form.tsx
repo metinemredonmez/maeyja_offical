@@ -68,7 +68,7 @@ export function AuthForm({ mode, next }: { mode: 'login' | 'register'; next?: st
         <Field label={tc('email')} name="email" type="email" autoComplete="email" required />
         <label className="flex flex-col gap-2">
           <span className="label text-muted">{tc('password')}</span>
-          <input name="password" type="password" required minLength={8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} className="field" />
+          <input name="password" type="password" required minLength={mode === 'register' ? 15 : 8} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} className="field" />
           {mode === 'register' ? <span className="text-xs text-muted">{t('passwordRule')}</span> : null}
         </label>
         {mode === 'register' ? (
