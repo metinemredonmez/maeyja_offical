@@ -69,6 +69,9 @@ export const envSchema = Joi.object({
   // Home page "Follow us on Instagram": long-lived token of the shop's Instagram account (Instagram API with Instagram Login)
   INSTAGRAM_ACCESS_TOKEN: Joi.string().allow('').default(''),
 
+  // Written by deploy/backup.sh after every run; empty: /var/lib/maeyja/backup-status.json in production, unchecked elsewhere.
+  BACKUP_STATUS_FILE: Joi.string().allow('').default(''),
+
   ORDER_PAYMENT_TIMEOUT_MINUTES: Joi.number().integer().min(5).default(30),
   BANK_TRANSFER_TIMEOUT_HOURS: Joi.number().integer().min(1).default(48),
 
@@ -142,6 +145,7 @@ export interface Env {
   AI_SEARCH_DAILY_LIMIT: number;
   AI_ADMIN_DAILY_LIMIT: number;
   INSTAGRAM_ACCESS_TOKEN: string;
+  BACKUP_STATUS_FILE: string;
   ORDER_PAYMENT_TIMEOUT_MINUTES: number;
   BANK_TRANSFER_TIMEOUT_HOURS: number;
   SWAGGER_ENABLED: boolean;

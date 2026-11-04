@@ -573,6 +573,17 @@ export interface CronRun {
   error: string | null;
 }
 
+export type HealthLevel = 'ok' | 'warn' | 'fail' | 'off';
+
+export interface SystemStatus {
+  disk: { total: number; free: number; level: HealthLevel };
+  uploads: { bytes: number; files: number };
+  databaseBytes: number;
+  backup: { configured: boolean; finishedAt: string | null; ok: boolean | null; bytes: number | null; problem: string | null; level: HealthLevel };
+  lateJobs: string[];
+  uptimeSec: number;
+}
+
 export interface AlertTestResult {
   smtp: boolean;
   emailTo: string | null;

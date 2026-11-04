@@ -22,7 +22,7 @@ async function bootstrap() {
   if (trustProxy > 0) app.set('trust proxy', trustProxy);
 
   app.use(requestIdMiddleware);
-  app.setGlobalPrefix(prefix, { exclude: ['health'] });
+  app.setGlobalPrefix(prefix, { exclude: ['health', 'health/ready'] });
   const swagger = !isProd || config.get('SWAGGER_ENABLED', { infer: true });
   app.use(
     helmet({

@@ -3,13 +3,16 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { api, qs } from '@/lib/api.client';
 import { useApiMutation } from '@/lib/queries/helpers';
-import type { CronJobState, CronRun, Paginated } from '@/lib/types';
+import type { CronJobState, CronRun, Paginated, SystemStatus } from '@/lib/types';
 
 export const cronKeys = {
   all: ['cron'] as const,
   jobs: ['cron', 'jobs'] as const,
   runs: (p: { name?: string; page: number; limit: number }) => ['cron', 'runs', p] as const,
+  system: ['system', 'status'] as const,
 };
+
+export const useSystemStatus = () => useQuery({ queryKey: cronKeys.system, queryFn: () => api.get<SystemStatus>('/admin/system/status'), refetchInterval: 60_000 });
 
 export const useCronJobs = () => useQuery({ queryKey: cronKeys.jobs, queryFn: () => api.get<CronJobState[]>('/admin/cron'), refetchInterval: 15_000 });
 

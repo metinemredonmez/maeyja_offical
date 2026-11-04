@@ -10,8 +10,45 @@ import { PageHeader } from '@/components/shared/page-header';
 import { DateTime } from '@/components/shared/primitives';
 import { ToneBadge } from '@/components/shared/status-badge';
 import type { Tone } from '@/lib/labels';
-import { useCronJobs, useCronRuns, useRunCronJob } from '@/lib/queries/cron';
-import type { CronJobState, CronRun } from '@/lib/types';
+import { useCronJobs, useCronRuns, useRunCronJob, useSystemStatus } from '@/lib/queries/cron';
+import type { CronJobState, CronRun, HealthLevel } from '@/lib/types';
+
+const size = (bytes: number) => (bytes >= 1024 ** 3 ? `${(bytes / 1024 ** 3).toFixed(1)} GB` : `${Math.round(bytes / 1024 ** 2)} MB`);
+const LEVEL_TONE: Record<HealthLevel, Tone> = { ok: 'success', warn: 'warning', fail: 'danger', off: 'muted' };
+
+function Tile({ label, value, level, note }: { label: string; value: React.ReactNode; level?: HealthLevel; note?: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {level && <ToneBadge tone={LEVEL_TONE[level]} dot>{{ ok: 'İyi', warn: 'Bakılmalı', fail: 'Acil', off: 'Kapalı' }[level]}</ToneBadge>}
+      </div>
+      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+      {note && <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
+}
+
+/** Disk, uploads, database and last night's backup; warnings also arrive as alerts. */
+function ServerTiles() {
+  const s = useSystemStatus();
+  if (!s.data) return null;
+  const { disk, uploads, databaseBytes, backup } = s.data;
+  const pct = disk.total ? Math.round((disk.free / disk.total) * 100) : 0;
+  return (
+    <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Tile label="Disk boş alanı" value={size(disk.free)} level={disk.level} note={`%${pct} boş · toplam ${size(disk.total)}`} />
+      <Tile label="Yüklenen dosyalar" value={size(uploads.bytes)} note={`${uploads.files.toLocaleString('tr-TR')} dosya`} />
+      <Tile label="Veritabanı" value={size(databaseBytes)} note="Gelen kutusu ekleri dahil" />
+      <Tile
+        label="Son gece yedeği"
+        level={backup.level}
+        value={backup.finishedAt ? <DateTime value={backup.finishedAt} className="text-base" /> : '—'}
+        note={!backup.configured ? 'Bu ortamda izlenmiyor' : backup.ok === false ? 'Son yedek hata verdi' : (backup.problem ?? (backup.bytes ? `Yedek klasörü ${size(backup.bytes)}` : undefined))}
+      />
+    </div>
+  );
+}
 
 /** Jobs that write to customers: a hand start asks first. */
 const SENDS_MAIL = new Set(['ai.cart-reminders', 'campaigns.resume']);
@@ -130,8 +167,9 @@ export default function CronPage() {
     <>
       <PageHeader
         title="Zamanlanmış işler"
-        description="Arka planda kendiliğinden çalışan işler. Biri hata verirse ya da beklenen sürede çalışmazsa Uyarılar'a düşer ve e-posta gelir."
+        description="Sunucunun durumu ve arka planda kendiliğinden çalışan işler. Biri hata verirse ya da beklenen sürede çalışmazsa Uyarılar'a düşer ve e-posta gelir."
       />
+      <ServerTiles />
       <DataTable
         columns={columns}
         rows={jobs.data}

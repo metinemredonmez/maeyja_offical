@@ -24,6 +24,10 @@ export const ALERT_CATALOG = {
   'security.staff_changed': { level: 'WARNING', group: 'Güvenlik', title: 'Personel yetkisi değişti', repeatMin: 60 },
   'cron.failed': { level: 'WARNING', group: 'Sistem', title: 'Zamanlanmış iş hata verdi', repeatMin: 120 },
   'cron.late': { level: 'WARNING', group: 'Sistem', title: 'Zamanlanmış iş çalışmıyor', repeatMin: 360 },
+  'infra.disk_low': { level: 'WARNING', group: 'Sistem', title: 'Sunucu diski doluyor', repeatMin: 720 },
+  'infra.disk_full': { level: 'CRITICAL', group: 'Sistem', title: 'Sunucu diski neredeyse dolu', repeatMin: 120 },
+  'backup.failed': { level: 'CRITICAL', group: 'Sistem', title: 'Gece yedeği alınamadı', repeatMin: 720 },
+  'backup.stale': { level: 'WARNING', group: 'Sistem', title: 'Gece yedeği güncel değil', repeatMin: 720 },
 } as const satisfies Record<string, { level: 'INFO' | 'WARNING' | 'CRITICAL'; group: string; title: string; repeatMin: number }>;
 
 export type AlertCode = keyof typeof ALERT_CATALOG;

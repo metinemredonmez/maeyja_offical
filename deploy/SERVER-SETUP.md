@@ -139,6 +139,15 @@ echo '30 3 * * * root /usr/local/bin/maeyja-backup.sh >> /var/log/maeyja-backup.
 Yedekler aynı sunucuda durduğu için sunucu kaybına karşı korumaz; ara ara Mac'e çek:
 `rsync -a hazal:/var/backups/maeyja/ ~/Yedekler/maeyja/`. Geri yükleme komutları script'in başında.
 
+Betik her çalışmanın sonucunu `/var/lib/maeyja/backup-status.json` dosyasına yazar (tarih, başarı, boyut; sır yok).
+API bunu 15 dakikada bir okur: yedek 30 saatten eskiyse ya da hata verdiyse admin → Uyarılar'a düşer. Betik
+değişince yukarıdaki `install` satırını yeniden çalıştırın; denemek için bir kez elle çalıştırın.
+
+## İzleme
+`https://api.maeyja.com/health/ready` dış izleme (UptimeRobot vb.) içindir: veritabanı, disk, yedek ve zamanlanmış
+işler için yalnız durum bayrakları döner, sayı yok. Veritabanına ulaşılamazsa ya da disk dolmak üzereyse 503 verir;
+yedek ya da iş gecikmesi `degraded` olarak görünür. Ayrıntılı sayılar admin → Zamanlanmış işler → Sunucu.
+
 ## HSTS
 certbot'tan sonra maeyja'nın 443 bloklarına `add_header Strict-Transport-Security "max-age=31536000" always;`
 (includeSubDomains yok — mail.maeyja.com nginx'te değil).
