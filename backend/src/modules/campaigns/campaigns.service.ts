@@ -14,6 +14,7 @@ import { MAIL_QUOTAS, UsageService } from '../usage/usage.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { renderCampaign, unsubscribeSignature, verifyUnsubscribeSignature } from './campaign.mail';
 import { AudienceQueryDto, CampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
+import { Tracked } from '../cron/tracked.decorator';
 
 /** ~100 emails a minute: stays under Resend's default 2 requests/second. */
 const SEND_INTERVAL_MS = 600;
@@ -129,6 +130,7 @@ export class CampaignsService {
 
   /** Picks up campaigns left half-sent by a restart or deploy. */
   @Cron(CronExpression.EVERY_MINUTE)
+  @Tracked('campaigns.resume', { label: 'Yarım kalan kampanyaları sürdürme', everyMin: 1 })
   async resume() {
     const sending = await this.prisma.emailCampaign.findMany({ where: { status: CampaignStatus.SENDING }, select: { id: true } });
     for (const c of sending) void this.process(c.id);

@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
 import { maskEmail } from '../alerts/alert-catalog';
 import { AlertsService } from '../alerts/alerts.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 const WINDOW_MS = 15 * 60_000;
 /** First lock; every further lock of the same key lasts twice as long, up to a day. */
@@ -63,6 +64,7 @@ export class LoginGuardService {
 
   /** Old counters go (a key's lock history is forgotten after two quiet days), and so do expired sign-ups. */
   @Cron(CronExpression.EVERY_HOUR)
+  @Tracked('auth.sweep', { label: 'Giriş sayaçları ve süresi dolan kayıtlar', everyMin: 60 })
   async sweep() {
     const quiet = new Date(Date.now() - 2 * 86400_000);
     await this.prisma.loginAttempt.deleteMany({ where: { updatedAt: { lt: quiet }, OR: [{ lockedUntil: null }, { lockedUntil: { lt: new Date() } }] } });

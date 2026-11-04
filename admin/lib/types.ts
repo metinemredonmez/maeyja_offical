@@ -545,6 +545,34 @@ export interface AlertCatalogItem {
   repeatMin: number;
 }
 
+export interface CronJobState {
+  name: string;
+  label: string;
+  everyMin: number;
+  running: string | null;
+  lastStartedAt: string | null;
+  lastFinishedAt: string | null;
+  lastDurationMs: number | null;
+  lastStatus: 'ok' | 'error' | null;
+  lastError: string | null;
+  lastOkAt: string | null;
+  failStreak: number;
+  runs: number;
+  lateMin: number;
+}
+
+export interface CronRun {
+  id: string;
+  name: string;
+  trigger: 'schedule' | 'manual';
+  actorId: string | null;
+  startedAt: string;
+  durationMs: number;
+  status: 'ok' | 'error';
+  result: Record<string, number | boolean | string> | null;
+  error: string | null;
+}
+
 export interface AlertTestResult {
   smtp: boolean;
   emailTo: string | null;

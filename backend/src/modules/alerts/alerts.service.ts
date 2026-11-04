@@ -8,6 +8,7 @@ import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
 import { SettingsService } from '../settings/settings.service';
 import { ALERT_CATALOG, AlertCode, maskEmail, maskEmails, webhookAllowed } from './alert-catalog';
+import { Tracked } from '../cron/tracked.decorator';
 
 const RETENTION_DAYS = 90;
 /** LOG-03: raises the database couldn't take are kept for the next try, but never more than this many. */
@@ -85,6 +86,7 @@ export class AlertsService implements OnModuleInit {
 
   /** Alerts the database couldn't take are written now (already delivered ones stay quiet). */
   @Cron(CronExpression.EVERY_5_MINUTES)
+  @Tracked('alerts.flush', { label: 'Bekleyen uyarıları yazma', everyMin: 5 })
   async flush() {
     while (this.buffer.length) {
       try {
@@ -98,6 +100,7 @@ export class AlertsService implements OnModuleInit {
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_5AM)
+  @Tracked('alerts.sweep', { label: 'Eski uyarıların temizliği', everyMin: 1440 })
   async sweep() {
     const { count } = await this.prisma.alert.deleteMany({ where: { resolvedAt: { lt: new Date(Date.now() - RETENTION_DAYS * 86400_000) } } });
     if (count) this.logger.log(`deleted ${count} resolved alert(s) older than ${RETENTION_DAYS} days`);

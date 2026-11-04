@@ -837,6 +837,37 @@ model Alert {
   @@index([resolvedAt, lastAt])
 }
 
+// ───────── Scheduled jobs: last state per job, and a history of the runs worth keeping ─────────
+/** Written at the end of every run of a @Tracked job (see cron-tracker.service.ts). */
+model CronJob {
+  name           String    @id
+  lastStartedAt  DateTime?
+  lastFinishedAt DateTime?
+  lastDurationMs Int?
+  lastStatus     String? // ok | error
+  lastError      String?
+  lastOkAt       DateTime?
+  failStreak     Int       @default(0)
+  runs           Int       @default(0)
+  updatedAt      DateTime  @updatedAt
+}
+
+/** Failed and manual runs always; others only when they did something or run hourly or less often. 30 days. */
+model CronRun {
+  id         String   @id @default(cuid())
+  name       String
+  trigger    String // schedule | manual
+  actorId    String?
+  startedAt  DateTime
+  durationMs Int
+  status     String // ok | error
+  result     Json?
+  error      String?
+
+  @@index([name, startedAt])
+  @@index([startedAt])
+}
+
 // ───────── E-mail campaigns (marketing; only to people who opted in) ─────────
 enum CampaignStatus {
   DRAFT

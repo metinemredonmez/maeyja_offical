@@ -27,6 +27,7 @@ import {
   UserCogIcon,
   FolderTreeIcon,
   TriangleAlertIcon,
+  TimerIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 
@@ -88,6 +89,7 @@ export const NAV: NavGroup[] = [
     label: 'Sistem',
     items: [
       { href: '/alerts', label: 'Uyarılar', icon: TriangleAlertIcon, roles: ALL },
+      { href: '/cron', label: 'Zamanlanmış işler', icon: TimerIcon, roles: ALL },
       { href: '/settings', label: 'Ayarlar', icon: SettingsIcon, roles: ALL },
       { href: '/staff', label: 'Personel', icon: UserCogIcon, roles: SUPER },
       { href: '/audit-logs', label: 'İşlem kayıtları', icon: TagIcon, roles: ALL },

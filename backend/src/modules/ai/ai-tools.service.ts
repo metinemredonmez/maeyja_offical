@@ -13,6 +13,7 @@ import { MailService } from '../notifications/mail.service';
 import { button, emailShell, esc, mailLocale, textOf } from '../notifications/mail.templates';
 import { SettingsService } from '../settings/settings.service';
 import { UsageService, visitorKey } from '../usage/usage.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 const MODEL = 'claude-opus-5-5';
 /** A shopper's (or a bot's) new searches per hour, and how many answers stay cached. */
@@ -200,6 +201,7 @@ export class AiToolsService {
    * days) get one short reminder, written for them in their language. Off until switched on in the admin.
    */
   @Cron(CronExpression.EVERY_30_MINUTES)
+  @Tracked('ai.cart-reminders', { label: 'Sepet hatırlatma e-postaları', everyMin: 30 })
   async cartReminders() {
     if (!this.client) return;
     const cfg = await this.settings.get('cartReminder');

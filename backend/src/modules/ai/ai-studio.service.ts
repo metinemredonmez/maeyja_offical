@@ -10,6 +10,7 @@ import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { SettingsService } from '../settings/settings.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 export const STUDIO_KINDS = ['model', 'scene', 'video'] as const;
 export type StudioKind = (typeof STUDIO_KINDS)[number];
@@ -146,6 +147,7 @@ export class AiStudioService {
 
   /** New products: one on-model suggestion each (from the first photo), waiting for approval. A few per run. */
   @Cron(CronExpression.EVERY_5_MINUTES)
+  @Tracked('ai.studio-suggest', { label: 'Yeni ürünlere AI model önerisi', everyMin: 5 })
   async suggestForNewProducts() {
     if (!this.key || !(await this.settings.get('aiStudio')).autoModel) return;
     const candidates = await this.prisma.product.findMany({

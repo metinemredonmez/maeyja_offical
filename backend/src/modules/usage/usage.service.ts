@@ -4,6 +4,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 /** One visitor per IPv4 address or per IPv6 /64: a bot rotating addresses inside its own block still counts once. */
 export function visitorKey(ip: string): string {
@@ -81,6 +82,7 @@ export class UsageService {
   }
 
   @Cron(CronExpression.EVERY_HOUR)
+  @Tracked('usage.sweep', { label: 'Kota sayaçlarının temizliği', everyMin: 60 })
   async sweep() {
     await this.prisma.usageCounter.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   }

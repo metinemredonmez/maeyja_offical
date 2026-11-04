@@ -14,6 +14,7 @@ import { AlertsService } from '../alerts/alerts.service';
 import { MailAccountDto, MailQueryDto, SendMailDto, UpdateMailAccountDto } from './dto/mailbox.dto';
 import { senderVerified } from './mail-auth';
 import { sanitizeMailHtml, snippetOf } from './mail-html';
+import { Tracked } from '../cron/tracked.decorator';
 
 type Address = { name: string | null; address: string };
 
@@ -286,6 +287,7 @@ export class MailboxService {
 
   /** Background poll; also triggered by "Yenile" in the panel. */
   @Cron('*/3 * * * *')
+  @Tracked('mailbox.sync', { label: 'Gelen kutusu eşitleme', everyMin: 3 })
   async syncAll() {
     if (this.syncing) return { fetched: 0, errors: [] as { email: string; error: string }[] };
     this.syncing = true;

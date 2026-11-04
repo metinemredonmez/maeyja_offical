@@ -6,6 +6,7 @@ import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { fillMissingTranslations } from './translation-fill';
 import { DraftInput, FieldMap, TARGET_LOCALES, Translator } from './translator';
+import { Tracked } from '../cron/tracked.decorator';
 
 const RETRY_AFTER_MS = 24 * 60 * 60 * 1000;
 
@@ -44,6 +45,7 @@ export class AiService {
    * button. A run that finds nothing to do only reads the tables.
    */
   @Cron(CronExpression.EVERY_MINUTE)
+  @Tracked('ai.translate', { label: 'Otomatik çeviri', everyMin: 1 })
   async autoFill() {
     if (!this.auto || !this.translator || this.running) return;
     this.running = true;
@@ -56,6 +58,7 @@ export class AiService {
         },
       });
       if (filled) this.logger.log(`Otomatik çeviri: ${filled} alan dolduruldu`);
+      return { filled };
     } finally {
       this.running = false;
     }

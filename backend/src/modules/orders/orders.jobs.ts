@@ -6,6 +6,7 @@ import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
 import { OrderLifecycleService } from './order-lifecycle.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 /**
  * Runs inside the API process (pm2 fork mode, single instance) — no Redis/queue needed.
@@ -28,6 +29,7 @@ export class OrdersJobs {
    * provider has confirmed nothing was paid (ARC-05); a payment page opened recently keeps its order.
    */
   @Cron(CronExpression.EVERY_5_MINUTES)
+  @Tracked('orders.expire', { label: 'Ödenmeyen siparişleri kapatma', everyMin: 5 })
   async expireUnpaidOrders() {
     if (this.running) return;
     this.running = true;
@@ -69,6 +71,7 @@ export class OrdersJobs {
         }
       }
       if (expired) this.logger.log(`expired ${expired} unpaid order(s)`);
+      return { checked: stale.length, expired, providerDown: down.size };
     } finally {
       this.running = false;
     }
@@ -76,6 +79,7 @@ export class OrdersJobs {
 
   /** Housekeeping: abandoned guest carts, dead refresh tokens and used auth links. */
   @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  @Tracked('orders.cleanup', { label: 'Eski sepet, oturum ve bağlantı temizliği', everyMin: 1440 })
   async cleanup() {
     const now = Date.now();
     const [carts, tokens, links] = await Promise.all([
@@ -84,5 +88,6 @@ export class OrdersJobs {
       this.prisma.authToken.deleteMany({ where: { expiresAt: { lt: new Date(now - 86400_000) } } }),
     ]);
     this.logger.log(`cleanup: ${carts.count} carts, ${tokens.count} refresh tokens, ${links.count} auth links`);
+    return { carts: carts.count, refreshTokens: tokens.count, authLinks: links.count };
   }
 }

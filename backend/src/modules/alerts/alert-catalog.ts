@@ -22,6 +22,8 @@ export const ALERT_CATALOG = {
   'security.ip_locked': { level: 'INFO', group: 'Güvenlik', title: 'Bir adres çok fazla hatalı giriş denedi', repeatMin: 60 },
   'security.mfa_disabled': { level: 'WARNING', group: 'Güvenlik', title: 'Personel iki adımlı doğrulamayı kapattı', repeatMin: 60 },
   'security.staff_changed': { level: 'WARNING', group: 'Güvenlik', title: 'Personel yetkisi değişti', repeatMin: 60 },
+  'cron.failed': { level: 'WARNING', group: 'Sistem', title: 'Zamanlanmış iş hata verdi', repeatMin: 120 },
+  'cron.late': { level: 'WARNING', group: 'Sistem', title: 'Zamanlanmış iş çalışmıyor', repeatMin: 360 },
 } as const satisfies Record<string, { level: 'INFO' | 'WARNING' | 'CRITICAL'; group: string; title: string; repeatMin: number }>;
 
 export type AlertCode = keyof typeof ALERT_CATALOG;

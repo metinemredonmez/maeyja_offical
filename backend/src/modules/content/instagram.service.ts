@@ -9,6 +9,7 @@ import sharp from 'sharp';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { Tracked } from '../cron/tracked.decorator';
 
 const GRAPH = 'https://graph.instagram.com';
 /** Internal setting row (not one of the admin settings, so it is never listed or exposed). */
@@ -56,6 +57,7 @@ export class InstagramService implements OnModuleInit {
   }
 
   @Cron(CronExpression.EVERY_HOUR)
+  @Tracked('instagram.sync', { label: 'Instagram akışı', everyMin: 60 })
   async sync() {
     if (!this.envToken) return;
     try {

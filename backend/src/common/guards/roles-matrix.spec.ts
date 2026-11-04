@@ -33,7 +33,7 @@ function routes(): Route[] {
 }
 
 /** CLAUDE.md / AZ-01: personal data, revenue, money and settings are for admins, not editors. */
-const ADMIN_ONLY = /^(GET|POST|PUT|PATCH|DELETE) admin\/(orders|customers|users|returns|newsletter|contact|messages|mail|audit-logs|alerts|settings|payments|campaigns|dashboard|stats|coupons|push|ai\/(reply|weekly))/;
+const ADMIN_ONLY = /^(GET|POST|PUT|PATCH|DELETE) admin\/(orders|customers|users|returns|newsletter|contact|messages|mail|audit-logs|alerts|cron|settings|payments|campaigns|dashboard|stats|coupons|push|ai\/(reply|weekly))/;
 
 describe('role matrix for every admin route (API-01, OPS-04)', () => {
   const all = routes();

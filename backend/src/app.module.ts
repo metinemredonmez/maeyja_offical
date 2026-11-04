@@ -28,6 +28,7 @@ import { HealthModule } from './modules/health/health.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
+import { CronModule } from './modules/cron/cron.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { UsageModule } from './modules/usage/usage.module';
@@ -60,6 +61,7 @@ import { SessionModule } from './modules/session/session.module';
     SettingsModule,
     NotificationsModule,
     AlertsModule,
+    CronModule,
     UsageModule,
     SessionModule,
     HealthModule,
