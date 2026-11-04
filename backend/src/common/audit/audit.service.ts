@@ -4,7 +4,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
 /** LOG-02: keys whose values never reach the audit log, at any depth. */
-const SENSITIVE = /password|passwd|token|secret|api[-_]?key|private[-_]?key|authorization|cookie|cvc|cvv|card[-_]?number/i;
+const SENSITIVE = /password|passwd|token|secret|api[-_]?key|private[-_]?key|authorization|cookie|cvc|cvv|card[-_]?number|webhook[-_]?url/i;
 const MAX_DEPTH = 6;
 
 export function redact(value: unknown, depth = 0): unknown {

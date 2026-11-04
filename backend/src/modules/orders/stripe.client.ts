@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import { decrypt, encrypt, keyFromEnv } from '../../common/utils/crypto.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 /** Labels our sessions in the Stripe Dashboard (Stripe asks for an 8-letter random suffix). */
 const INTEGRATION_ID = 'maeyja_web_checkout_qvtrkzpm';
@@ -55,6 +56,7 @@ export class StripeClient implements OnModuleInit {
   constructor(
     private readonly config: ConfigService<Env, true>,
     private readonly prisma: PrismaService,
+    private readonly alerts: AlertsService,
   ) {
     this.encKey = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
     // Payments are settled by the webhook too; without it a closed tab would leave a paid order unpaid.
@@ -177,11 +179,16 @@ export class StripeClient implements OnModuleInit {
   /** Throws unless the body carries a valid Stripe signature from the last 5 minutes. */
   parseWebhook(rawBody: Buffer | undefined, signature: string | undefined): Stripe.Event {
     const a = this.active;
-    if (!a?.webhookSecret) throw new ServiceUnavailableException('Stripe webhook yapılandırılmamış');
+    if (!a?.webhookSecret) {
+      void this.alerts.raise('payment.webhook_failed', 'Stripe bildirim gönderiyor ama webhook sırrı tanımlı değil. Anahtarı Ayarlar → Kartla ödeme’den yeniden kaydedin.');
+      throw new ServiceUnavailableException('Stripe webhook yapılandırılmamış');
+    }
     if (!rawBody || !signature) throw new BadRequestException('İmza yok');
     try {
       return a.client.webhooks.constructEvent(rawBody, signature, a.webhookSecret);
     } catch {
+      // Anyone can post here, so this alone isn't an attack; a run of them usually means the webhook secret changed.
+      void this.alerts.raise('payment.webhook_signature', 'İmzası doğrulanamayan bir Stripe bildirimi reddedildi. Sürerse anahtarı Ayarlar → Kartla ödeme’den yeniden kaydedin.');
       throw new BadRequestException('Geçersiz imza');
     }
   }
@@ -237,11 +244,14 @@ export class StripeClient implements OnModuleInit {
     } catch (e) {
       if (e instanceof Stripe.errors.StripeConnectionError || e instanceof Stripe.errors.StripeAPIError || e instanceof Stripe.errors.StripeRateLimitError) {
         this.logger.error(`Stripe unreachable: ${e.message}`);
+        void this.alerts.raise('payment.provider_down', `Stripe'a ulaşılamadı (${e.type}). Müşteriler şu an kartla ödeme yapamıyor olabilir.`);
         throw new ServiceUnavailableException('Ödeme servisine ulaşılamadı, lütfen tekrar deneyin');
       }
       // A wrong or under-permitted key is ours to fix; its message (with part of the key) never reaches a shopper.
       if (e instanceof Stripe.errors.StripeAuthenticationError || e instanceof Stripe.errors.StripePermissionError) {
         this.logger.error(`Stripe key rejected: ${e.message}`);
+        // Not Stripe's text: it carries part of the key.
+        void this.alerts.raise('payment.provider_auth', 'Stripe anahtarı reddedildi ya da yetkisi yetmiyor; kartla ödeme çalışmıyor. Anahtarı Ayarlar → Kartla ödeme’den yeniden kaydedin.');
         throw new ServiceUnavailableException('Kartla ödeme şu anda kullanılamıyor');
       }
       if (e instanceof Stripe.errors.StripeError) {

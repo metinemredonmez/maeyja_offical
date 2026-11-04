@@ -81,6 +81,15 @@ export const SETTING_DEFAULTS = {
     /** robots.txt lets AI assistants (ChatGPT, Claude, Perplexity, Gemini…) read the shop. */
     allowAiCrawlers: true,
   },
+  /**
+   * Where alerts go (LOG-04). Empty e-mail: ADMIN_NOTIFY_EMAIL. The webhook (Slack, Discord or Google Chat) is a
+   * secret: its address alone lets anyone post to the channel. Muted codes stay in the panel but aren't sent.
+   */
+  alerts: {
+    email: '',
+    webhookUrl: '',
+    muted: [] as string[],
+  },
   bankTransfer: {
     enabled: false,
     bankName: '',

@@ -8,6 +8,7 @@ import { Locale, storefrontPath } from '../../common/utils/i18n.util';
 import { toKurus, toNumber } from '../../common/utils/money.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AlertsService } from '../alerts/alerts.service';
 import { CartOwner, CartService } from '../cart/cart.service';
 import { SettingsService } from '../settings/settings.service';
 import { CheckoutAddressDto, CheckoutDto } from './dto/orders.dto';
@@ -66,6 +67,7 @@ export class CheckoutService {
     private readonly iyzico: IyzicoClient,
     private readonly stripe: StripeClient,
     private readonly config: ConfigService<Env, true>,
+    private readonly alerts: AlertsService,
   ) {}
 
   /**
@@ -389,8 +391,14 @@ export class CheckoutService {
       this.logger.warn(`Stripe ${event.type} for unknown session`);
       return;
     }
-    const outcome = await this.reconcile(payment);
-    this.logger.log(`Stripe ${event.type} ${payment.order.orderNumber}: ${outcome}`);
+    try {
+      const outcome = await this.reconcile(payment);
+      this.logger.log(`Stripe ${event.type} ${payment.order.orderNumber}: ${outcome}`);
+    } catch (e) {
+      // Stripe retries a failed delivery; staff hear about it in case it keeps failing.
+      void this.alerts.raise('payment.webhook_failed', `${payment.order.orderNumber} için gelen Stripe bildirimi işlenemedi: ${(e as Error).message}`, { key: payment.order.orderNumber });
+      throw e;
+    }
   }
 
   /**
@@ -487,6 +495,9 @@ export class CheckoutService {
         const panel = payment.provider === PaymentProvider.STRIPE ? 'Stripe' : 'iyzico';
         await this.addAdminNote(order.id, `⚠ Ödeme incelemede: ${v.reason}. ${panel} panelinden kontrol edin; tamamsa siparişi "Ödendi", değilse "İptal" yapın.`);
         this.logger.error(`payment needs review ${order.orderNumber}: ${v.reason}`);
+        void this.alerts.raise('payment.review', `${order.orderNumber}: ${v.reason}. ${panel} panelinden kontrol edin; tamamsa siparişi "Ödendi", değilse "İptal" yapın.`, {
+          key: order.orderNumber,
+        });
       }
       return 'review';
     }
@@ -533,7 +544,10 @@ export class CheckoutService {
     });
 
     if (outcome === 'paid') void this.lifecycle.notify(order.id, 'paid');
-    if (outcome === 'needs_refund') this.logger.error(`order ${order.orderNumber} paid after cancellation without stock — refund needed`);
+    if (outcome === 'needs_refund') {
+      this.logger.error(`order ${order.orderNumber} paid after cancellation without stock — refund needed`);
+      void this.alerts.raise('payment.needs_refund', `${order.orderNumber} iptal edildikten sonra ödendi ve stok kalmadı. Ödemeyi sağlayıcının panelinden iade edin.`, { key: order.orderNumber });
+    }
     if (outcome === 'duplicate') await this.refundDuplicate(payment, v.providerPaymentId);
     return outcome;
   }
@@ -545,9 +559,11 @@ export class CheckoutService {
       await this.refundPayment({ ...payment, providerPaymentId: providerPaymentId ?? null }, payment.order.ip ?? '127.0.0.1');
       await this.prisma.payment.update({ where: { id: payment.id }, data: { status: PaymentStatus.REFUNDED } });
       note = `İkinci ödeme (${providerPaymentId}) otomatik iade edildi.`;
+      void this.alerts.raise('payment.duplicate_refunded', `${payment.order.orderNumber}: ${note}`, { key: payment.order.orderNumber });
     } catch (e) {
       note = `⚠ İkinci ödeme alındı (${providerPaymentId}) ama otomatik iade edilemedi — ödeme panelinden iade edin.`;
       this.logger.error(`duplicate charge on ${payment.order.orderNumber} not refunded: ${(e as Error).message}`);
+      void this.alerts.raise('payment.refund_failed', `${payment.order.orderNumber}: ${note}`, { key: payment.order.orderNumber });
     }
     await this.addAdminNote(payment.orderId, note);
   }

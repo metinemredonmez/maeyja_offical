@@ -8,6 +8,7 @@ import { dirname, join, resolve } from 'path';
 import sharp from 'sharp';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AlertsService } from '../alerts/alerts.service';
 import { SettingsService } from '../settings/settings.service';
 
 export const STUDIO_KINDS = ['model', 'scene', 'video'] as const;
@@ -54,6 +55,7 @@ export class AiStudioService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly alerts: AlertsService,
     config: ConfigService<Env, true>,
   ) {
     this.key = config.get('GEMINI_API_KEY', { infer: true });
@@ -318,6 +320,7 @@ No text, no logo other than the one on the bag, no other objects. Portrait 4:5.$
     const today = new Date().toISOString().slice(0, 10);
     if (this.day.date !== today) this.day = { date: today, image: 0, video: 0 };
     if (this.day[kind] >= DAILY[kind]) {
+      void this.alerts.raise('quota.reached', `AI stüdyo: bugünkü ${kind === 'video' ? 'video' : 'görsel'} sınırı (${DAILY[kind]}) doldu.`, { key: `ai-studio:${kind}` });
       throw new HttpException(`Bugünlük ${kind === 'video' ? 'video' : 'görsel'} sınırı doldu (${DAILY[kind]}); yarın yeniden deneyin`, HttpStatus.TOO_MANY_REQUESTS);
     }
     this.day[kind]++;

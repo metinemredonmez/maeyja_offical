@@ -10,6 +10,7 @@ import { paginate, skipTake } from '../../common/dto/pagination.dto';
 import { decrypt, encrypt, keyFromEnv } from '../../common/utils/crypto.util';
 import { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AlertsService } from '../alerts/alerts.service';
 import { MailAccountDto, MailQueryDto, SendMailDto, UpdateMailAccountDto } from './dto/mailbox.dto';
 import { senderVerified } from './mail-auth';
 import { sanitizeMailHtml, snippetOf } from './mail-html';
@@ -57,6 +58,7 @@ export class MailboxService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly alerts: AlertsService,
     config: ConfigService<Env, true>,
   ) {
     this.key = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
@@ -293,8 +295,10 @@ export class MailboxService {
       for (const account of await this.prisma.mailAccount.findMany({ where: { isActive: true } })) {
         try {
           fetched += await this.syncAccount(account);
+          void this.alerts.clear('mailbox.sync_failed', account.email);
         } catch (e) {
           errors.push({ email: account.email, error: this.reason(e) });
+          void this.alerts.raise('mailbox.sync_failed', `${account.email} eşitlenemedi: ${this.reason(e)}`, { key: account.email });
         }
       }
     } finally {

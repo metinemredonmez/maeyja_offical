@@ -8,6 +8,7 @@ import { MailContent } from './mail.templates';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly transporter: nodemailer.Transporter | null;
+  private failureListener?: (subject: string, error: string) => void;
 
   constructor(private readonly config: ConfigService<Env, true>) {
     const host = this.config.get('SMTP_HOST', { infer: true });
@@ -41,8 +42,16 @@ export class MailService {
     });
   }
 
-  /** Never throws: a failed email must not fail the request that triggered it. */
-  async send(to: string | undefined | null, content: MailContent): Promise<boolean> {
+  /** AlertsService listens here for failed e-mails (it sends through this service, so it can't be injected). */
+  onFailure(listener: (subject: string, error: string) => void) {
+    this.failureListener = listener;
+  }
+
+  /**
+   * Never throws: a failed email must not fail the request that triggered it. `reportFailure` is false for the
+   * alert e-mails themselves, so a broken SMTP doesn't alert about alerts.
+   */
+  async send(to: string | undefined | null, content: MailContent, reportFailure = true): Promise<boolean> {
     if (!to) return false;
     if (!this.transporter) {
       this.logger.log(`[mail:dry-run] to=${to} subject="${content.subject}"`);
@@ -60,6 +69,7 @@ export class MailService {
       return true;
     } catch (e) {
       this.logger.error(`mail to ${to} failed: ${(e as Error).message}`);
+      if (reportFailure) this.failureListener?.(content.subject, (e as Error).message);
       return false;
     }
   }

@@ -12,6 +12,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
 import { SessionStateService } from '../session/session-state.service';
+import { maskEmail } from '../alerts/alert-catalog';
+import { AlertsService } from '../alerts/alerts.service';
 
 const ISSUER = 'MAEYJA Admin';
 const BACKUP_CODES = 8;
@@ -41,6 +43,7 @@ export class MfaService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     private readonly sessions: SessionStateService,
+    private readonly alerts: AlertsService,
     config: ConfigService<Env, true>,
   ) {
     this.key = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
@@ -108,6 +111,8 @@ export class MfaService {
     await this.sessions.endAll(userId);
     this.logger.warn(`mfa disabled for ${user.email}`);
     this.notify(user, 'İki adımlı doğrulama kapatıldı', ['Hesabınızdaki doğrulama uygulaması kaldırıldı ve bütün oturumlar kapatıldı.']);
+    // LOG-04: a staff account without its second factor is what an intruder would want; whoever watches alerts hears it.
+    void this.alerts.raise('security.mfa_disabled', `${maskEmail(user.email)} (${user.role}) iki adımlı doğrulamayı kapattı. Siz değilseniz şifresini sıfırlayın.`, { key: user.id });
     return { ok: true };
   }
 

@@ -515,8 +515,42 @@ export interface Settings {
     googleSiteVerification: string;
     allowAiCrawlers: boolean;
   };
+  /** `webhookUrl` comes back masked ("••••abcd") once saved. */
+  alerts: { email: string; webhookUrl: string; muted: string[] };
 }
 export type SettingKey = keyof Settings;
+
+export type AlertLevel = 'INFO' | 'WARNING' | 'CRITICAL';
+
+export interface Alert {
+  id: string;
+  code: string;
+  key: string;
+  level: AlertLevel;
+  title: string;
+  detail: string;
+  count: number;
+  firstAt: string;
+  lastAt: string;
+  notifiedAt: string | null;
+  resolvedAt: string | null;
+  resolvedById: string | null;
+}
+
+export interface AlertCatalogItem {
+  code: string;
+  level: AlertLevel;
+  group: string;
+  title: string;
+  repeatMin: number;
+}
+
+export interface AlertTestResult {
+  smtp: boolean;
+  emailTo: string | null;
+  email: boolean;
+  webhook: boolean | null;
+}
 
 export interface AuditLog {
   id: string;

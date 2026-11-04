@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MailService } from '../notifications/mail.service';
-import { templates } from '../notifications/mail.templates';
+import { AlertsService } from '../alerts/alerts.service';
 
 /** One visitor per IPv4 address or per IPv6 /64: a bot rotating addresses inside its own block still counts once. */
 export function visitorKey(ip: string): string {
@@ -40,7 +39,7 @@ export class UsageService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mail: MailService,
+    private readonly alerts: AlertsService,
     private readonly config: ConfigService<Env, true>,
   ) {}
 
@@ -49,14 +48,17 @@ export class UsageService {
     return (await this.increment(key, windowMs)) <= limit;
   }
 
-  /** The store's budget for the day (Istanbul calendar day); the admin hears once when 80 % is used. */
+  /** The store's budget for the day (Istanbul calendar day); staff are alerted at 80 % and when it runs out. */
   async takeDaily(feature: string, limit: number, label: string): Promise<boolean> {
     const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date());
     const count = await this.increment(`${feature}:day:${day}`, 26 * 3600_000);
     if (count === Math.ceil(limit * 0.8)) {
-      void this.mail.sendToAdmin(templates.adminNotice(`${label}: günlük sınırın %80'i kullanıldı`, { Kullanım: `${count} / ${limit}`, Gün: day }));
+      void this.alerts.raise('quota.warning', `${label}: günlük sınırın %80'i kullanıldı (${count} / ${limit}, ${day}).`, { key: feature });
     }
-    if (count === limit + 1) this.logger.warn(`${feature}: daily limit of ${limit} reached`);
+    if (count === limit + 1) {
+      this.logger.warn(`${feature}: daily limit of ${limit} reached`);
+      void this.alerts.raise('quota.reached', `${label}: günlük sınır (${limit}) doldu; bu özellik yarına kadar çalışmaz. Beklenmedik bir artışsa kötüye kullanım olabilir.`, { key: feature });
+    }
     return count <= limit;
   }
 

@@ -1,6 +1,8 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../prisma/prisma.service';
+import { maskEmail } from '../alerts/alert-catalog';
+import { AlertsService } from '../alerts/alerts.service';
 
 const WINDOW_MS = 15 * 60_000;
 /** First lock; every further lock of the same key lasts twice as long, up to a day. */
@@ -22,7 +24,10 @@ const MAX_PER_IP = 20;
 export class LoginGuardService {
   private readonly logger = new Logger(LoginGuardService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly alerts: AlertsService,
+  ) {}
 
   /** Throws 429 while a key is locked. Call before checking credentials. */
   assertAllowed(email: string, ip: string) {
@@ -36,12 +41,19 @@ export class LoginGuardService {
 
   async recordFailure(email: string, ip: string) {
     await this.bump(`ui:${email}|${ip}`, MAX_PER_ACCOUNT_IP, `account ${email} from ${ip}`);
-    await this.bump(`u:${email}`, MAX_PER_ACCOUNT, `account ${email}`);
+    const minutes = await this.bump(`u:${email}`, MAX_PER_ACCOUNT, `account ${email}`);
+    // LOG-04: one account guessed at from many addresses is an attack, not a forgotten password.
+    if (minutes) {
+      void this.alerts.raise('security.account_locked', `${maskEmail(email)} hesabına çok sayıda adresten hatalı şifre denendi; hesap ${minutes} dakika kilitlendi.`, {
+        key: maskEmail(email),
+      });
+    }
     await this.recordIpFailure(ip);
   }
 
-  recordIpFailure(ip: string) {
-    return this.bump(`ip:${ip}`, MAX_PER_IP, `ip ${ip}`);
+  async recordIpFailure(ip: string) {
+    const minutes = await this.bump(`ip:${ip}`, MAX_PER_IP, `ip ${ip}`);
+    if (minutes) void this.alerts.raise('security.ip_locked', `${ip} adresi çok fazla hatalı giriş denedi; ${minutes} dakika engellendi.`, { key: ip });
   }
 
   /** The account-wide count is left to expire: a right password elsewhere mustn't reset a distributed attack. */
@@ -69,15 +81,17 @@ export class LoginGuardService {
     );
   }
 
-  private async bump(key: string, max: number, label: string) {
+  /** Counts one failure; returns the lock's length in minutes when this one locked the key, else 0. */
+  private async bump(key: string, max: number, label: string): Promise<number> {
     const now = new Date();
     let row = await this.prisma.loginAttempt.upsert({ where: { key }, create: { key, failures: 1, firstAt: now }, update: { failures: { increment: 1 } } });
     if (now.getTime() - row.firstAt.getTime() > WINDOW_MS) {
       row = await this.prisma.loginAttempt.update({ where: { key }, data: { failures: 1, firstAt: now } });
     }
-    if (row.failures < max) return;
+    if (row.failures < max) return 0;
     const ms = Math.min(LOCK_MS * 2 ** row.locks, LOCK_MAX_MS);
     await this.prisma.loginAttempt.update({ where: { key }, data: { failures: 0, firstAt: now, locks: { increment: 1 }, lockedUntil: new Date(now.getTime() + ms) } });
     this.logger.warn(`login locked for ${label} for ${ms / 60_000} min (${max} failures in window)`);
+    return ms / 60_000;
   }
 }

@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MailService } from '../notifications/mail.service';
 import { SettingsService } from '../settings/settings.service';
 import { MAIL_QUOTAS, UsageService } from '../usage/usage.service';
+import { AlertsService } from '../alerts/alerts.service';
 import { renderCampaign, unsubscribeSignature, verifyUnsubscribeSignature } from './campaign.mail';
 import { AudienceQueryDto, CampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 
@@ -35,6 +36,7 @@ export class CampaignsService {
     private readonly settings: SettingsService,
     private readonly config: ConfigService<Env, true>,
     private readonly usage: UsageService,
+    private readonly alerts: AlertsService,
   ) {
     this.key = keyFromEnv(config.get('APP_ENCRYPTION_KEY', { infer: true }), config.get('JWT_ACCESS_SECRET', { infer: true }));
   }
@@ -177,10 +179,15 @@ export class CampaignsService {
           await sleep(SEND_INTERVAL_MS);
         }
       }
-      await this.prisma.emailCampaign.updateMany({ where: { id, status: CampaignStatus.SENDING }, data: { status: CampaignStatus.SENT, finishedAt: new Date() } });
+      const done = await this.prisma.emailCampaign.updateMany({ where: { id, status: CampaignStatus.SENDING }, data: { status: CampaignStatus.SENT, finishedAt: new Date() } });
       this.logger.log(`campaign ${id} finished`);
+      const sent = done.count ? await this.prisma.emailCampaign.findUnique({ where: { id }, select: { subject: true, sentCount: true, failedCount: true } }) : null;
+      if (sent?.failedCount) {
+        void this.alerts.raise('campaign.failed', `"${sent.subject}": ${sent.sentCount} gönderildi, ${sent.failedCount} gönderilemedi. Ayrıntı kampanya sayfasında.`, { key: id });
+      }
     } catch (e) {
       this.logger.error(`campaign ${id} stopped: ${(e as Error).message}`); // the minute job resumes it
+      void this.alerts.raise('campaign.stopped', `Kampanya gönderimi bir hatayla durdu, bir dakika içinde kaldığı yerden sürecek: ${(e as Error).message}`, { key: id });
     } finally {
       this.active.delete(id);
     }

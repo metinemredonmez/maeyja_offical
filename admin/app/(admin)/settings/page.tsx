@@ -15,8 +15,8 @@ import { useConnectStripe, useDisconnectStripe, useSaveSetting, useSettings, use
 import { cn } from '@/lib/utils';
 import type { Carrier, SettingKey, Settings } from '@/lib/types';
 
-/** Maintenance has no tab: it is the one-click button in the top bar. */
-const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance' | 'aiStudio' | 'cartReminder'> | 'stripe', string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', stripe: 'Kartla ödeme', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', productPage: 'Ürün sayfası rengi', tracking: 'İzleme ve görünürlük' };
+/** Maintenance has no tab: it is the one-click button in the top bar. Alert recipients live on the Uyarılar page. */
+const TAB_LABELS: Record<Exclude<SettingKey, 'maintenance' | 'aiStudio' | 'cartReminder' | 'alerts'> | 'stripe', string> = { store: 'Mağaza', shipping: 'Kargo', tax: 'KDV', checkout: 'Ödeme adımı', stripe: 'Kartla ödeme', bankTransfer: 'Havale / EFT', assistant: 'Asistan', tryon: 'Sanal deneme', productPage: 'Ürün sayfası rengi', tracking: 'İzleme ve görünürlük' };
 
 /** Generic per-key editor state: a local draft of the setting value and a save button. Tabs are re-keyed by value, so no sync effect. */
 function useDraft<K extends SettingKey>(key: K, initial: Settings[K]) {

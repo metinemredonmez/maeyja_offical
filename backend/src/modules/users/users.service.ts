@@ -7,12 +7,15 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { publicUser } from '../auth/auth.service';
 import { AddressDto, AdminUpdateUserDto, AdminUserQueryDto, CreateStaffDto, UpdateAddressDto, UpdateProfileDto } from './dto/users.dto';
 import { SessionStateService } from '../session/session-state.service';
+import { maskEmail } from '../alerts/alert-catalog';
+import { AlertsService } from '../alerts/alerts.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sessions: SessionStateService,
+    private readonly alerts: AlertsService,
   ) {}
 
   // ─────────── self-service ───────────
@@ -158,6 +161,13 @@ export class UsersService {
       // SES-02: new permissions apply at once — every session (and access token) of the account ends.
       await this.sessions.endAll(id);
     }
+    // LOG-04: who can reach the panel changed.
+    const roleChanged = dto.role !== undefined && dto.role !== target.role;
+    const activeChanged = dto.isActive !== undefined && dto.isActive !== target.isActive;
+    if (touchesStaff && (roleChanged || activeChanged)) {
+      const what = [roleChanged ? `rol ${target.role} → ${user.role}` : '', activeChanged ? (user.isActive ? 'hesap açıldı' : 'hesap kapatıldı') : ''].filter(Boolean).join(', ');
+      void this.alerts.raise('security.staff_changed', `${maskEmail(target.email)}: ${what} (değiştiren: ${maskEmail(actor.email)}).`, { key: id });
+    }
     return { ...publicUser(user), isActive: user.isActive };
   }
 
@@ -172,6 +182,7 @@ export class UsersService {
         emailVerifiedAt: new Date(),
       },
     });
+    void this.alerts.raise('security.staff_changed', `Yeni personel hesabı açıldı: ${maskEmail(user.email)} (${user.role}).`, { key: user.id });
     return publicUser(user);
   }
 }

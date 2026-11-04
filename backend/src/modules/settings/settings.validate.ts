@@ -1,9 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 import { LOCALES } from '../../common/utils/i18n.util';
+import { ALERT_CODES, webhookAllowed } from '../alerts/alert-catalog';
 import { SETTING_DEFAULTS, SettingKey } from './settings.defaults';
 
 /** Kept on the server; the admin sees only their last four characters (EXT-05). */
-export const SECRET_FIELDS: Partial<Record<SettingKey, string[]>> = { tracking: ['metaCapiToken', 'ga4ApiSecret'] };
+export const SECRET_FIELDS: Partial<Record<SettingKey, string[]>> = { tracking: ['metaCapiToken', 'ga4ApiSecret'], alerts: ['webhookUrl'] };
 /** Written by the API itself, never by a PUT (INP-01): the preview token is made and rotated server-side. */
 const SERVER_FIELDS: Partial<Record<SettingKey, string[]>> = { maintenance: ['previewToken'] };
 export const MASK = '••••';
@@ -53,13 +54,18 @@ function checkValue(name: string, def: unknown, value: unknown): unknown {
     if (value.length > (LONG_TEXT.has(name) ? 10_000 : 500)) fail(name, 'çok uzun');
     if (name.startsWith('productPage.') && !HEX.test(value)) fail(name, '#rrggbb biçiminde bir renk olmalı');
     if (name === 'store.instagram' && value && !/^https:\/\//.test(value)) fail(name, 'https:// ile başlamalı');
-    if (name === 'store.email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) fail(name, 'geçerli bir e-posta olmalı');
+    if ((name === 'store.email' || name === 'alerts.email') && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) fail(name, 'geçerli bir e-posta olmalı');
+    if (name === 'alerts.webhookUrl' && value && !webhookAllowed(value)) fail(name, 'Slack, Discord ya da Google Chat webhook adresi olmalı (https://)');
     // Money goes here: a typo or a tampered value must not reach the order e-mails.
     if (name === 'bankTransfer.iban' && value && !/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(value.replace(/\s/g, ''))) fail(name, 'geçerli bir IBAN olmalı');
     return value;
   }
+  if (name === 'alerts.muted') {
+    if (!Array.isArray(value) || value.some((c) => !(ALERT_CODES as string[]).includes(c as string))) return fail(name, 'bilinmeyen uyarı kodu');
+    return [...new Set(value as string[])];
+  }
   if (Array.isArray(def)) {
-    // The only list is shipping.carriers.
+    // Otherwise the only list is shipping.carriers.
     if (!Array.isArray(value) || value.length > 20) return fail(name, 'en çok 20 kargo firması');
     return value.map((c, i) => {
       const row = (c ?? {}) as Record<string, unknown>;

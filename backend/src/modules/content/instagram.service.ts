@@ -8,6 +8,7 @@ import { join, resolve } from 'path';
 import sharp from 'sharp';
 import type { Env } from '../../config/env.validation';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AlertsService } from '../alerts/alerts.service';
 
 const GRAPH = 'https://graph.instagram.com';
 /** Internal setting row (not one of the admin settings, so it is never listed or exposed). */
@@ -37,6 +38,7 @@ export class InstagramService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly alerts: AlertsService,
     config: ConfigService<Env, true>,
   ) {
     this.envToken = config.get('INSTAGRAM_ACCESS_TOKEN', { infer: true });
@@ -88,8 +90,13 @@ export class InstagramService implements OnModuleInit {
         if (!posts.some((p) => p.image.endsWith(`/${f}`))) await unlink(join(this.dir, f)).catch(() => undefined);
       }
       await this.write({ token, envHash, refreshedAt, syncedAt: Date.now(), posts });
+      void this.alerts.clear('instagram.sync_failed');
     } catch (e) {
       this.logger.warn(`Instagram eşitlenemedi: ${e instanceof Error ? e.message : String(e)}`);
+      void this.alerts.raise(
+        'instagram.sync_failed',
+        `Instagram gönderileri alınamadı: ${e instanceof Error ? e.message : String(e)}. Bağlantının süresi dolduysa INSTAGRAM_ACCESS_TOKEN yenilenmeli.`,
+      );
     }
   }
 

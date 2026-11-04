@@ -809,6 +809,34 @@ model AuditLog {
   @@index([actorId])
 }
 
+// ───────── Alerts (LOG-04): things staff must hear about — failed payments, stuck jobs, attacks ─────────
+enum AlertLevel {
+  INFO // kept in the panel only
+  WARNING
+  CRITICAL
+}
+
+/** One row per open problem (code + key); a repeat raises `count` instead of a new row. */
+model Alert {
+  id           String     @id @default(cuid())
+  code         String // see alert-catalog.ts
+  key          String     @default("") // which instance: an order number, a mail account, a quota…
+  /** `code|key` while open, null once resolved: the next raise of a resolved problem opens a new row. */
+  openKey      String?    @unique
+  level        AlertLevel
+  title        String
+  detail       String     @db.Text
+  meta         Json?
+  count        Int        @default(1)
+  firstAt      DateTime   @default(now())
+  lastAt       DateTime   @default(now())
+  notifiedAt   DateTime? // last e-mail / webhook; repeats inside the code's window stay quiet
+  resolvedAt   DateTime?
+  resolvedById String? // null with resolvedAt set: the problem cleared by itself
+
+  @@index([resolvedAt, lastAt])
+}
+
 // ───────── E-mail campaigns (marketing; only to people who opted in) ─────────
 enum CampaignStatus {
   DRAFT
