@@ -14,6 +14,8 @@ const KNOWLEDGE_TTL_MS = 5 * 60 * 1000;
 const PER_VISITOR = { limit: 20, windowMs: 10 * 60 * 1000 };
 /** Store-wide per hour: a bot can't spend the day's budget in minutes. */
 const HOURLY_SHARE = 1 / 8;
+/** The card provider shoppers are sent to (CARD_PROVIDER), as the shop's pages name it. */
+const CARD_PROVIDER_NAMES: Record<Env['CARD_PROVIDER'], string> = { STRIPE: 'Stripe', IYZICO: 'iyzico' };
 
 const LANGUAGE_NAMES: Record<string, string> = {
   tr: 'Turkish', en: 'English', ru: 'Russian', nl: 'Dutch', de: 'German', fr: 'French', it: 'Italian', es: 'Spanish', ko: 'Korean', ja: 'Japanese', zh: 'Simplified Chinese',
@@ -56,6 +58,7 @@ export class AssistantService {
   private readonly logger = new Logger(AssistantService.name);
   private readonly client: Anthropic | null;
   private readonly dailyLimit: number;
+  private readonly cardProvider: string;
   private knowledgeCache: { at: number; text: string } | null = null;
 
   constructor(
@@ -68,6 +71,7 @@ export class AssistantService {
     const key = config.get('ANTHROPIC_API_KEY', { infer: true });
     this.client = key ? new Anthropic({ apiKey: key, maxRetries: 2, timeout: 60_000 }) : null;
     this.dailyLimit = config.get('AI_CHAT_DAILY_LIMIT', { infer: true });
+    this.cardProvider = CARD_PROVIDER_NAMES[config.get('CARD_PROVIDER', { infer: true })];
   }
 
   async chat(history: ChatTurn[], lang: Locale, visitor: string) {
@@ -170,7 +174,7 @@ export class AssistantService {
     const text = [
       `Store: ${store.name} — ${store.tagline}. E-mail: ${store.email}${store.phone ? `, phone: ${store.phone}` : ''}. Based in ${store.address}. Instagram: ${store.instagram}.`,
       `Shipping: ${shipping.flatRate === 0 ? 'free within Türkiye' : `${money(shipping.flatRate)} within Türkiye${shipping.freeShippingThreshold ? `, free over ${money(shipping.freeShippingThreshold)}` : ''}`}; dispatched in ${shipping.estimatedDays} business days with ${shipping.carriers.map((c) => c.name).join(', ')}. International shipping: on request by e-mail.`,
-      `Payment: cards via iyzico (secure; card details never reach the store)${bank.enabled ? ', or bank transfer' : ''}. Returns: 14 days, no reason needed. Order tracking: /order-status.`,
+      `Payment: cards via ${this.cardProvider} (secure; card details never reach the store)${bank.enabled ? ', or bank transfer' : ''}. Returns: 14 days, no reason needed. Order tracking: /order-status.`,
       `\nCATALOGUE\n${products.join('\n')}`,
       faqs.length ? `\nFAQ\n${faqs.map((f) => localize(f, lang)).map((f) => `Q: ${f.question}\nA: ${plain(f.answer)}`).join('\n')}` : '',
       ...pages.map((p) => {
