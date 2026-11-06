@@ -294,12 +294,21 @@ export interface CheckoutResult {
 /** Admin → Üst menü ve alt bilgi. `key` is a message used in every language left empty in `label`/`title`. */
 export interface NavHeaderItem {
   id: string;
-  kind: 'bags' | 'expertise' | 'stores' | 'link';
+  /** `link`: a plain link; the others open a picture menu (bags also lists the models, stores the stockists). */
+  kind: 'bags' | 'expertise' | 'stores' | 'menu' | 'link';
   label: Record<string, string>;
   key: string;
   href: string;
   side: 'left' | 'right';
   visible: boolean;
+  panel?: NavPanel;
+}
+/** A picture menu's heading, links and pictures (admin-edited). An empty tile label on a model page shows its name. */
+export interface NavPanel {
+  title: Record<string, string>;
+  titleKey: string;
+  links: NavFooterLink[];
+  tiles: { image: string; label: Record<string, string>; key: string; href: string }[];
 }
 /** `href` empty: plain text; `#cookies`: the cookie settings button. */
 export interface NavFooterLink {

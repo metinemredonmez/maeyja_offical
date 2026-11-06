@@ -1,13 +1,32 @@
 import { useLocale, useTranslations } from 'next-intl';
-import type { Navigation, NavFooterLink, NavHeaderItem } from './types';
+import type { Navigation, NavFooterLink, NavHeaderItem, NavPanel } from './types';
 
 const item = (id: string, kind: NavHeaderItem['kind'], key: string, side: NavHeaderItem['side'], href = ''): NavHeaderItem => ({ id, kind, label: {}, key, href, side, visible: true });
 const link = (key: string, href: string): NavFooterLink => ({ label: {}, key, href });
+const tile = (image: string, href: string, key = '') => ({ image, label: {}, key, href });
+
+/** The API's default menu contents (backend navigation.ts), for when it can't be reached. */
+export const DEFAULT_PANELS: Record<Exclude<NavHeaderItem['kind'], 'link'>, NavPanel> = {
+  bags: {
+    title: {},
+    titleKey: 'nav.byModel',
+    links: [],
+    tiles: [tile('/menu/bags-origami.webp', '/products/petal-box-chili'), tile('/menu/bags-tulip.webp', '/products/petal-bucket-12-chili'), tile('/menu/bags-frame.webp', '/products/petal-shoulder-24-botanic')],
+  },
+  expertise: { title: {}, titleKey: 'nav.expertise', links: [link('home.ourStory', '/about')], tiles: [] },
+  stores: {
+    title: {},
+    titleKey: 'stockists.title',
+    links: [],
+    tiles: [tile('/menu/store-city.webp', '/stockists', 'stockists.title'), tile('/menu/store-shelves.webp', '/products', 'stockists.online'), tile('/menu/store-contact.webp', '/contact', 'footer.contact')],
+  },
+  menu: { title: {}, titleKey: '', links: [], tiles: [] },
+};
 
 /** The API's defaults, for when it can't be reached: the shop keeps its menus. */
 export const DEFAULT_NAVIGATION: Navigation = {
   header: {
-    items: [item('bags', 'bags', 'nav.bags', 'left'), item('expertise', 'expertise', 'nav.expertise', 'left'), item('journal', 'link', 'nav.journal', 'left', '/journal'), item('stores', 'stores', 'nav.stores', 'right')],
+    items: [item('bags', 'bags', 'nav.bags', 'left'), item('expertise', 'expertise', 'nav.expertise', 'left'), { ...item('journal', 'link', 'nav.journal', 'left', '/journal'), visible: false }, item('stores', 'stores', 'nav.stores', 'right')],
     languages: true,
     account: true,
   },
@@ -37,7 +56,15 @@ export function useNavLabel() {
   return (texts: Record<string, string>, key: string) => texts[locale] || (key && t.has(key) ? t(key) : '') || texts.en || texts.tr || '';
 }
 
-/** Where a picture-menu item goes in the phone menu. */
-export const KIND_HREF: Record<Exclude<NavHeaderItem['kind'], 'link'>, string> = { bags: '/products', expertise: '/expertise', stores: '/stockists' };
+/** Where a picture-menu item goes in the phone menu (a custom menu: its first link). */
+export const KIND_HREF: Record<Exclude<NavHeaderItem['kind'], 'link' | 'menu'>, string> = { bags: '/products', expertise: '/expertise', stores: '/stockists' };
+
+export const panelOf = (i: NavHeaderItem): NavPanel => i.panel ?? DEFAULT_PANELS[i.kind === 'link' ? 'menu' : i.kind];
+
+export function mobileHref(i: NavHeaderItem): string {
+  if (i.kind === 'link') return i.href;
+  if (i.kind === 'menu') return panelOf(i).links[0]?.href ?? panelOf(i).tiles[0]?.href ?? '/';
+  return KIND_HREF[i.kind];
+}
 
 export const isExternal = (href: string) => href.startsWith('https://');

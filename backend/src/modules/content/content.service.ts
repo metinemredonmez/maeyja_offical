@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ContentStatus, Prisma } from '@prisma/client';
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
 import { Locale, localize } from '../../common/utils/i18n.util';
@@ -10,7 +11,8 @@ import { ProductQueryDto } from '../catalog/dto/catalog.dto';
 import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
 import { ContactDto, JournalPostDto, SubscribeDto, UpdateJournalPostDto } from './dto/content.dto';
-import { cleanNavigation, Navigation, NAVIGATION_DEFAULTS, NAVIGATION_KEY } from './navigation';
+import type { Env } from '../../config/env.validation';
+import { cleanNavigation, Navigation, NAVIGATION_DEFAULTS, NAVIGATION_KEY, withPanels } from './navigation';
 
 @Injectable()
 export class ContentService {
@@ -18,16 +20,17 @@ export class ContentService {
     private readonly prisma: PrismaService,
     private readonly catalog: CatalogService,
     private readonly mail: MailService,
+    private readonly config: ConfigService<Env, true>,
   ) {}
 
   /** The storefront's header and footer (Admin → Üst menü ve alt bilgi); the defaults until it is first saved. */
   async navigation(): Promise<Navigation> {
     const row = await this.prisma.setting.findUnique({ where: { key: NAVIGATION_KEY } });
-    return (row?.value as Navigation | undefined) ?? NAVIGATION_DEFAULTS;
+    return row ? withPanels(row.value as Navigation) : NAVIGATION_DEFAULTS;
   }
 
   async saveNavigation(body: unknown) {
-    const value = cleanNavigation(body) as unknown as Prisma.InputJsonValue;
+    const value = cleanNavigation(body, this.config.get('UPLOAD_PUBLIC_URL', { infer: true })) as unknown as Prisma.InputJsonValue;
     await this.prisma.setting.upsert({ where: { key: NAVIGATION_KEY }, create: { key: NAVIGATION_KEY, value }, update: { value } });
     return value;
   }

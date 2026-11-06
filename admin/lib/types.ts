@@ -754,7 +754,7 @@ export interface AuthSession {
 }
 
 /** Content → Üst menü ve alt bilgi. `key` is a storefront message used in every language left empty in `label`/`title`. */
-export type NavKind = 'bags' | 'expertise' | 'stores' | 'link';
+export type NavKind = 'bags' | 'expertise' | 'stores' | 'menu' | 'link';
 export interface NavHeaderItem {
   id: string;
   kind: NavKind;
@@ -763,6 +763,20 @@ export interface NavHeaderItem {
   href: string;
   side: 'left' | 'right';
   visible: boolean;
+  /** Every kind but `link`: what its picture menu shows (the API fills in the defaults). */
+  panel?: NavPanel;
+}
+export interface NavPanelTile {
+  image: string;
+  label: Record<string, string>;
+  key: string;
+  href: string;
+}
+export interface NavPanel {
+  title: Record<string, string>;
+  titleKey: string;
+  links: NavFooterLink[];
+  tiles: NavPanelTile[];
 }
 /** `href` empty: plain text; `#cookies`: the cookie settings button. */
 export interface NavFooterLink {

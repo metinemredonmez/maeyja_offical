@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon, LanguagesIcon, PlusIcon, RotateCcwIcon, SaveIcon, SparklesIcon, Trash2Icon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, GripVerticalIcon, LanguagesIcon, PanelTopIcon, PlusIcon, RotateCcwIcon, SaveIcon, SparklesIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,21 +12,24 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StorePreview } from '@/components/content/store-preview';
+import { ImageUrlField } from '@/components/shared/media-picker';
 import { useConfirm } from '@/components/shared/confirm-dialog';
 import { PageHeader } from '@/components/shared/page-header';
 import { QueryState } from '@/components/shared/query-state';
 import { ToneBadge } from '@/components/shared/status-badge';
 import { api, errorMessage } from '@/lib/api.client';
+import { STORE_URL } from '@/lib/format';
 import { DEFAULT_LOCALE, LOCALE_LABELS, LOCALES } from '@/lib/i18n';
 import { useNavigation, useResetNavigation, useSaveNavigation } from '@/lib/queries/content';
-import type { NavFooterColumn, NavHeaderItem, NavKind, Navigation } from '@/lib/types';
+import type { NavFooterColumn, NavHeaderItem, NavKind, NavPanel, Navigation } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const KIND: Record<NavKind, { label: string; hint: string }> = {
   link: { label: 'Bağlantı', hint: 'Bir sayfaya ya da https:// adresine gider' },
-  bags: { label: 'Çantalar menüsü', hint: 'Modeller ve fotoğraflarla açılan menü' },
-  expertise: { label: 'Uzmanlık menüsü', hint: 'Tasarım, malzeme, işçilik ve hikâye' },
-  stores: { label: 'Mağazalar menüsü', hint: 'Satış noktaları ve iletişim' },
+  menu: { label: 'Açılır menü', hint: 'Başlık, bağlantılar ve fotoğraflarla açılan yeni bir menü' },
+  bags: { label: 'Çantalar menüsü', hint: 'Modeller kendiliğinden listelenir; fotoğrafları siz seçersiniz' },
+  expertise: { label: 'Uzmanlık menüsü', hint: 'Başlık, bağlantılar ve fotoğraflar' },
+  stores: { label: 'Mağazalar menüsü', hint: 'Satış noktaları kendiliğinden listelenir' },
 };
 
 /** Turkish of the shop's own texts: used (and already translated into every language) while the name is left empty. */
@@ -52,8 +55,13 @@ const KEY_TR: Record<string, string> = {
   'footer.privacy': 'Gizlilik ve çerezler',
   'consent.settings': 'Çerez tercihleri',
   'footer.terms': 'Kullanım koşulları',
+  'nav.byModel': 'Modeller',
+  'home.ourStory': 'Hikâyemiz',
+  'stockists.title': 'Satış noktaları',
+  'stockists.online': 'Çevrimiçi',
 };
-const KIND_KEY: Record<Exclude<NavKind, 'link'>, string> = { bags: 'nav.bags', expertise: 'nav.expertise', stores: 'nav.stores' };
+const KIND_KEY: Record<Exclude<NavKind, 'link'>, string> = { bags: 'nav.bags', expertise: 'nav.expertise', stores: 'nav.stores', menu: '' };
+const EMPTY_PANEL: NavPanel = { title: {}, titleKey: '', links: [], tiles: [] };
 const OTHER = LOCALES.filter((l) => l !== DEFAULT_LOCALE);
 const newId = () => crypto.randomUUID().slice(0, 8);
 const move = <T,>(list: T[], i: number, by: -1 | 1) => (i + by < 0 || i + by >= list.length ? list : arrayMove(list, i, i + by));
@@ -91,6 +99,7 @@ function IconButton({ label, onClick, children, className, disabled }: { label: 
 function HeaderRow({ item, onChange, onDelete }: { item: NavHeaderItem; onChange: (i: NavHeaderItem) => void; onDelete: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const [langs, setLangs] = useState(false);
+  const [content, setContent] = useState(false);
   return (
     <li ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition }} className={cn('rounded-xl border bg-card p-3', isDragging && 'z-10 shadow-lg', !item.visible && 'opacity-60')}>
       <div className="flex items-center gap-2">
@@ -114,15 +123,124 @@ function HeaderRow({ item, onChange, onDelete }: { item: NavHeaderItem; onChange
         <IconButton label="Diller" onClick={() => setLangs((o) => !o)} className={cn(langs && 'bg-muted')}>
           <LanguagesIcon />
         </IconButton>
+        {item.kind !== 'link' ? (
+          <IconButton label="Menü içeriği" onClick={() => setContent((o) => !o)} className={cn(content && 'bg-muted')}>
+            <PanelTopIcon />
+          </IconButton>
+        ) : null}
         <IconButton label="Sil" onClick={onDelete} className="text-muted-foreground hover:text-[#A3121B]">
           <Trash2Icon />
         </IconButton>
       </div>
+      {item.kind !== 'link' && content ? <PanelEditor kind={item.kind} panel={item.panel ?? EMPTY_PANEL} onChange={(panel) => onChange({ ...item, panel })} /> : null}
       {item.kind === 'link' ? (
         <Input value={item.href} onChange={(e) => onChange({ ...item, href: e.target.value })} placeholder="/journal ya da https://…" aria-label="Bağlantı" className="mt-2 h-8" />
       ) : null}
       <Names value={item.label} textKey={item.key} open={langs} onChange={(label) => onChange({ ...item, label })} />
     </li>
+  );
+}
+
+/**
+ * What a picture menu shows: a heading, links under it and up to four pictures beside them (from the media library).
+ * The bags menu lists the models and the stores menu the stockists by themselves, above the links.
+ */
+function PanelEditor({ kind, panel, onChange }: { kind: Exclude<NavKind, 'link'>; panel: NavPanel; onChange: (p: NavPanel) => void }) {
+  const [langs, setLangs] = useState<string | null>(null);
+  const toggle = (k: string) => setLangs((o) => (o === k ? null : k));
+  const setLink = (j: number, patch: Partial<NavPanel['links'][number]>) => onChange({ ...panel, links: panel.links.map((l, k) => (k === j ? { ...l, ...patch } : l)) });
+  const setTile = (j: number, patch: Partial<NavPanel['tiles'][number]>) => onChange({ ...panel, tiles: panel.tiles.map((t, k) => (k === j ? { ...t, ...patch } : t)) });
+  return (
+    <div className="mt-3 space-y-4 rounded-lg border bg-muted/30 p-3">
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">Başlık</p>
+        <div className="flex items-center gap-1.5">
+          <Input
+            value={panel.title.tr ?? ''}
+            onChange={(e) => onChange({ ...panel, title: { ...panel.title, tr: e.target.value } })}
+            placeholder={KEY_TR[panel.titleKey] ?? 'Boş: başlık yok'}
+            maxLength={80}
+            aria-label="Başlık"
+            className="h-8 min-w-0 flex-1"
+          />
+          <IconButton label="Diller" onClick={() => toggle('title')} className={cn(langs === 'title' && 'bg-muted')}>
+            <LanguagesIcon />
+          </IconButton>
+        </div>
+        <Names value={panel.title} textKey={panel.titleKey} open={langs === 'title'} onChange={(title) => onChange({ ...panel, title })} />
+        {kind === 'bags' || kind === 'stores' ? (
+          <p className="mt-1.5 text-xs text-muted-foreground">{kind === 'bags' ? 'Modeller başlığın altında kendiliğinden listelenir.' : 'Satış noktaları başlığın altında kendiliğinden listelenir.'}</p>
+        ) : null}
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">Bağlantılar</p>
+        <ul className="space-y-2">
+          {panel.links.map((l, j) => (
+            <li key={j}>
+              <div className="flex items-center gap-1.5">
+                <Input value={l.label.tr ?? ''} onChange={(e) => setLink(j, { label: { ...l.label, tr: e.target.value } })} placeholder={KEY_TR[l.key] ?? 'Ad'} maxLength={80} aria-label="Ad" className="h-8 min-w-0 flex-1" />
+                <Input value={l.href} onChange={(e) => setLink(j, { href: e.target.value })} placeholder="/sayfa ya da https://…" aria-label="Bağlantı" className="h-8 min-w-0 flex-1 text-xs" />
+                <IconButton label="Diller" onClick={() => toggle(`l${j}`)} className={cn(langs === `l${j}` && 'bg-muted')}>
+                  <LanguagesIcon />
+                </IconButton>
+                <IconButton label="Yukarı" onClick={() => onChange({ ...panel, links: move(panel.links, j, -1) })} disabled={j === 0}>
+                  <ArrowUpIcon />
+                </IconButton>
+                <IconButton label="Aşağı" onClick={() => onChange({ ...panel, links: move(panel.links, j, 1) })} disabled={j === panel.links.length - 1}>
+                  <ArrowDownIcon />
+                </IconButton>
+                <IconButton label="Sil" onClick={() => onChange({ ...panel, links: panel.links.filter((_, k) => k !== j) })} className="text-muted-foreground hover:text-[#A3121B]">
+                  <Trash2Icon />
+                </IconButton>
+              </div>
+              <Names value={l.label} textKey={l.key} open={langs === `l${j}`} onChange={(label) => setLink(j, { label })} />
+            </li>
+          ))}
+        </ul>
+        <Button type="button" variant="ghost" size="sm" className="mt-1" disabled={panel.links.length >= 12} onClick={() => onChange({ ...panel, links: [...panel.links, { label: {}, key: '', href: '/' }] })}>
+          <PlusIcon /> Bağlantı ekle
+        </Button>
+      </div>
+
+      <div>
+        <p className="mb-1 text-xs font-medium text-muted-foreground">Fotoğraflar (en çok 4)</p>
+        <ul className="space-y-3">
+          {panel.tiles.map((t, j) => (
+            <li key={j} className="rounded-md border bg-card p-2">
+              <ImageUrlField value={t.image} onChange={(image) => setTile(j, { image })} previewBase={STORE_URL} placeholder="Medyadan seçin" />
+              <div className="mt-2 flex items-center gap-1.5">
+                <Input
+                  value={t.label.tr ?? ''}
+                  onChange={(e) => setTile(j, { label: { ...t.label, tr: e.target.value } })}
+                  placeholder={KEY_TR[t.key] ?? (t.href.startsWith('/products/') ? 'Boş: model adı' : 'Yazı (opsiyonel)')}
+                  maxLength={80}
+                  aria-label="Fotoğraf yazısı"
+                  className="h-8 min-w-0 flex-1"
+                />
+                <Input value={t.href} onChange={(e) => setTile(j, { href: e.target.value })} placeholder="/sayfa" aria-label="Fotoğrafın bağlantısı" className="h-8 min-w-0 flex-1 text-xs" />
+                <IconButton label="Diller" onClick={() => toggle(`t${j}`)} className={cn(langs === `t${j}` && 'bg-muted')}>
+                  <LanguagesIcon />
+                </IconButton>
+                <IconButton label="Yukarı" onClick={() => onChange({ ...panel, tiles: move(panel.tiles, j, -1) })} disabled={j === 0}>
+                  <ArrowUpIcon />
+                </IconButton>
+                <IconButton label="Aşağı" onClick={() => onChange({ ...panel, tiles: move(panel.tiles, j, 1) })} disabled={j === panel.tiles.length - 1}>
+                  <ArrowDownIcon />
+                </IconButton>
+                <IconButton label="Sil" onClick={() => onChange({ ...panel, tiles: panel.tiles.filter((_, k) => k !== j) })} className="text-muted-foreground hover:text-[#A3121B]">
+                  <Trash2Icon />
+                </IconButton>
+              </div>
+              <Names value={t.label} textKey={t.key} open={langs === `t${j}`} onChange={(label) => setTile(j, { label })} />
+            </li>
+          ))}
+        </ul>
+        <Button type="button" variant="ghost" size="sm" className="mt-1" disabled={panel.tiles.length >= 4} onClick={() => onChange({ ...panel, tiles: [...panel.tiles, { image: '', label: {}, key: '', href: '/' }] })}>
+          <PlusIcon /> Fotoğraf ekle
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -248,7 +366,8 @@ export default function NavigationPage() {
   const translate = async () => {
     if (!nav) return;
     const next = structuredClone(nav);
-    const names = [...next.header.items.map((i) => i.label), ...next.footer.columns.flatMap((c) => [c.title, ...c.links.map((l) => l.label)])];
+    const panels = next.header.items.flatMap((i) => (i.panel ? [i.panel.title, ...i.panel.links.map((l) => l.label), ...i.panel.tiles.map((t) => t.label)] : []));
+    const names = [...next.header.items.map((i) => i.label), ...panels, ...next.footer.columns.flatMap((c) => [c.title, ...c.links.map((l) => l.label)])];
     const fields = Object.fromEntries(names.map((t, i) => [`f${i}`, t.tr?.trim() ?? '']).filter(([k, v]) => v && OTHER.some((l) => !names[Number(k.slice(1))][l]?.trim())));
     if (!Object.keys(fields).length) {
       toast.success('Çevrilecek yeni ad yok. Türkçe adı boş olanlar zaten hazır çeviriyle görünüyor.');
@@ -274,14 +393,23 @@ export default function NavigationPage() {
 
   const addItem = (kind: NavKind) =>
     change((n) => {
-      n.header.items.push({ id: newId(), kind, label: kind === 'link' ? { tr: 'Yeni bağlantı' } : {}, key: kind === 'link' ? '' : KIND_KEY[kind], href: kind === 'link' ? '/' : '', side: 'left', visible: true });
+      n.header.items.push({
+        id: newId(),
+        kind,
+        label: kind === 'link' ? { tr: 'Yeni bağlantı' } : kind === 'menu' ? { tr: 'Yeni menü' } : {},
+        key: kind === 'link' ? '' : KIND_KEY[kind],
+        href: kind === 'link' ? '/' : '',
+        side: 'left',
+        visible: true,
+        ...(kind === 'menu' ? { panel: structuredClone(EMPTY_PANEL) } : {}),
+      });
     });
 
   return (
     <>
       <PageHeader
         title="Üst menü ve alt bilgi"
-        description="Menüleri ekleyin, sıralayın ve adlarını değiştirin. Boş bırakılan adlar sitenin kendi metniyle 11 dilde görünür. Kaydedince sağdaki önizleme yenilenir."
+        description="Menüleri ekleyin, sıralayın ve adlarını değiştirin; açılır menülerin başlık, bağlantı ve fotoğraflarını yanlarındaki menü içeriği düğmesiyle düzenleyin. Boş bırakılan adlar sitenin kendi metniyle 11 dilde görünür. Kaydedince sağdaki önizleme yenilenir."
         actions={
           <div className="flex gap-2">
             <Button

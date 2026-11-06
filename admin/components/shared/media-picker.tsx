@@ -123,14 +123,28 @@ export function MediaPicker({ open, onOpenChange, onSelect, title = 'Medya seç'
   );
 }
 
-/** Input + "Seç" button pair for a single image URL field. */
-export function ImageUrlField({ value, onChange, placeholder, id, allowVideo }: { value: string | undefined; onChange: (url: string) => void; placeholder?: string; id?: string; allowVideo?: boolean }) {
+/** Input + "Seç" button pair for a single image URL field. `previewBase` prefixes a site path (/menu/…) for the thumbnail. */
+export function ImageUrlField({
+  value,
+  onChange,
+  placeholder,
+  id,
+  allowVideo,
+  previewBase,
+}: {
+  value: string | undefined;
+  onChange: (url: string) => void;
+  placeholder?: string;
+  id?: string;
+  allowVideo?: boolean;
+  previewBase?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex items-start gap-2">
       {value && !/\.(mp4|webm)$/i.test(value) ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={value} alt="" className="size-16 shrink-0 rounded-md object-cover ring-1 ring-black/5" />
+        <img src={previewBase && value.startsWith('/') ? `${previewBase}${value}` : value} alt="" className="size-16 shrink-0 rounded-md object-cover ring-1 ring-black/5" />
       ) : (
         <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-muted text-[10px] text-muted-foreground">{value ? 'video' : 'yok'}</div>
       )}

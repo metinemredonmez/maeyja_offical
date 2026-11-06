@@ -1,4 +1,4 @@
-import { cleanNavigation, NAVIGATION_DEFAULTS } from './navigation';
+import { cleanNavigation, NAVIGATION_DEFAULTS, PANEL_DEFAULTS, withPanels } from './navigation';
 
 const withHeaderLink = (href: string) => ({
   ...NAVIGATION_DEFAULTS,
@@ -38,5 +38,47 @@ describe('header and footer (INP-01)', () => {
     expect(out).not.toHaveProperty('extra');
     expect(out.header.items[0]).not.toHaveProperty('html');
     expect(out.header.items[0].label).toEqual({ tr: 'Çantalar' });
+  });
+});
+
+describe('picture menus', () => {
+  const UPLOADS = 'https://api.shop.test/uploads';
+  const withPanel = (panel: unknown) => ({
+    ...NAVIGATION_DEFAULTS,
+    header: { ...NAVIGATION_DEFAULTS.header, items: [{ kind: 'expertise', key: 'nav.expertise', side: 'left', visible: true, panel }] },
+  });
+
+  it('ships the expertise menu with only "Our story", and the journal switched off', () => {
+    expect(PANEL_DEFAULTS.expertise).toEqual({ title: {}, titleKey: 'nav.expertise', links: [{ label: {}, key: 'home.ourStory', href: '/about' }], tiles: [] });
+    expect(NAVIGATION_DEFAULTS.header.items.find((i) => i.id === 'journal')?.visible).toBe(false);
+  });
+
+  it('gives an item saved before menus had content the default content of its kind', () => {
+    const old = { ...NAVIGATION_DEFAULTS, header: { ...NAVIGATION_DEFAULTS.header, items: [{ id: 'bags', kind: 'bags', label: {}, key: 'nav.bags', href: '', side: 'left', visible: true }] } };
+    expect(withPanels(old as never).header.items[0].panel).toEqual(PANEL_DEFAULTS.bags);
+    expect(cleanNavigation(old).header.items[0].panel).toEqual(PANEL_DEFAULTS.bags);
+  });
+
+  it('takes links, headings and pictures from the media library', () => {
+    const out = cleanNavigation(
+      withPanel({ title: { tr: 'Atölye' }, links: [{ label: { tr: 'Hikâyemiz' }, href: '/about' }], tiles: [{ image: `${UPLOADS}/media/a-800.webp`, label: { tr: 'Dikiş' }, href: '/expertise' }] }),
+      UPLOADS,
+    );
+    expect(out.header.items[0].panel).toEqual({
+      title: { tr: 'Atölye' },
+      titleKey: '',
+      links: [{ label: { tr: 'Hikâyemiz' }, key: '', href: '/about' }],
+      tiles: [{ image: `${UPLOADS}/media/a-800.webp`, label: { tr: 'Dikiş' }, key: '', href: '/expertise' }],
+    });
+  });
+
+  it.each(['https://evil.example/x.webp', 'https://api.shop.test/uploads/../etc/x.webp', '/menu/../../x.webp', 'javascript:alert(1)', ''])('refuses the picture %s', (image) => {
+    expect(() => cleanNavigation(withPanel({ tiles: [{ image, label: {}, href: '/' }] }), UPLOADS)).toThrow(/medya/);
+  });
+
+  it('refuses unsafe links, unnamed links and too many pictures', () => {
+    expect(() => cleanNavigation(withPanel({ links: [{ label: { tr: 'x' }, href: 'javascript:alert(1)' }] }), UPLOADS)).toThrow(/sayfa ya da https/);
+    expect(() => cleanNavigation(withPanel({ links: [{ label: {}, href: '/about' }] }), UPLOADS)).toThrow(/Türkçe ad/);
+    expect(() => cleanNavigation(withPanel({ tiles: Array.from({ length: 5 }, () => ({ image: '/menu/a.webp', href: '/' })) }), UPLOADS)).toThrow(/en çok 4/);
   });
 });
