@@ -12,7 +12,7 @@ import { MailService } from '../notifications/mail.service';
 import { templates } from '../notifications/mail.templates';
 import { ContactDto, JournalPostDto, SubscribeDto, UpdateJournalPostDto } from './dto/content.dto';
 import type { Env } from '../../config/env.validation';
-import { cleanNavigation, Navigation, NAVIGATION_DEFAULTS, NAVIGATION_KEY, withPanels } from './navigation';
+import { cleanNavigation, Navigation, NAVIGATION_DEFAULTS, NAVIGATION_KEY, picture, withPanels } from './navigation';
 
 @Injectable()
 export class ContentService {
@@ -33,6 +33,20 @@ export class ContentService {
     const value = cleanNavigation(body, this.config.get('UPLOAD_PUBLIC_URL', { infer: true })) as unknown as Prisma.InputJsonValue;
     await this.prisma.setting.upsert({ where: { key: NAVIGATION_KEY }, create: { key: NAVIGATION_KEY, value }, update: { value } });
     return value;
+  }
+
+  /**
+   * INP-01: a homepage section's photo list (Instagram collage, the sideways band) may only hold our uploads or the
+   * storefront's own pictures — the image optimiser would fail the whole page on any other host.
+   */
+  sectionPayload(payload: Record<string, unknown>): Record<string, unknown> {
+    const out = { ...payload };
+    if (payload.images !== undefined) {
+      if (!Array.isArray(payload.images) || payload.images.length > 7) throw new BadRequestException('payload.images: en çok 7 fotoğraf olmalı');
+      out.images = payload.images.map((v, i) => picture(`payload.images[${i}]`, v, this.config.get('UPLOAD_PUBLIC_URL', { infer: true })));
+    }
+    if (payload.feed !== undefined && typeof payload.feed !== 'boolean') throw new BadRequestException('payload.feed: açık/kapalı olmalı');
+    return out;
   }
 
   /** "Varsayılana döndür": the header and footer the shop shipped with. */

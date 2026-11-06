@@ -146,7 +146,8 @@ function href(name: string, v: unknown, footer: boolean): string {
 const list = (name: string, v: unknown, max: number): Record<string, unknown>[] =>
   Array.isArray(v) && v.length <= max ? v.map((x) => (x && typeof x === 'object' ? (x as Record<string, unknown>) : {})) : fail(name, `en çok ${max} öğe olmalı`);
 
-function picture(name: string, v: unknown, uploadBase: string): string {
+/** A picture from the media library (our uploads) or the storefront's own folders; anything else is refused. */
+export function picture(name: string, v: unknown, uploadBase: string): string {
   const value = typeof v === 'string' ? v.trim() : '';
   const upload = uploadBase && value.startsWith(`${uploadBase.replace(/\/$/, '')}/`) && EXTERNAL.test(value) && !value.includes('..');
   if (value.length > 500 || !(SHOP_PICTURE.test(value) || upload)) fail(name, 'medya kütüphanesinden bir fotoğraf olmalı');

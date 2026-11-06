@@ -83,6 +83,7 @@ enum HomeSectionType {
   PRESS
   STOCKISTS
   NEWSLETTER
+  INSTAGRAM // "Follow on Instagram": the shop's latest posts, then the admin's photos
 }
 
 enum DevicePlatform {

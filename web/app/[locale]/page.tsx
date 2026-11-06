@@ -3,7 +3,7 @@ import { setRequestLocale } from 'next-intl/server';
 import { apiGet } from '@/lib/api.server';
 import { PREVIEW_HEADER } from '@/lib/maintenance';
 import type { HomeSection, InstagramPost, PublicSettings } from '@/lib/types';
-import { HomeSections, InstagramCollage } from '@/components/home/sections';
+import { HomeSections } from '@/components/home/sections';
 import { alternates } from '@/lib/seo';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -21,10 +21,5 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
     apiGet<PublicSettings>('/settings/public', { revalidate: 60 }).catch(() => null),
     apiGet<InstagramPost[]>('/content/instagram', { revalidate: 600 }).catch(() => []),
   ]);
-  return (
-    <>
-      <HomeSections sections={sections} />
-      <InstagramCollage url={settings?.store.instagram || null} posts={posts} />
-    </>
-  );
+  return <HomeSections sections={sections} instagram={{ url: settings?.store.instagram || null, posts }} />;
 }

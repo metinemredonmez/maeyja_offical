@@ -202,7 +202,7 @@ export interface PublicSettings {
   bankTransfer: { enabled: boolean; bankName?: string; accountName?: string; iban?: string; note?: Record<string, string> };
 }
 
-export type HomeSectionType = 'HERO' | 'FEATURED_PRODUCTS' | 'COLLECTION' | 'EDITORIAL' | 'CRAFT_STORY' | 'PRESS' | 'STOCKISTS' | 'NEWSLETTER';
+export type HomeSectionType = 'HERO' | 'FEATURED_PRODUCTS' | 'COLLECTION' | 'EDITORIAL' | 'CRAFT_STORY' | 'PRESS' | 'STOCKISTS' | 'NEWSLETTER' | 'INSTAGRAM';
 
 export interface HomeSection {
   id: string;

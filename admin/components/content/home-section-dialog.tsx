@@ -45,7 +45,9 @@ const LAYOUTS: Partial<Record<HomeSectionType, { value: string; label: string }[
   ],
 };
 const HAS_BODY: HomeSectionType[] = ['EDITORIAL', 'CRAFT_STORY', 'HERO'];
-const HAS_CTA: HomeSectionType[] = ['HERO', 'EDITORIAL', 'CRAFT_STORY', 'COLLECTION', 'FEATURED_PRODUCTS'];
+const HAS_CTA: HomeSectionType[] = ['HERO', 'EDITORIAL', 'CRAFT_STORY', 'COLLECTION', 'FEATURED_PRODUCTS', 'INSTAGRAM'];
+/** Pictures of the Instagram collage. */
+const COLLAGE_PHOTOS = 7;
 
 export function HomeSectionDialog({ section, type, onClose }: { section: HomeSection | null; type: HomeSectionType; onClose: () => void }) {
   const save = useSaveHomeSection();
@@ -65,7 +67,8 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
       ctaLabel: section?.ctaLabel ?? '',
       ctaUrl: section?.ctaUrl ?? '',
       productIds: section?.payload?.productIds ?? [],
-      images: [0, 1, 2].map((i) => section?.payload?.images?.[i] ?? ''),
+      images: Array.from({ length: COLLAGE_PHOTOS }, (_, i) => section?.payload?.images?.[i] ?? ''),
+      feed: section?.payload?.feed !== false,
       collectionSlug: section?.payload?.collectionSlug ?? '',
       limit: section?.payload?.limit != null ? String(section.payload.limit) : '',
       isActive: section?.isActive ?? true,
@@ -84,7 +87,11 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
     const payload: Record<string, unknown> = {};
     if ((type === 'HERO' || type === 'EDITORIAL') && v.productIds.length) payload.productIds = v.productIds.slice(0, cards);
     const images = v.images.map((u) => u.trim()).filter(Boolean);
-    if (type === 'EDITORIAL' && v.layout === 'sideways' && images.length) payload.images = images;
+    if (type === 'EDITORIAL' && v.layout === 'sideways' && images.length) payload.images = images.slice(0, 3);
+    if (type === 'INSTAGRAM') {
+      payload.feed = v.feed;
+      if (images.length) payload.images = images;
+    }
     if (type === 'FEATURED_PRODUCTS') {
       if (v.productIds.length) payload.productIds = v.productIds;
       if (v.limit) payload.limit = v.limit;
@@ -131,14 +138,19 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
             form={form}
             fields={[
               { name: 'title', label: 'Başlık', maxLength: 160 },
-              { name: 'subtitle', label: 'Alt başlık', type: 'textarea', rows: 2, maxLength: 300 },
+              ...(type === 'INSTAGRAM' ? [] : [{ name: 'subtitle', label: 'Alt başlık', type: 'textarea' as const, rows: 2, maxLength: 300 }]),
               ...(HAS_BODY.includes(type) ? [{ name: 'body', label: 'Metin', type: 'rich' as const, rows: 6 }] : []),
               ...(HAS_CTA.includes(type) ? [{ name: 'ctaLabel', label: 'Buton metni', maxLength: 60 }] : []),
             ]}
             extraBase={
               <div className="grid gap-4">
+                {type === 'INSTAGRAM' && (
+                  <p className="rounded-lg bg-muted/50 p-3 text-xs leading-relaxed text-muted-foreground">
+                    Başlık boşsa “Follow on Instagram”, buton metni boşsa “Our account” 11 dilde hazır çeviriyle görünür. Buton adresi boşsa Ayarlar → Mağaza’daki Instagram adresi kullanılır.
+                  </p>
+                )}
                 {HAS_CTA.includes(type) && (
-                  <Field label="Buton adresi" error={form.formState.errors.ctaUrl} htmlFor="ctaUrl" hint="/collections/signature veya https://…">
+                  <Field label="Buton adresi" error={form.formState.errors.ctaUrl} htmlFor="ctaUrl" hint={type === 'INSTAGRAM' ? 'Boş: Ayarlar → Mağaza’daki Instagram adresi' : '/collections/signature veya https://…'}>
                     <Input id="ctaUrl" maxLength={300} {...form.register('ctaUrl')} />
                   </Field>
                 )}
@@ -181,6 +193,29 @@ export function HomeSectionDialog({ section, type, onClose }: { section: HomeSec
                         </div>
                       </Field>
                     )}
+                  </>
+                )}
+                {type === 'INSTAGRAM' && (
+                  <>
+                    <Controller
+                      control={form.control}
+                      name="feed"
+                      render={({ field }) => (
+                        <SwitchField
+                          label="Instagram gönderilerini göster"
+                          description="Açıkken hesabın son gönderileri önce gelir (sunucuda Instagram bağlantısı kuruluysa); boş kalan yerleri aşağıdaki fotoğraflar doldurur."
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      )}
+                    />
+                    <Field label={`Fotoğraflar (en çok ${COLLAGE_PHOTOS})`} hint="Medya kütüphanesinden seçin. Hepsi boşsa sitenin hazır kampanya fotoğrafları görünür.">
+                      <div className="grid gap-3">
+                        {Array.from({ length: COLLAGE_PHOTOS }, (_, i) => (
+                          <Controller key={i} control={form.control} name={`images.${i}`} render={({ field }) => <ImageUrlField value={field.value} onChange={field.onChange} />} />
+                        ))}
+                      </div>
+                    </Field>
                   </>
                 )}
                 {(type === 'HERO' || type === 'EDITORIAL') && (

@@ -9,7 +9,7 @@ export type PaymentStatus = 'PENDING' | 'SUCCEEDED' | 'FAILED' | 'REFUNDED';
 export type CouponType = 'PERCENT' | 'FIXED' | 'FREE_SHIPPING';
 export type ReturnStatus = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'RECEIVED' | 'REFUNDED';
 export type ContentStatus = 'DRAFT' | 'PUBLISHED';
-export type HomeSectionType = 'HERO' | 'FEATURED_PRODUCTS' | 'COLLECTION' | 'EDITORIAL' | 'CRAFT_STORY' | 'PRESS' | 'STOCKISTS' | 'NEWSLETTER';
+export type HomeSectionType = 'HERO' | 'FEATURED_PRODUCTS' | 'COLLECTION' | 'EDITORIAL' | 'CRAFT_STORY' | 'PRESS' | 'STOCKISTS' | 'NEWSLETTER' | 'INSTAGRAM';
 export type PushTarget = 'ALL' | 'USERS';
 export type PushStatus = 'PENDING' | 'SENT' | 'FAILED';
 export type DevicePlatform = 'IOS' | 'ANDROID' | 'WEB';
@@ -380,7 +380,8 @@ export interface HomeSection {
   layout: string | null;
   ctaLabel: string | null;
   ctaUrl: string | null;
-  payload: { productIds?: string[]; collectionSlug?: string; limit?: number; images?: string[] } | null;
+  /** `feed` (Instagram): the shop's posts first; off, only the photos in `images`. */
+  payload: { productIds?: string[]; collectionSlug?: string; limit?: number; images?: string[]; feed?: boolean } | null;
   sortOrder: number;
   isActive: boolean;
   translations: Translations | null;

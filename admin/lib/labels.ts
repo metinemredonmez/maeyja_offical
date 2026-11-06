@@ -88,6 +88,7 @@ export const HOME_SECTION_TYPE: Record<HomeSectionType, { label: string; hint: s
   PRESS: { label: 'Basında', hint: 'Basın öğeleri otomatik gelir' },
   STOCKISTS: { label: 'Satış noktaları', hint: 'Satış noktaları otomatik gelir' },
   NEWSLETTER: { label: 'Bülten', hint: 'E-posta abonelik bloğu' },
+  INSTAGRAM: { label: 'Instagram', hint: 'Instagram gönderileri ve seçtiğiniz fotoğraflarla kolaj, başlık ve hesap bağlantısı' },
 };
 
 export const STAFF_ROLES: UserRole[] = ['EDITOR', 'ADMIN', 'SUPER_ADMIN'];

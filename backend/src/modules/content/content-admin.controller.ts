@@ -48,13 +48,19 @@ export class ContentAdminController {
 
   // home sections
   @Get('home-sections') listSections() { return this.prisma.homeSection.findMany({ orderBy: { sortOrder: 'asc' } }); }
-  @Post('home-sections') createSection(@Body() dto: HomeSectionDto) { return this.prisma.homeSection.create({ data: json(dto) }); }
-  @Patch('home-sections/:id') updateSection(@Param('id') id: string, @Body() dto: UpdateHomeSectionDto) { return this.prisma.homeSection.update({ where: { id }, data: json(dto) }); }
+  @Post('home-sections') createSection(@Body() dto: HomeSectionDto) { return this.prisma.homeSection.create({ data: json(this.withPayload(dto)) }); }
+  @Patch('home-sections/:id') updateSection(@Param('id') id: string, @Body() dto: UpdateHomeSectionDto) {
+    return this.prisma.homeSection.update({ where: { id }, data: json(this.withPayload(dto)) });
+  }
   @Delete('home-sections/:id') async deleteSection(@Param('id') id: string) { await this.prisma.homeSection.delete({ where: { id } }); return { ok: true }; }
   @Put('home-sections/order')
   async reorderSections(@Body() dto: ReorderDto) {
     await this.prisma.$transaction(dto.ids.map((id, sortOrder) => this.prisma.homeSection.update({ where: { id }, data: { sortOrder } })));
     return this.listSections();
+  }
+
+  private withPayload<T extends { payload?: Record<string, unknown> }>(dto: T): T {
+    return dto.payload === undefined ? dto : { ...dto, payload: this.content.sectionPayload(dto.payload) };
   }
 
   // header and footer

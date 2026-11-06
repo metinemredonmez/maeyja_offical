@@ -11,7 +11,7 @@ import { Swatch } from '@/components/product/swatch';
 import { AutoVideo } from './auto-video';
 
 /** Renders the admin-managed homepage sections in order. Unknown types are skipped. */
-export function HomeSections({ sections }: { sections: HomeSection[] }) {
+export function HomeSections({ sections, instagram }: { sections: HomeSection[]; instagram: { url: string | null; posts: InstagramPost[] } }) {
   // The hero's floating card falls back to the first product of the first product block.
   const firstProduct = sections.find((s) => s.type === 'FEATURED_PRODUCTS' && s.products?.length)?.products?.[0];
   return (
@@ -39,6 +39,8 @@ export function HomeSections({ sections }: { sections: HomeSection[] }) {
             return <Stockists key={s.id} s={s} />;
           case 'NEWSLETTER':
             return <Newsletter key={s.id} s={s} />;
+          case 'INSTAGRAM':
+            return <InstagramCollage key={s.id} s={s} url={instagram.url} posts={instagram.posts} />;
           default:
             return null;
         }
@@ -369,19 +371,26 @@ const COLLAGE = [
 ];
 
 /**
- * Polène's "Follow us on Instagram": pictures scattered around a short line and a link to the account. They are
- * the shop's latest posts once the API has synced them (each opens its post); campaign pictures fill the rest.
- * Phones get the line first and a simple grid underneath.
+ * Polène's "Follow us on Instagram": pictures scattered around a short line and a link to the account. Admin → Ana
+ * sayfa sets the line, the link and the photos: the shop's latest posts come first (each opens its post) unless
+ * switched off, then the admin's photos, then the campaign pictures. Phones get the line first and a grid underneath.
  */
-export function InstagramCollage({ url, posts }: { url: string | null; posts: InstagramPost[] }) {
+function InstagramCollage({ s, url, posts }: { s: HomeSection; url: string | null; posts: InstagramPost[] }) {
   const t = useTranslations('home');
-  if (!url) return null;
-  const tiles = COLLAGE.map((c, i) => ({ ...c, src: posts[i]?.image ?? `/instagram/${c.n}.webp`, href: posts[i]?.permalink ?? url }));
+  const link = s.ctaUrl || url;
+  if (!link) return null;
+  const payload = (s.payload ?? {}) as { images?: string[]; feed?: boolean };
+  const pool = [
+    ...(payload.feed === false ? [] : posts.map((p) => ({ src: p.image, href: p.permalink }))),
+    ...(payload.images ?? []).filter(Boolean).map((src) => ({ src, href: link })),
+    ...COLLAGE.map((c) => ({ src: `/instagram/${c.n}.webp`, href: link })),
+  ];
+  const tiles = COLLAGE.map((c, i) => ({ ...c, ...pool[i] }));
   const line = (
     <div className="flex flex-col items-center gap-3 text-center">
-      <p className="font-serif text-[26px] font-light md:text-[30px]">{t('followInstagram')}</p>
-      <a href={url} target="_blank" rel="noopener" className="link-underline">
-        {t('instagramAccount')}
+      <p className="font-serif text-[26px] font-light md:text-[30px]">{s.title || t('followInstagram')}</p>
+      <a href={link} target="_blank" rel="noopener" className="link-underline">
+        {s.ctaLabel || t('instagramAccount')}
       </a>
     </div>
   );

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { optionalInt, optionalSlug, optionalText, optionalUrl, seoSchema, slugSchema, translationsSchema } from '@/lib/schemas/common';
 
 export const homeSectionSchema = z.object({
-  type: z.enum(['HERO', 'FEATURED_PRODUCTS', 'COLLECTION', 'EDITORIAL', 'CRAFT_STORY', 'PRESS', 'STOCKISTS', 'NEWSLETTER']),
+  type: z.enum(['HERO', 'FEATURED_PRODUCTS', 'COLLECTION', 'EDITORIAL', 'CRAFT_STORY', 'PRESS', 'STOCKISTS', 'NEWSLETTER', 'INSTAGRAM']),
   title: optionalText(160),
   subtitle: optionalText(300),
   body: optionalText(),
@@ -16,6 +16,8 @@ export const homeSectionSchema = z.object({
   productIds: z.array(z.string()),
   // Sideways layout: further photos that fade in one after another while scrolling.
   images: z.array(z.string()),
+  // Instagram: the shop's own posts first.
+  feed: z.boolean(),
   collectionSlug: z.string().optional(),
   limit: optionalInt.refine((v) => v === undefined || (v >= 1 && v <= 24), '1-24 arası'),
   isActive: z.boolean(),

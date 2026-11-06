@@ -82,3 +82,20 @@ describe('picture menus', () => {
     expect(() => cleanNavigation(withPanel({ tiles: Array.from({ length: 5 }, () => ({ image: '/menu/a.webp', href: '/' })) }), UPLOADS)).toThrow(/en çok 4/);
   });
 });
+
+describe('homepage section photos (INP-01)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { ContentService } = require('./content.service') as typeof import('./content.service');
+  const svc = new ContentService({} as never, {} as never, {} as never, { get: () => 'https://api.shop.test/uploads' } as never);
+
+  it('keeps our uploads and the shop pictures, and the feed switch', () => {
+    const payload = { images: ['https://api.shop.test/uploads/media/a-800.webp', '/instagram/3.webp'], feed: false, productIds: ['p1'] };
+    expect(svc.sectionPayload(payload)).toEqual(payload);
+  });
+
+  it('refuses another host, too many photos and a feed that is not a switch', () => {
+    expect(() => svc.sectionPayload({ images: ['https://evil.example/a.webp'] })).toThrow(/medya/);
+    expect(() => svc.sectionPayload({ images: Array.from({ length: 8 }, () => '/instagram/1.webp') })).toThrow(/en çok 7/);
+    expect(() => svc.sectionPayload({ feed: 'yes' })).toThrow(/açık\/kapalı/);
+  });
+});
