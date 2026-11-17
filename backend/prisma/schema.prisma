@@ -869,6 +869,28 @@ model CronRun {
   @@index([startedAt])
 }
 
+// ───────── "See it on me" avatars: made once per set of choices, reused by every visitor (tryon-avatar.ts) ─────────
+model TryonAvatar {
+  id        String      @id @default(cuid())
+  key       String      @unique // e.g. "average-slim-medium-brown-long"
+  imageUrl  String
+  createdAt DateTime    @default(now())
+  looks     TryonLook[]
+}
+
+/** One bag (product + colour) on one avatar, made the first time it is asked for. */
+model TryonLook {
+  id        String      @id @default(cuid())
+  avatarId  String
+  productId String
+  colorSlug String      @default("")
+  imageUrl  String
+  createdAt DateTime    @default(now())
+  avatar    TryonAvatar @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+
+  @@unique([avatarId, productId, colorSlug])
+}
+
 // ───────── E-mail campaigns (marketing; only to people who opted in) ─────────
 enum CampaignStatus {
   DRAFT

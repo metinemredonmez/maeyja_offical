@@ -10,6 +10,7 @@ import { InstagramDialog } from '@/components/ai/instagram-dialog';
 import { Input } from '@/components/ui/input';
 import { api, errorMessage } from '@/lib/api.client';
 import { SuggestionsList } from '@/components/ai/suggestions-list';
+import { TryonAvatars } from '@/components/ai/tryon-avatars';
 import { SimpleSelect, SwitchField } from '@/components/shared/form';
 import { MediaPicker } from '@/components/shared/media-picker';
 import { PageHeader } from '@/components/shared/page-header';
@@ -58,6 +59,9 @@ export default function AiStudioPage() {
         <div className="space-y-5">
           <Section title="Onay bekleyenler">
             <SuggestionsList productNames={names} empty={<p className="text-sm text-muted-foreground">Bekleyen öneri yok. Yeni ürün eklenince mankenli fotoğraf önerisi kendiliğinden burada belirir.</p>} />
+          </Section>
+          <Section title="Deneme avatarları" description="Ürün sayfasındaki “See it on me → Avatar oluştur” ile üretilenler. Her seçim bir kez üretilir ve aynı seçimi yapan herkese gösterilir; beğenmediğinizi silin.">
+            <TryonAvatars />
           </Section>
         </div>
         <aside className="space-y-5">
