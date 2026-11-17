@@ -5,8 +5,10 @@ import { useState } from 'react';
 import { ApiError } from '@/lib/api.client';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PaletteProvider } from '@/components/layout/palette-picker';
+import type { PaletteId } from '@/lib/palettes';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ palette, children }: { palette: PaletteId; children: React.ReactNode }) {
   const [client] = useState(
     () =>
       new QueryClient({
@@ -24,7 +26,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
   return (
     <QueryClientProvider client={client}>
-      <TooltipProvider>{children}</TooltipProvider>
+      <PaletteProvider initial={palette}>
+        <TooltipProvider>{children}</TooltipProvider>
+      </PaletteProvider>
       <Toaster position="bottom-right" richColors closeButton />
     </QueryClientProvider>
   );

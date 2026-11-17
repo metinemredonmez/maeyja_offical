@@ -10,6 +10,7 @@ import { useLogout } from '@/lib/queries/auth';
 import type { AuthUser } from '@/lib/types';
 import { AlertsBell } from './alerts-bell';
 import { MaintenanceToggle } from './maintenance-toggle';
+import { PalettePicker } from './palette-picker';
 
 type Props = { user: AuthUser | undefined; onOpenSearch: () => void; onOpenMenu: () => void };
 
@@ -32,6 +33,7 @@ export function Topbar({ user, onOpenSearch, onOpenMenu }: Props) {
         <kbd className="hidden rounded border bg-background px-1.5 font-mono text-[10px] sm:inline">⌘K</kbd>
       </button>
       <div className="ml-auto flex items-center gap-1">
+        <PalettePicker />
         <AlertsBell role={user?.role} />
         <MaintenanceToggle />
         <DropdownMenu>

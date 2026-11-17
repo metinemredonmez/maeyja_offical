@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { cookies } from 'next/headers';
 import { Providers } from '@/components/providers';
+import { PALETTE_COOKIE, PALETTES_CSS, getPalette, paletteClass } from '@/lib/palettes';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -11,11 +13,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // The colour palette picked in the top bar; an unknown cookie value falls back to the default.
+  const palette = getPalette((await cookies()).get(PALETTE_COOKIE)?.value).id;
   return (
-    <html lang="tr" className={cn('font-sans antialiased', inter.variable)}>
+    <html lang="tr" className={cn('font-sans antialiased', inter.variable, paletteClass(palette))}>
+      <head>
+        <style>{PALETTES_CSS}</style>
+      </head>
       <body className="min-h-dvh bg-background text-foreground">
-        <Providers>{children}</Providers>
+        <Providers palette={palette}>{children}</Providers>
       </body>
     </html>
   );

@@ -94,15 +94,15 @@ export default function DashboardPage() {
                       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                         <defs>
                           <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#1A1A1A" stopOpacity={0.12} />
-                            <stop offset="100%" stopColor="#1A1A1A" stopOpacity={0} />
+                            <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.12} />
+                            <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid vertical={false} stroke="#E8E3DA" strokeDasharray="2 4" />
-                        <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#737373' }} tickLine={false} axisLine={false} interval={6} />
-                        <YAxis tick={{ fontSize: 10, fill: '#737373' }} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
-                        <Tooltip content={<ChartTip />} cursor={{ stroke: '#A3A3A3', strokeWidth: 1 }} />
-                        <Area type="monotone" dataKey="revenue" stroke="#1A1A1A" strokeWidth={2} fill="url(#rev)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: '#fff' }} />
+                        <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="2 4" />
+                        <XAxis dataKey="day" tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} interval={6} />
+                        <YAxis tick={{ fontSize: 10, fill: 'var(--muted-foreground)' }} tickLine={false} axisLine={false} width={56} tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))} />
+                        <Tooltip content={<ChartTip />} cursor={{ stroke: 'var(--muted-foreground)', strokeOpacity: 0.5, strokeWidth: 1 }} />
+                        <Area type="monotone" dataKey="revenue" stroke="var(--primary)" strokeWidth={2} fill="url(#rev)" dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--card)' }} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
@@ -112,8 +112,8 @@ export default function DashboardPage() {
                       <BarChart data={data} margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barCategoryGap={2}>
                         <XAxis dataKey="day" hide />
                         <YAxis hide allowDecimals={false} />
-                        <Tooltip content={<ChartTip />} cursor={{ fill: '#F5F5F5' }} />
-                        <Bar dataKey="orders" fill="#A3A3A3" radius={[3, 3, 0, 0]} />
+                        <Tooltip content={<ChartTip />} cursor={{ fill: 'var(--muted)' }} />
+                        <Bar dataKey="orders" fill="var(--primary)" fillOpacity={0.35} radius={[3, 3, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

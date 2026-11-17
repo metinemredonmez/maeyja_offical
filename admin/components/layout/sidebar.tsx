@@ -43,7 +43,7 @@ export function Sidebar({ role, collapsed, onToggle, onNavigate, className }: Pr
                     aria-current={active ? 'page' : undefined}
                     className={cn(
                       'flex items-center gap-2.5 rounded-md px-2 py-1.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring',
-                      active ? 'bg-foreground text-background' : 'text-foreground/80 hover:bg-sidebar-accent hover:text-foreground',
+                      active ? 'bg-primary text-primary-foreground' : 'text-foreground/80 hover:bg-sidebar-accent hover:text-foreground',
                       collapsed && 'justify-center px-0',
                     )}
                   >
