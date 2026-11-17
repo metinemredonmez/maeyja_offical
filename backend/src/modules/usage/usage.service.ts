@@ -27,6 +27,7 @@ export const MAIL_QUOTAS = {
   verify: { perAddress: 3, windowMs: 3600_000, daily: 300, label: 'Doğrulama e-postası' },
   newsletter: { perAddress: 2, windowMs: 86400_000, daily: 2000, label: 'Bülten (kampanya) e-postası' },
   restock: { perAddress: 5, windowMs: 86400_000, daily: 1000, label: 'Stok bildirimi e-postası' },
+  automation: { perAddress: 2, windowMs: 86400_000, daily: 500, label: 'Otomatik e-posta' },
 } as const;
 export type MailKind = keyof typeof MAIL_QUOTAS;
 

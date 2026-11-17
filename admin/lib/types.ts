@@ -518,6 +518,10 @@ export interface Settings {
   };
   /** `webhookUrl` comes back masked ("••••abcd") once saved. */
   alerts: { email: string; webhookUrl: string; muted: string[] };
+  /** Automatic e-mails (Pazarlama → Otomatik e-postalar); texts in tr/en, {name} and {coupon} filled in. */
+  mailWelcome: { enabled: boolean; subject: Record<string, string>; body: Record<string, string> };
+  mailAfterPurchase: { enabled: boolean; delayDays: number; onlyConsented: boolean; subject: Record<string, string>; body: Record<string, string> };
+  mailWinback: { enabled: boolean; afterDays: number; coupon: string; subject: Record<string, string>; body: Record<string, string> };
 }
 export type SettingKey = keyof Settings;
 

@@ -90,6 +90,43 @@ export const SETTING_DEFAULTS = {
     webhookUrl: '',
     muted: [] as string[],
   },
+  /**
+   * Automatic e-mails (Admin → Otomatik e-postalar), each off until switched on. Texts in Turkish and English (other
+   * languages get English); {name} becomes " Ad" when the name is known, {coupon} the code (a paragraph with an
+   * empty {coupon} is left out). Only people who may receive marketing get them, and every one has an unsubscribe link.
+   */
+  mailWelcome: {
+    enabled: false,
+    subject: { tr: "MAEYJA'ya hoş geldiniz", en: 'Welcome to MAEYJA' } as Record<string, string>,
+    body: {
+      tr: "Merhaba{name},\n\nMAEYJA'ya katıldığınız için teşekkür ederiz. Çantalarımız atölyemizde, tek parça deriden elle kesilip dikiliyor; her modelden az sayıda üretiyoruz.\n\nYeni modelleri, atölyeden haberleri ve özel davetleri ilk siz duyacaksınız.",
+      en: 'Hello{name},\n\nThank you for joining MAEYJA. Our bags are cut and stitched by hand in our atelier, from a single piece of leather, and made in small numbers.\n\nYou will be the first to hear about new models, news from the atelier and private invitations.',
+    } as Record<string, string>,
+  },
+  mailAfterPurchase: {
+    enabled: false,
+    /** Days after the order was shipped. */
+    delayDays: 10,
+    /** Only buyers who agreed to marketing e-mails. */
+    onlyConsented: true,
+    subject: { tr: 'Çantanız nasıl?', en: 'How is your bag?' } as Record<string, string>,
+    body: {
+      tr: "Merhaba{name},\n\nÇantanızın size sorunsuz ulaştığını umuyoruz. Derinin uzun yıllar güzel kalması için birkaç küçük öneriyi bakım rehberimizde topladık.\n\nDüşüncelerinizi duymayı çok isteriz; bu e-postayı yanıtlamanız yeterli. Instagram'da paylaşırsanız @maeyja_official etiketiyle görmekten mutluluk duyarız.",
+      en: 'Hello{name},\n\nWe hope your bag has reached you safely. To keep the leather beautiful for years, we have gathered a few simple tips in our care guide.\n\nWe would love to hear what you think — simply reply to this e-mail. If you share it on Instagram, tag @maeyja_official; we would be delighted to see it.',
+    } as Record<string, string>,
+  },
+  mailWinback: {
+    enabled: false,
+    /** Customers whose last order is older than this many days; each hears at most once in that time. */
+    afterDays: 180,
+    /** An existing, active coupon code, or empty. */
+    coupon: '',
+    subject: { tr: 'Sizi özledik', en: 'We have missed you' } as Record<string, string>,
+    body: {
+      tr: 'Merhaba{name},\n\nSizi bir süredir görmedik. Atölyede yeni modeller ve renkler üzerinde çalıştık.\n\nBir sonraki siparişinizde {coupon} kodunu kullanabilirsiniz.',
+      en: 'Hello{name},\n\nIt has been a while. In the atelier we have been working on new models and colours.\n\nUse the code {coupon} on your next order.',
+    } as Record<string, string>,
+  },
   bankTransfer: {
     enabled: false,
     bankName: '',

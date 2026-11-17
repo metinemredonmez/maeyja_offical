@@ -16,6 +16,8 @@ const RANGES: Record<string, [number, number]> = {
   'tax.defaultRate': [0, 100],
   'checkout.maxQtyPerItem': [1, 50],
   'cartReminder.delayHours': [1, 168],
+  'mailAfterPurchase.delayDays': [1, 90],
+  'mailWinback.afterDays': [30, 730],
 };
 const LONG_TEXT = new Set(['assistant.instructions']);
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -56,6 +58,7 @@ function checkValue(name: string, def: unknown, value: unknown): unknown {
     if (name === 'store.instagram' && value && !/^https:\/\//.test(value)) fail(name, 'https:// ile başlamalı');
     if ((name === 'store.email' || name === 'alerts.email') && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) fail(name, 'geçerli bir e-posta olmalı');
     if (name === 'alerts.webhookUrl' && value && !webhookAllowed(value)) fail(name, 'Slack, Discord ya da Google Chat webhook adresi olmalı (https://)');
+    if (name === 'mailWinback.coupon' && value && !/^[A-Za-z0-9_-]{2,40}$/.test(value)) fail(name, 'harf, rakam, - ya da _ olmalı');
     // Money goes here: a typo or a tampered value must not reach the order e-mails.
     if (name === 'bankTransfer.iban' && value && !/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(value.replace(/\s/g, ''))) fail(name, 'geçerli bir IBAN olmalı');
     return value;
@@ -83,7 +86,7 @@ function checkValue(name: string, def: unknown, value: unknown): unknown {
     const texts: Record<string, string> = {};
     for (const [lang, text] of Object.entries(value as Record<string, unknown>)) {
       if (!(LOCALES as readonly string[]).includes(lang)) continue;
-      if (typeof text !== 'string' || text.length > 2000) fail(`${name}.${lang}`, 'en çok 2000 karakter metin olmalı');
+      if (typeof text !== 'string' || text.length > 4000) fail(`${name}.${lang}`, 'en çok 4000 karakter metin olmalı');
       texts[lang] = text as string;
     }
     return texts;

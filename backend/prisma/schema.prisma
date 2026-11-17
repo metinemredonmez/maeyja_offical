@@ -955,6 +955,25 @@ model EmailCampaignRecipient {
 }
 
 // ───────── Mailbox: IMAP/SMTP accounts read & answered inside the admin (ported from fly) ─────────
+/**
+ * One automatic e-mail (welcome, after purchase, win-back) to one address — the unique key keeps it from going twice.
+ * `refId`: the order for "after purchase", the period for "win-back", empty for "welcome". Its id signs the
+ * unsubscribe link.
+ */
+model MailAutomationSend {
+  id     String   @id @default(cuid())
+  flow   String // welcome | afterPurchase | winback
+  email  String
+  refId  String   @default("")
+  locale String   @default("tr")
+  status String   @default("PENDING") // PENDING | SENT | FAILED
+  error  String?
+  sentAt DateTime @default(now())
+
+  @@unique([flow, email, refId])
+  @@index([flow, sentAt])
+}
+
 enum MailDirection {
   INBOUND
   OUTBOUND

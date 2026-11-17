@@ -12,6 +12,7 @@ import { MailService } from '../notifications/mail.service';
 import { SettingsService } from '../settings/settings.service';
 import { MAIL_QUOTAS, UsageService } from '../usage/usage.service';
 import { AlertsService } from '../alerts/alerts.service';
+import { AUTOMATION_PREFIX } from './automation.mail';
 import { renderCampaign, unsubscribeSignature, verifyUnsubscribeSignature } from './campaign.mail';
 import { AudienceQueryDto, CampaignDto, UpdateCampaignDto } from './dto/campaign.dto';
 import { Tracked } from '../cron/tracked.decorator';
@@ -200,7 +201,10 @@ export class CampaignsService {
   async unsubscribe(recipientId: string, signature: string) {
     if (!verifyUnsubscribeSignature(recipientId, signature, this.key)) throw new BadRequestException('Bağlantı geçersiz');
     if (recipientId === TEST_RECIPIENT) return { ok: true };
-    const r = await this.prisma.emailCampaignRecipient.findUnique({ where: { id: recipientId }, select: { email: true } });
+    // A campaign's link names its recipient; an automatic e-mail's (welcome, after purchase, win-back) its send.
+    const r = recipientId.startsWith(AUTOMATION_PREFIX)
+      ? await this.prisma.mailAutomationSend.findUnique({ where: { id: recipientId.slice(AUTOMATION_PREFIX.length) }, select: { email: true } })
+      : await this.prisma.emailCampaignRecipient.findUnique({ where: { id: recipientId }, select: { email: true } });
     if (!r) throw new BadRequestException('Bağlantı geçersiz');
     const email = r.email.toLowerCase();
     const now = new Date();
