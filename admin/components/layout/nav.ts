@@ -29,6 +29,7 @@ import {
   TriangleAlertIcon,
   TimerIcon,
   MailCheckIcon,
+  MegaphoneIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/lib/types';
 
@@ -82,6 +83,7 @@ export const NAV: NavGroup[] = [
       { href: '/mail', label: 'Gelen kutusu', icon: InboxIcon, roles: ALL },
       { href: '/campaigns', label: 'E-posta kampanyaları', icon: SendIcon, roles: ALL },
       { href: '/mail-automations', label: 'Otomatik e-postalar', icon: MailCheckIcon, roles: ALL },
+      { href: '/ads', label: 'Reklamlar', icon: MegaphoneIcon, roles: ALL },
       { href: '/newsletter', label: 'Bülten', icon: MailIcon, roles: ALL },
       { href: '/messages', label: 'Mesajlar', icon: MessageSquareIcon, roles: ALL },
       { href: '/push', label: 'Push bildirim', icon: BellRingIcon, roles: ALL },

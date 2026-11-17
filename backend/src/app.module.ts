@@ -20,6 +20,7 @@ import { MailboxModule } from './modules/mailbox/mailbox.module';
 import { ContentModule } from './modules/content/content.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AiModule } from './modules/ai/ai.module';
+import { AdsModule } from './modules/ads/ads.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
 import { CouponsModule } from './modules/coupons/coupons.module';
 import { MediaModule } from './modules/media/media.module';
@@ -79,6 +80,7 @@ import { SessionModule } from './modules/session/session.module';
     MailboxModule,
     DashboardModule,
     AiModule,
+    AdsModule,
   ],
   providers: [
     AuditService,

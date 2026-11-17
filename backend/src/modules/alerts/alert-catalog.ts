@@ -28,6 +28,7 @@ export const ALERT_CATALOG = {
   'infra.disk_full': { level: 'CRITICAL', group: 'Sistem', title: 'Sunucu diski neredeyse dolu', repeatMin: 120 },
   'backup.failed': { level: 'CRITICAL', group: 'Sistem', title: 'Gece yedeği alınamadı', repeatMin: 720 },
   'backup.stale': { level: 'WARNING', group: 'Sistem', title: 'Gece yedeği güncel değil', repeatMin: 720 },
+  'ads.connection': { level: 'WARNING', group: 'Reklam', title: 'Meta reklam hesabı okunamıyor', repeatMin: 720 },
 } as const satisfies Record<string, { level: 'INFO' | 'WARNING' | 'CRITICAL'; group: string; title: string; repeatMin: number }>;
 
 export type AlertCode = keyof typeof ALERT_CATALOG;
